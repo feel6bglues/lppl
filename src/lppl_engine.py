@@ -813,6 +813,13 @@ def process_single_day_ensemble(close_prices: np.ndarray, idx: int,
     # 4. 崩溃时间聚类分析
     tc_array = np.array([fit['days_to_crash'] for fit in valid_fits])
     tc_std = np.std(tc_array)
+
+    positive_fits = [fit for fit in valid_fits if fit.get("params", (None, None, None, None, 0))[4] <= 0]
+    negative_fits = [fit for fit in valid_fits if fit.get("params", (None, None, None, None, 0))[4] > 0]
+
+    positive_consensus_rate = len(positive_fits) / total_windows if total_windows > 0 else 0.0
+    negative_consensus_rate = len(negative_fits) / total_windows if total_windows > 0 else 0.0
+    predicted_rebound_days = np.median([fit["days_to_crash"] for fit in negative_fits]) if negative_fits else None
     
     # 5. 信号强度计算
     signal_strength = consensus_rate * (1.0 / (tc_std + 1.0))
@@ -824,7 +831,10 @@ def process_single_day_ensemble(close_prices: np.ndarray, idx: int,
         'predicted_crash_days': np.median(tc_array),
         'tc_std': tc_std,
         'signal_strength': signal_strength,
-        'avg_r2': np.mean([fit['r_squared'] for fit in valid_fits])
+        'avg_r2': np.mean([fit['r_squared'] for fit in valid_fits]),
+        'positive_consensus_rate': positive_consensus_rate,
+        'negative_consensus_rate': negative_consensus_rate,
+        'predicted_rebound_days': predicted_rebound_days,
     }
 
 

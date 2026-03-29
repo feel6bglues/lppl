@@ -9,12 +9,14 @@ lppl/
 ├── main.py                 # 兼容入口（wrapper）
 ├── lppl_verify_v2.py       # 兼容入口（wrapper）
 ├── lppl_walk_forward.py    # 兼容入口（wrapper）
+├── index_investment_analysis.py  # 指数投资分析入口（wrapper）
 ├── generate_optimal8_report.py  # 兼容入口（wrapper）
 ├── src/
 │   ├── cli/                # 实际 CLI 实现
 │   │   ├── main.py
 │   │   ├── lppl_verify_v2.py
 │   │   ├── lppl_walk_forward.py
+│   │   ├── index_investment_analysis.py
 │   │   └── generate_optimal8_report.py
 │   ├── constants.py        # 配置常量
 │   ├── lppl_core.py        # LPPL 核心算法
@@ -24,8 +26,11 @@ lppl/
 │   ├── data/
 │   │   ├── manager.py      # 数据管理
 │   │   └── tdx_reader.py   # 通达信数据读取
+│   ├── investment/
+│   │   └── backtest.py     # 投资信号、回测、回撤计算
 │   ├── reporting/
 │   │   ├── html_generator.py       # HTML 报告生成
+│   │   ├── investment_report.py    # 投资分析报告生成
 │   │   ├── plot_generator.py       # 图表生成
 │   │   └── verification_report.py  # 验证报告生成
 │   └── verification/
@@ -100,11 +105,18 @@ pip install -r requirements.txt
 
 # 3) 再跑盲测（单指数示例）
 .venv/bin/python lppl_walk_forward.py --symbol 000001.SH --ensemble --use-optimal-config
+
+# 4) 跑指数投资分析（净值/回撤/K线对比）
+.venv/bin/python index_investment_analysis.py \
+  --symbol 000001.SH \
+  --start-date 2023-01-01 \
+  --end-date 2024-12-31
 ```
 
 说明：
 - 若不想启用最优参数模式，去掉 `--use-optimal-config` 即可。
 - 最优参数默认读取 `config/optimal_params.yaml`，可用 `--optimal-config-path` 指定其他路径。
+- 投资分析建议显式传入 `--start-date` / `--end-date`，避免扫描全历史带来的额外耗时。
 
 ## 质量门禁命令
 
@@ -112,7 +124,7 @@ pip install -r requirements.txt
 
 ```bash
 # 编译所有核心模块
-.venv/bin/python -m compileall main.py src lppl_verify_v2.py lppl_walk_forward.py
+.venv/bin/python -m compileall main.py src lppl_verify_v2.py lppl_walk_forward.py index_investment_analysis.py
 ```
 
 ### 2. 单元测试
@@ -158,6 +170,13 @@ pip install -r requirements.txt
 
 # Walk-forward 最小盲测
 .venv/bin/python lppl_walk_forward.py --symbol 000001.SH --step 20 --lookahead 60
+
+# 指数投资分析最小链路
+.venv/bin/python index_investment_analysis.py \
+  --symbol 000001.SH \
+  --start-date 2025-01-01 \
+  --end-date 2025-12-31 \
+  --output output/investment_smoke
 ```
 
 ## 运行指南
@@ -232,6 +251,64 @@ pip install -r requirements.txt
 - `--output, -o`: 输出目录
 - `--use-optimal-config`: 启用按指数最优参数模式（从 YAML 读取）
 - `--optimal-config-path`: 最优参数 YAML 路径 (默认 `config/optimal_params.yaml`)
+
+### 指数投资分析
+
+```bash
+# 单指数投资分析
+.venv/bin/python index_investment_analysis.py \
+  --symbol 000001.SH \
+  --start-date 2023-01-01 \
+  --end-date 2024-12-31
+
+# 自定义资金、滑点和手续费
+.venv/bin/python index_investment_analysis.py \
+  --symbol 000300.SH \
+  --start-date 2021-01-01 \
+  --end-date 2024-12-31 \
+  --initial-capital 1000000 \
+  --buy-fee 0.0003 \
+  --sell-fee 0.0003 \
+  --slippage 0.0005 \
+  --step 5 \
+  --output output/investment
+
+# 使用按指数最优参数（YAML）
+.venv/bin/python index_investment_analysis.py \
+  --symbol 000001.SH \
+  --start-date 2023-01-01 \
+  --end-date 2024-12-31 \
+  --use-optimal-config
+```
+
+输出文件：
+- `output/investment/raw/signals_*.csv` - 逐日投资信号
+- `output/investment/raw/equity_*.csv` - 逐日净值、仓位、回撤
+- `output/investment/raw/trades_*.csv` - 交易流水
+- `output/investment/summary/summary_*.csv` - 策略汇总
+- `output/investment/plots/*_strategy_overview.png` - 净值 vs 基准 + 日K线 + 买卖点
+- `output/investment/plots/*_strategy_drawdown.png` - 回撤曲线
+- `output/investment/reports/investment_analysis_report.md` - Markdown 报告
+- `output/investment/reports/investment_analysis_report.html` - HTML 报告
+
+参数说明：
+- `--symbol, -s`: 指数代码
+- `--start-date`: 回测起始日期 `YYYY-MM-DD`
+- `--end-date`: 回测结束日期 `YYYY-MM-DD`
+- `--ensemble, -e`: 使用 Ensemble 多窗口共识模式
+- `--step`: LPPL 信号扫描步长，越大越快，默认 `5`
+- `--initial-capital`: 初始资金，默认 `1000000`
+- `--buy-fee`: 买入手续费，默认 `0.0003`
+- `--sell-fee`: 卖出手续费，默认 `0.0003`
+- `--slippage`: 滑点，默认 `0.0005`
+- `--output, -o`: 输出目录，默认 `output/investment`
+- `--use-optimal-config`: 启用按指数最优参数模式（从 YAML 读取）
+- `--optimal-config-path`: 最优参数 YAML 路径
+
+说明：
+- 投资分析当前按`指数层`运行，不做 ETF/场外基金映射。
+- 回测模型为`收盘后出信号，下一交易日开盘执行`。
+- 若区间很长，优先通过 `--start-date` / `--end-date` 和 `--step` 控制性能。
 
 ### 最优参数配置（YAML）
 
