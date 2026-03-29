@@ -17,3 +17,4 @@ tdxpy>=0.2.5
 
 # Development tooling
 ruff>=0.5.0
+PyYAML>=6.0.0

@@ -6,17 +6,22 @@ LPPL算法有效性验证程序
 查找8个指数历年日线最高点，对每个最高点前后运行LPPL拟合，验证算法预警效果
 """
 
-import pandas as pd
-import numpy as np
-from scipy.optimize import differential_evolution
-from datetime import datetime, timedelta
-import warnings
 import os
-import time
+import sys
+import warnings
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 from joblib import Parallel, delayed
+from scipy.optimize import differential_evolution
 
 warnings.filterwarnings("ignore")
 CPU_CORES = max(1, (os.cpu_count() or 4) - 2)
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # LPPL模型函数
 def lppl_func(t, tc, m, w, a, b, c, phi):
@@ -257,14 +262,13 @@ def main():
     print("="*100)
     print("LPPL算法有效性验证")
     print("="*100)
-    print(f"参数配置:")
+    print("参数配置:")
     print(f"  窗口范围: {WINDOW_RANGE[0]}-{WINDOW_RANGE[-1]}天")
     print(f"  扫描步长: {SCAN_STEP}天")
     print(f"  移动平均: {MA_WINDOW}天")
     print(f"  最小跌幅: {MIN_PEAK_DROP*100:.0f}%")
     print(f"  最小间隔: {MIN_PEAK_GAP}天")
     
-    all_peaks = []
     all_results = []
     
     for symbol, name in SYMBOLS.items():
@@ -274,7 +278,7 @@ def main():
         
         df = dm.get_data(symbol)
         if df is None or df.empty:
-            print(f"  无数据")
+            print("  无数据")
             continue
         
         df = df.sort_values('date').reset_index(drop=True)
@@ -309,9 +313,9 @@ def main():
                 if result['detected']:
                     print(f"    ✅ 检测到预警: {result['first_danger_days']}天前, R²={result['first_danger_r2']:.3f}")
                 else:
-                    print(f"    ❌ 未检测到预警")
+                    print("    ❌ 未检测到预警")
             else:
-                print(f"    ⚠️ 分析失败")
+                print("    ⚠️ 分析失败")
     
     # 保存结果
     if all_results:
@@ -355,7 +359,7 @@ def main():
             for _, row in high_conf.sort_values('first_danger_r2', ascending=False).iterrows():
                 print(f"{row['name']:<10} {row['peak_date']:<12} {row['peak_price']:>10.2f} {row['first_danger_days']:>10.0f} {row['first_danger_r2']:>6.3f} {row['first_danger_m']:>6.3f} {row['first_danger_w']:>6.3f}")
         
-        print(f"\n结果已保存到 output/MA/peak_verification.csv")
+        print("\n结果已保存到 output/MA/peak_verification.csv")
 
 if __name__ == "__main__":
     main()

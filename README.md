@@ -6,10 +6,16 @@
 
 ```
 lppl/
-├── main.py                 # 主程序入口
-├── lppl_verify_v2.py       # 验证脚本
-├── lppl_walk_forward.py    # Walk-Forward 盲测脚本
+├── main.py                 # 兼容入口（wrapper）
+├── lppl_verify_v2.py       # 兼容入口（wrapper）
+├── lppl_walk_forward.py    # 兼容入口（wrapper）
+├── generate_optimal8_report.py  # 兼容入口（wrapper）
 ├── src/
+│   ├── cli/                # 实际 CLI 实现
+│   │   ├── main.py
+│   │   ├── lppl_verify_v2.py
+│   │   ├── lppl_walk_forward.py
+│   │   └── generate_optimal8_report.py
 │   ├── constants.py        # 配置常量
 │   ├── lppl_core.py        # LPPL 核心算法
 │   ├── lppl_engine.py      # LPPL 计算引擎
@@ -28,6 +34,19 @@ lppl/
 │   ├── unit/               # 单元测试
 │   ├── integration/        # 集成测试
 │   └── fixtures/           # 测试数据
+├── scripts/                # 研究/实验脚本
+│   ├── ensemble_grid_search.py
+│   ├── lppl_backtest.py
+│   ├── verify_lppl.py
+│   ├── test_lppl_ma.py
+│   └── lppl.py
+├── docs/                   # 项目文档
+│   ├── 使用文档.md
+│   ├── lppl_backtest_report.md
+│   └── archive/            # 历史规划文档归档
+│       ├── plan.md
+│       ├── task.md
+│       └── target.md
 ├── output/                 # 输出目录
 │   └── MA/                 # 验证输出
 │       ├── raw/            # 原始数据
@@ -36,6 +55,10 @@ lppl/
 │       └── summary/        # 汇总
 └── data/                   # 数据目录
 ```
+
+文档入口：
+- 详细使用说明：`docs/使用文档.md`
+- 历史规划归档：`docs/archive/`
 
 ## 环境配置
 
@@ -64,6 +87,24 @@ export LPPL_REPORTS_DIR="output/MA/reports"
 export LPPL_SUMMARY_DIR="output/MA/summary"
 export LPPL_RAW_DIR="output/MA/raw"
 ```
+
+## 快速上手（3条命令）
+
+```bash
+# 1) 安装依赖
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# 2) 先跑验证（推荐：按指数最优参数）
+.venv/bin/python lppl_verify_v2.py --all --ensemble --use-optimal-config
+
+# 3) 再跑盲测（单指数示例）
+.venv/bin/python lppl_walk_forward.py --symbol 000001.SH --ensemble --use-optimal-config
+```
+
+说明：
+- 若不想启用最优参数模式，去掉 `--use-optimal-config` 即可。
+- 最优参数默认读取 `config/optimal_params.yaml`，可用 `--optimal-config-path` 指定其他路径。
 
 ## 质量门禁命令
 
@@ -150,6 +191,9 @@ export LPPL_RAW_DIR="output/MA/raw"
 
 # 自定义参数
 .venv/bin/python lppl_verify_v2.py --symbol 000001.SH --max-peaks 5 --step 5 --ma 5
+
+# 使用按指数最优参数（YAML）
+.venv/bin/python lppl_verify_v2.py --all --ensemble --use-optimal-config
 ```
 
 参数说明:
@@ -160,6 +204,8 @@ export LPPL_RAW_DIR="output/MA/raw"
 - `--step`: 扫描步长 (默认 5)
 - `--ma`: 移动平均窗口 (默认 5)
 - `--output, -o`: 输出目录 (默认 output/MA)
+- `--use-optimal-config`: 启用按指数最优参数模式（从 YAML 读取）
+- `--optimal-config-path`: 最优参数 YAML 路径 (默认 `config/optimal_params.yaml`)
 
 ### Walk-Forward 盲测
 
@@ -172,6 +218,9 @@ export LPPL_RAW_DIR="output/MA/raw"
 
 # 自定义参数
 .venv/bin/python lppl_walk_forward.py --symbol 000001.SH --step 5 --lookahead 60 --drop-threshold 0.10
+
+# 使用按指数最优参数（YAML）
+.venv/bin/python lppl_walk_forward.py --symbol 000001.SH --ensemble --use-optimal-config
 ```
 
 参数说明:
@@ -181,6 +230,30 @@ export LPPL_RAW_DIR="output/MA/raw"
 - `--lookahead`: 未来观察天数 (默认 60)
 - `--drop-threshold`: 未来跌幅阈值 (默认 0.10)
 - `--output, -o`: 输出目录
+- `--use-optimal-config`: 启用按指数最优参数模式（从 YAML 读取）
+- `--optimal-config-path`: 最优参数 YAML 路径 (默认 `config/optimal_params.yaml`)
+
+### 最优参数配置（YAML）
+
+- 默认配置文件：`config/optimal_params.yaml`
+- 结构：
+  - `window_sets`: 窗口集合定义
+  - `symbols`: 每个指数的最优参数（`step/window_set/r2_threshold/consensus_threshold/danger_days/optimizer`）
+  - `defaults`: 全局默认参数
+- 回退策略：
+  - 若配置文件缺失、无法解析，或某指数未配置，系统会打印告警并回退到默认参数，不中断运行
+
+### 8指数可读报告（固化模板）
+
+```bash
+# 基于 8 指数 walk-forward 汇总 CSV 生成可读报告 + 4 张图
+.venv/bin/python generate_optimal8_report.py \
+  --summary-csv output/MA/summary/walk_forward_optimal_8index_summary_YYYYMMDD_HHMMSS.csv
+```
+
+输出：
+- `output/MA/reports/optimal8_human_friendly_report_v2_*.md`
+- `output/MA/plots/optimal8_*_readable_*.png`
 
 ## 验证循环 (Verification Loop)
 
@@ -251,6 +324,7 @@ echo "=== 所有验证通过 ==="
 | v1.1.0 | 2026-03-08 | 优化计划 |
 | v1.2.0 | 2026-03-24 | 数据源迁移到通达信本地 |
 | v1.3.0 | 2026-03-29 | 验证体系整改与可视化增强 |
+| v1.4.0 | 2026-03-29 | 新增按指数最优参数 YAML 配置模式 |
 
 ## 许可证
 

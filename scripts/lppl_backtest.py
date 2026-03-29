@@ -12,20 +12,24 @@ LPPL 回测分析程序
     python lppl_backtest.py --symbol sh000001
 """
 
+import matplotlib
 import numpy as np
 import pandas as pd
-import matplotlib
+
 matplotlib.use('Agg')
+import os
+import sys
+import warnings
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-import warnings
-import sys
-import os
-import multiprocessing as mp
 
 warnings.filterwarnings("ignore")
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 CPU_CORES = os.cpu_count() or 4
 print(f"检测到 CPU 核心数: {CPU_CORES}, 使用单线程+内部并行 (differential_evolution workers=-1)")
@@ -157,7 +161,7 @@ def plot_all_results(all_results, output_dir="output"):
         for date in ['2007-10-16', '2015-06-12']:
             try:
                 ax.axvline(pd.Timestamp(date), color='orange', linestyle=':', alpha=0.5)
-            except:
+            except Exception:
                 pass
     
     ax_summary = axes[-1]
@@ -177,7 +181,7 @@ def plot_all_results(all_results, output_dir="output"):
     for date in ['2007-10-16', '2015-06-12', '2024-03-01']:
         try:
             ax_summary.axvline(pd.Timestamp(date), color='orange', linestyle=':', alpha=0.5)
-        except:
+        except Exception:
             pass
     
     plt.tight_layout()
@@ -190,7 +194,7 @@ def plot_all_results(all_results, output_dir="output"):
 def print_statistics(all_results):
     """打印统计信息"""
     print(f"\n{'='*80}")
-    print(f"回测统计汇总")
+    print("回测统计汇总")
     print(f"{'='*80}")
     
     summary_data = []
@@ -291,7 +295,7 @@ def save_report_to_markdown(all_results, output_path="lppl_backtest_report.md", 
                 lines.append(f"| {year} | {count} |")
             
             lines.append("")
-            lines.append(f"**最近危险信号** (前10条):")
+            lines.append("**最近危险信号** (前10条):")
             lines.append("")
             lines.append("| 日期 | 收盘价 | 预测崩盘天数 | m | w |")
             lines.append("|:-----|-------:|------------:|---:|---:|")
@@ -396,7 +400,7 @@ def main():
         window_sizes = WINDOW_RANGE
     
     print(f"\n{'='*60}")
-    print(f"LPPL 回测分析程序")
+    print("LPPL 回测分析程序")
     print(f"{'='*60}")
     print(f"开始日期: {args.start}")
     print(f"窗口范围: {min(window_sizes)}-{max(window_sizes)}天, 共{len(window_sizes)}个窗口")
@@ -413,12 +417,10 @@ def main():
     else:
         symbol_lppl = args.symbol
         symbol_name = None
-        symbol_tdx = None
         
-        for lp, td, name in LPPL_CODE_LIST:
+        for lp, _, name in LPPL_CODE_LIST:
             if lp == symbol_lppl:
                 symbol_lppl = lp
-                symbol_tdx = td
                 symbol_name = name
                 break
         
@@ -436,7 +438,7 @@ def main():
             print(f"\n统计: {len(result)} 次扫描, {len(danger)} 次危险信号 ({len(danger)/len(result)*100:.1f}%)")
             
             if not danger.empty:
-                print(f"\n危险信号详情 (前10条):")
+                print("\n危险信号详情 (前10条):")
                 print(danger[['date', 'price', 'days_to_crash', 'm', 'w']].head(10).to_string(index=False))
 
 

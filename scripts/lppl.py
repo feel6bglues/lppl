@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
+import os
+from datetime import timedelta
+
 import numpy as np
 import pandas as pd
-from scipy.optimize import differential_evolution
-from datetime import timedelta, datetime
-import logging
-import time
-import os
-from tabulate import tabulate
 from colorama import Fore, Style, init
+from scipy.optimize import differential_evolution
+from tabulate import tabulate
 
 init(autoreset=True)
 
@@ -129,7 +128,7 @@ class LPPLScanner:
             else:
                 print("x", end="", flush=True)
 
-        print(f" 完成")
+        print(" 完成")
         
         output_results = []
         if results["short"]["result"]:
@@ -149,9 +148,12 @@ class LPPLScanner:
         
         risk = "低"
         if 0.1 < m < 0.9 and 6 < w < 13:
-            if days_left < 20: risk = "极高 (Danger)"
-            elif days_left < 60: risk = "高 (Warning)"
-            else: risk = "中 (Watch)"
+            if days_left < 20:
+                risk = "极高 (Danger)"
+            elif days_left < 60:
+                risk = "高 (Warning)"
+            else:
+                risk = "中 (Watch)"
         else:
             risk = "无效模型 (假信号)"
 
@@ -170,7 +172,7 @@ class LPPLScanner:
 
 def main():
     print(f"{Fore.CYAN}{'='*60}")
-    print(f"   LPPL 中国主要指数全市场扫描系统")
+    print("   LPPL 中国主要指数全市场扫描系统")
     print(f"   扫描窗口范围: {list(WINDOW_RANGE)} 天")
     print(f"{'='*60}{Style.RESET_ALL}\n")
     

@@ -10,18 +10,22 @@ LPPL 多窗口+移动平均趋势预警测试程序
     python test_lppl_ma.py --all
 """
 
+import os
+import sys
+import time
+import warnings
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from scipy.optimize import differential_evolution
-from datetime import timedelta, datetime
-import warnings
-import sys
-import os
-import time
 from joblib import Parallel, delayed
+from scipy.optimize import differential_evolution
 
 warnings.filterwarnings("ignore")
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # CPU核心数
 CPU_CORES = max(1, (os.cpu_count() or 4) - 2)
@@ -412,7 +416,7 @@ def run_test(symbol, name, start_date, end_date, window_strategy, step, ma_windo
         'evaluation': evaluation,
     }
     
-    print(f"\n统计:")
+    print("\n统计:")
     print(f"  总扫描: {total_scans}")
     print(f"  Danger信号: {danger_count} ({result_summary['danger_ratio']:.1f}%)")
     print(f"  Warning信号: {warning_count}")
@@ -428,7 +432,6 @@ def run_test(symbol, name, start_date, end_date, window_strategy, step, ma_windo
 
 def generate_report(all_results, output_dir):
     """生成对比报告"""
-    from datetime import datetime
     
     if not all_results:
         print("无结果可生成报告")
@@ -472,7 +475,7 @@ def generate_report(all_results, output_dir):
                 if perf['first_danger_days'] is not None:
                     lines.append(f"- 首个Danger信号: **{perf['first_danger_days']}天前**")
                 else:
-                    lines.append(f"- 首个Danger信号: 无")
+                    lines.append("- 首个Danger信号: 无")
                 lines.append(f"- 最高趋势得分: **{perf['best_trend_days']}天前** (得分={perf['best_trend_score']:.4f})")
                 lines.append(f"- 最高R²: **{perf['best_r2_days']}天前** (R²={perf['best_r2_value']:.3f})")
                 lines.append(f"- Danger信号数: {perf['danger_count']}")
@@ -514,7 +517,7 @@ def generate_report(all_results, output_dir):
         
         # 推荐最佳组合
         best = best_by_danger[0]
-        lines.append(f"### 推荐最佳组合")
+        lines.append("### 推荐最佳组合")
         lines.append("")
         lines.append(f"- **窗口策略**: {best['window_strategy']}")
         lines.append(f"- **扫描步长**: {best['step']}")

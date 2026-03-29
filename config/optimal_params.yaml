@@ -1,0 +1,71 @@
+version: 1
+
+defaults:
+  optimizer: lbfgsb
+  lookahead_days: 60
+  drop_threshold: 0.10
+  ma_window: 5
+  max_peaks: 10
+
+window_sets:
+  narrow_40_120: [40, 50, 60, 70, 80, 90, 100, 110, 120]
+  default_40_150: [40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150]
+  wide_30_180: [30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180]
+
+symbols:
+  "000001.SH":
+    step: 120
+    window_set: narrow_40_120
+    r2_threshold: 0.50
+    consensus_threshold: 0.20
+    danger_days: 20
+    optimizer: lbfgsb
+  "399001.SZ":
+    step: 120
+    window_set: wide_30_180
+    r2_threshold: 0.50
+    consensus_threshold: 0.30
+    danger_days: 20
+    optimizer: lbfgsb
+  "399006.SZ":
+    step: 60
+    window_set: wide_30_180
+    r2_threshold: 0.50
+    consensus_threshold: 0.30
+    danger_days: 20
+    optimizer: lbfgsb
+  "000016.SH":
+    step: 60
+    window_set: wide_30_180
+    r2_threshold: 0.50
+    consensus_threshold: 0.20
+    danger_days: 20
+    optimizer: lbfgsb
+  "000300.SH":
+    step: 120
+    window_set: narrow_40_120
+    r2_threshold: 0.50
+    consensus_threshold: 0.25
+    danger_days: 20
+    optimizer: lbfgsb
+  "000905.SH":
+    step: 120
+    window_set: narrow_40_120
+    r2_threshold: 0.50
+    consensus_threshold: 0.20
+    danger_days: 20
+    optimizer: lbfgsb
+  "000852.SH":
+    step: 120
+    window_set: narrow_40_120
+    r2_threshold: 0.50
+    consensus_threshold: 0.20
+    danger_days: 20
+    optimizer: lbfgsb
+  "932000.SH":
+    step: 20
+    window_set: narrow_40_120
+    r2_threshold: 0.50
+    consensus_threshold: 0.25
+    danger_days: 20
+    optimizer: lbfgsb
