@@ -1,0 +1,106 @@
+{
+  "single_window": [
+    {
+      "symbol": "000001.SH",
+      "name": "上证综指",
+      "peak_date": "2015-06-12",
+      "peak_price": 5166.35,
+      "detected": true,
+      "first_danger_days": -15,
+      "first_danger_r2": 0.83,
+      "first_danger_m": 0.45,
+      "first_danger_w": 8.2,
+      "danger_before_peak": 2,
+      "best_trend_score": 0.62,
+      "best_trend_r2": 0.84,
+      "mode": "single_window",
+      "timeline": [
+        {
+          "idx": 120,
+          "date": "2015-05-20",
+          "price": 4800.0,
+          "days_to_peak": -23,
+          "is_warning": true,
+          "is_danger": false,
+          "r_squared": 0.76
+        },
+        {
+          "idx": 125,
+          "date": "2015-05-27",
+          "price": 4950.0,
+          "days_to_peak": -16,
+          "is_warning": true,
+          "is_danger": true,
+          "r_squared": 0.83
+        },
+        {
+          "idx": 130,
+          "date": "2015-06-03",
+          "price": 5060.0,
+          "days_to_peak": -9,
+          "is_warning": true,
+          "is_danger": true,
+          "r_squared": 0.81
+        }
+      ]
+    }
+  ],
+  "ensemble": [
+    {
+      "symbol": "000001.SH",
+      "name": "上证综指",
+      "peak_date": "2015-06-12",
+      "peak_price": 5166.35,
+      "detected": true,
+      "first_danger_days": -18,
+      "first_danger_r2": 0.88,
+      "first_danger_m": 0.41,
+      "first_danger_w": 8.6,
+      "danger_before_peak": 3,
+      "best_trend_score": 0.71,
+      "best_trend_r2": 0.89,
+      "mode": "ensemble",
+      "timeline": [
+        {
+          "idx": 118,
+          "date": "2015-05-18",
+          "price": 4740.0,
+          "days_to_peak": -25,
+          "is_warning": true,
+          "is_danger": false,
+          "consensus_rate": 0.24,
+          "valid_windows": 3,
+          "predicted_crash_days": 22,
+          "tc_std": 4.2,
+          "signal_strength": 0.31
+        },
+        {
+          "idx": 123,
+          "date": "2015-05-25",
+          "price": 4890.0,
+          "days_to_peak": -18,
+          "is_warning": true,
+          "is_danger": true,
+          "consensus_rate": 0.33,
+          "valid_windows": 4,
+          "predicted_crash_days": 15,
+          "tc_std": 2.4,
+          "signal_strength": 0.46
+        },
+        {
+          "idx": 128,
+          "date": "2015-06-01",
+          "price": 5015.0,
+          "days_to_peak": -11,
+          "is_warning": true,
+          "is_danger": true,
+          "consensus_rate": 0.42,
+          "valid_windows": 5,
+          "predicted_crash_days": 9,
+          "tc_std": 1.6,
+          "signal_strength": 0.61
+        }
+      ]
+    }
+  ]
+}

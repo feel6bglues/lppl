@@ -1,0 +1,40 @@
+{
+  "baseline_version": "v1.3.0",
+  "mode": "ensemble",
+  "generated_from": "output/MA/peak_verification_v2.csv",
+  "cases": [
+    {
+      "symbol": "000001.SH",
+      "name": "上证综指",
+      "peak_date": "2015-06-12",
+      "peak_price": 5166.35,
+      "detected": true,
+      "first_danger_days": -115.0,
+      "first_danger_r2": 0.965372957992202,
+      "best_trend_score": 0.5691133063579622,
+      "best_trend_r2": 0.9783914265635512
+    },
+    {
+      "symbol": "000300.SH",
+      "name": "沪深300",
+      "peak_date": "2015-06-08",
+      "peak_price": 5353.75,
+      "detected": true,
+      "first_danger_days": -110.0,
+      "first_danger_r2": 0.9456150833837568,
+      "best_trend_score": 0.7530916539233592,
+      "best_trend_r2": 0.9401992282660628
+    },
+    {
+      "symbol": "399006.SZ",
+      "name": "创业板指",
+      "peak_date": "2015-06-03",
+      "peak_price": 3982.25,
+      "detected": true,
+      "first_danger_days": -90.0,
+      "first_danger_r2": 0.6541777033155851,
+      "best_trend_score": 0.9496841106473222,
+      "best_trend_r2": 0.9559146235377336
+    }
+  ]
+}

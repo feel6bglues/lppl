@@ -1,0 +1,27 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tool caches
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Local IDE/editor metadata
+.trae/
+.claude/
+.DS_Store
+
+# Build and runtime artifacts
+output/
+
+# Local data files
+data/*.parquet
+*.parquet
+
