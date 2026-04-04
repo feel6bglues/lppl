@@ -37,7 +37,7 @@ def objective(summary: Dict[str, float]) -> float:
     precision = float(summary["precision"])
     recall = float(summary["recall"])
     fpr = float(summary["false_positive_rate"])
-    return (0.60 * recall) + (0.30 * precision) - (0.10 * fpr)
+    return (0.40 * recall) + (0.40 * precision) - (0.20 * fpr)
 
 
 def main() -> None:

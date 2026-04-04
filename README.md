@@ -111,12 +111,32 @@ pip install -r requirements.txt
   --symbol 000001.SH \
   --start-date 2023-01-01 \
   --end-date 2024-12-31
+
+# 5) 跑信号调优（单指数示例）
+.venv/bin/python tune_signal_model.py \
+  --symbol 000001.SH \
+  --start-date 2023-01-01 \
+  --end-date 2024-12-31
+
+# 6) 跑二轮原子化调优（局部精调示例）
+.venv/bin/python tune_signal_model.py \
+  --symbols 000300.SH,000016.SH \
+  --start-date 2020-01-01 \
+  --sell-votes 2,3 \
+  --sell-confirms 2,3 \
+  --vol-breakout-grid 1.00,1.02 \
+  --drawdown-grid 0.05,0.08 \
+  --cooldown-grid 10,15 \
+  --buy-volatility-cap-grid 1.00 \
+  --scoring-profile risk_reduction
 ```
 
 说明：
 - 若不想启用最优参数模式，去掉 `--use-optimal-config` 即可。
 - 最优参数默认读取 `config/optimal_params.yaml`，可用 `--optimal-config-path` 指定其他路径。
 - 投资分析建议显式传入 `--start-date` / `--end-date`，避免扫描全历史带来的额外耗时。
+- 信号调优会在 `config/optimal_params.yaml` 的 LPPL 最优参数基础上，继续搜索多因子买卖信号参数。
+- 二轮调优支持 `--symbols`、`--cooldown-grid`、`--buy-volatility-cap-grid` 和评分硬门槛参数，适合分批细调。
 
 ## 质量门禁命令
 
@@ -177,6 +197,20 @@ pip install -r requirements.txt
   --start-date 2025-01-01 \
   --end-date 2025-12-31 \
   --output output/investment_smoke
+
+# 单指数信号调优最小链路
+.venv/bin/python tune_signal_model.py \
+  --symbol 000001.SH \
+  --start-date 2024-01-01 \
+  --end-date 2024-06-30 \
+  --positive-offsets 0.00 \
+  --negative-offsets 0.00 \
+  --sell-votes 3 \
+  --buy-votes 3 \
+  --sell-confirms 2 \
+  --buy-confirms 2 \
+  --vol-breakout-grid 1.05 \
+  --drawdown-grid 0.05
 ```
 
 ## 运行指南

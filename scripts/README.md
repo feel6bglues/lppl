@@ -1,11 +1,20 @@
-# 脚本说明
+# Scripts 目录说明
 
-此目录存放研究型与实验型脚本，不属于主流程必跑入口：
+本目录包含实验/研究脚本和工具脚本。
 
-- `ensemble_grid_search.py`：参数网格搜索。
-- `lppl_backtest.py`：回测分析。
-- `verify_lppl.py`：早期验证脚本（保留用于对照）。
-- `test_lppl_ma.py`：多窗口+移动平均实验脚本。
-- `lppl.py`：早期扫描原型脚本。
+## 脚本分类
 
-生产/日常流程请使用根目录兼容入口或 `src/cli/` 下对应实现。
+### 活跃脚本 (Active)
+- `ensemble_grid_search.py` - 网格搜索最优参数
+- `train_test_group_rescan.py` - 分组重扫描
+
+### 实验脚本 (Experimental)
+- `test_lppl_ma.py` - MA策略实验
+
+### 遗留脚本 (Legacy - 向后兼容)
+- `lppl_backtest.py` - 历史回测（独立实现，不依赖src）
+- `lppl.py` - 早期原型
+- `verify_lppl.py` - 早期验证（被 src/cli/lppl_verify_v2.py 取代）
+
+## 开发建议
+新项目请使用 `src/cli/` 下的正式入口。

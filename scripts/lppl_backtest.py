@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-LPPL 回测分析程序
+LPPL 回测分析程序 [LEGACY - 向后兼容]
 
-使用通达信本地数据进行历史回测分析
-基于 Sornette 教授的 LPPL 模型
-
-支持多指数并行计算，多线程优化
+⚠️ 警告: 此脚本使用独立实现，不依赖 src/ 模块。
+新项目请使用 src/cli/ 下的正式入口。
 
 使用方法:
     python lppl_backtest.py --all
     python lppl_backtest.py --symbol sh000001
 """
+
+import warnings
+warnings.warn(
+    "lppl_backtest.py is deprecated. Use src.cli.lppl_verify_v2 instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 import matplotlib
 import numpy as np
