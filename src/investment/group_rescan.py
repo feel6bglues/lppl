@@ -162,7 +162,7 @@ def build_merged_candidate_yaml_lines(
                 _append_symbol_block(lines, symbol, params)
 
     if high_beta_summary_df is not None and not high_beta_summary_df.empty:
-        eligible_mask = (high_beta_summary_df["eligible_count"] >= 1) & (high_beta_summary_df["annualized_excess_return"] > 0.0)
+        eligible_mask = high_beta_summary_df["eligible_count"] >= 1
         if "eligible" in high_beta_summary_df.columns:
             eligible_mask = eligible_mask & high_beta_summary_df["eligible"].fillna(False).astype(bool)
         eligible_df = high_beta_summary_df[eligible_mask].copy()

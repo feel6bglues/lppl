@@ -272,6 +272,39 @@ class GroupRescanExecutionTests(unittest.TestCase):
         self.assertNotIn('"399006.SZ"', payload)
         self.assertNotIn('"000852.SH"', payload)
 
+    def test_build_merged_candidate_yaml_lines_includes_high_beta_candidate_when_eligible(self) -> None:
+        high_beta_summary = pd.DataFrame(
+            [
+                {
+                    "group": "high_beta",
+                    "candidate_key": "recover",
+                    "fast_ma": 5,
+                    "slow_ma": 250,
+                    "atr_period": 20,
+                    "atr_ma_window": 40,
+                    "buy_volatility_cap": 1.05,
+                    "vol_breakout_mult": 1.10,
+                    "enable_volatility_scaling": True,
+                    "target_volatility": 0.20,
+                    "eligible_count": 1,
+                    "symbol_count": 3,
+                    "annualized_excess_return": -0.01,
+                    "max_drawdown": -0.18,
+                    "eligible": True,
+                }
+            ]
+        )
+
+        lines = build_merged_candidate_yaml_lines(None, high_beta_summary)
+        payload = "\n".join(lines)
+
+        self.assertIn('"399006.SZ"', payload)
+        self.assertIn('"000852.SH"', payload)
+        self.assertIn('"932000.SH"', payload)
+        self.assertIn("trend_fast_ma: 5", payload)
+        self.assertIn("trend_slow_ma: 250", payload)
+        self.assertIn("target_volatility: 0.20", payload)
+
 
 if __name__ == "__main__":
     unittest.main()

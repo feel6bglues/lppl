@@ -176,7 +176,6 @@ def _run_single_symbol(
                 "drawdown_confirm_threshold": drawdown_confirm_threshold,
                 "cooldown_days": cooldown_days,
                 "buy_volatility_cap": buy_volatility_cap,
-                "signal_model": "multi_factor_v1",
             }
         )
         signal_config = InvestmentSignalConfig.from_mapping(symbol, candidate_mapping)
