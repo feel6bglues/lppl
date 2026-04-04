@@ -73,6 +73,51 @@ class Optimal8ReadableReportTests(unittest.TestCase):
         self.assertIn("图1 风险优先级", content)
         self.assertIn("000001.SH", content)
 
+    def test_generate_supports_trade_metric_summary(self) -> None:
+        data = pd.DataFrame(
+            [
+                {
+                    "symbol": "000001.SH",
+                    "risk_band": "Warning",
+                    "suggest_position": "20-40%",
+                    "objective_score": 0.61,
+                    "annualized_excess_return": 0.04,
+                    "calmar_ratio": 0.88,
+                    "max_drawdown": -0.12,
+                    "trade_count": 6,
+                    "turnover_rate": 0.70,
+                    "whipsaw_rate": 0.10,
+                    "step": 120,
+                    "window_count": 9,
+                },
+                {
+                    "symbol": "399006.SZ",
+                    "risk_band": "Safe",
+                    "suggest_position": "80-100%",
+                    "objective_score": 0.83,
+                    "annualized_excess_return": 0.09,
+                    "calmar_ratio": 1.40,
+                    "max_drawdown": -0.09,
+                    "trade_count": 9,
+                    "turnover_rate": 0.85,
+                    "whipsaw_rate": 0.05,
+                    "step": 60,
+                    "window_count": 16,
+                },
+            ]
+        )
+        summary_csv = os.path.join(self.summary_dir, "trade_summary.csv")
+        data.to_csv(summary_csv, index=False)
+
+        gen = Optimal8ReadableReportGenerator(report_dir=self.report_dir, plot_dir=self.plot_dir)
+        outputs = gen.generate(summary_csv=summary_csv, output_stem="ut_opt8_trade")
+
+        self.assertTrue(os.path.isfile(outputs["report_path"]))
+        with open(outputs["report_path"], "r", encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("annualized_excess_return", content)
+        self.assertIn("calmar_ratio", content)
+
 
 if __name__ == "__main__":
     unittest.main()

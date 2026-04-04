@@ -58,6 +58,23 @@ class InvestmentReportingTests(unittest.TestCase):
         self.assertTrue(os.path.isfile(overview_path))
         self.assertTrue(os.path.isfile(drawdown_path))
 
+    def test_plot_generator_handles_empty_trades_without_trade_type_column(self) -> None:
+        generator = PlotGenerator(output_dir=self.temp_dir.name)
+        equity_df = self._make_equity_df()
+        trades_df = pd.DataFrame()
+        metadata = {
+            "symbol": "000001.SH",
+            "name": "上证综指",
+            "start_date": "2021-01-01",
+            "end_date": "2021-01-04",
+            "max_drawdown": -0.019417,
+            "total_return": 0.02,
+        }
+
+        overview_path = generator.generate_strategy_overview_plot(equity_df, trades_df, metadata)
+
+        self.assertTrue(os.path.isfile(overview_path))
+
     def test_investment_report_generator_outputs_markdown_and_html(self) -> None:
         report_generator = InvestmentReportGenerator(output_dir=self.temp_dir.name)
         summary_df = pd.DataFrame(

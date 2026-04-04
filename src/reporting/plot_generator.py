@@ -238,7 +238,9 @@ class PlotGenerator:
         equity_df = equity_df.copy()
         equity_df["date"] = pd.to_datetime(equity_df["date"])
         trades_df = trades_df.copy()
-        if not trades_df.empty:
+        if "trade_type" not in trades_df.columns:
+            trades_df = pd.DataFrame(columns=["date", "trade_type"])
+        if not trades_df.empty and "date" in trades_df.columns:
             trades_df["date"] = pd.to_datetime(trades_df["date"])
 
         fig, axes = plt.subplots(2, 1, figsize=(14, 10), sharex=True, gridspec_kw={"height_ratios": [1, 1.2]})

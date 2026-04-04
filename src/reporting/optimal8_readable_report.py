@@ -43,8 +43,15 @@ class Optimal8ReadableReportGenerator:
         colors = [band_colors.get(x, "#6b7280") for x in df["risk_band"]]
 
         chart1 = self._plot_priority(df, colors, stamp)
-        chart2 = self._plot_precision_recall(df, stamp)
-        chart3 = self._plot_signal_structure(df, stamp)
+        if {"precision", "recall"}.issubset(df.columns):
+            chart2 = self._plot_precision_recall(df, stamp)
+        else:
+            chart2 = self._plot_trade_quality(df, stamp)
+
+        if {"true_positive", "false_positive"}.issubset(df.columns):
+            chart3 = self._plot_signal_structure(df, stamp)
+        else:
+            chart3 = self._plot_drawdown_trade_count(df, stamp)
         chart4 = self._plot_param_profile(df, stamp)
         report = self._write_markdown(df, [chart1, chart2, chart3, chart4], output_stem, stamp)
 
@@ -112,6 +119,47 @@ class Optimal8ReadableReportGenerator:
         plt.close(fig)
         return out
 
+    def _plot_trade_quality(self, df: pd.DataFrame, stamp: str) -> Path:
+        fig, ax = plt.subplots(figsize=(12, 6))
+        x = np.arange(len(df))
+        width = 0.36
+        calmar = df.get("calmar_ratio", pd.Series([0.0] * len(df))).astype(float)
+        excess = df.get("annualized_excess_return", pd.Series([0.0] * len(df))).astype(float) * 100.0
+        ax.bar(x - width / 2, calmar, width, label="Calmar", color="#1d4ed8")
+        ax.bar(x + width / 2, excess, width, label="Annualized Excess(%)", color="#16a34a")
+        ax.set_xticks(x)
+        ax.set_xticklabels(df["symbol"])
+        ax.set_title("图2｜交易质量对比（Calmar vs 年化超额）")
+        for i, (c_val, e_val) in enumerate(zip(calmar, excess)):
+            ax.text(i - width / 2, c_val + 0.03, f"{c_val:.2f}", ha="center", fontsize=8)
+            ax.text(i + width / 2, e_val + 0.30, f"{e_val:.1f}", ha="center", fontsize=8)
+        ax.legend()
+        ax.grid(axis="y", alpha=0.25)
+        fig.tight_layout()
+        out = self.plot_dir / f"optimal8_trade_quality_readable_{stamp}.png"
+        fig.savefig(out, dpi=160)
+        plt.close(fig)
+        return out
+
+    def _plot_drawdown_trade_count(self, df: pd.DataFrame, stamp: str) -> Path:
+        fig, ax1 = plt.subplots(figsize=(12, 6))
+        trade_count = df.get("trade_count", pd.Series([0] * len(df))).astype(float)
+        max_drawdown = df.get("max_drawdown", pd.Series([0.0] * len(df))).astype(float) * 100.0
+        ax1.bar(df["symbol"], trade_count, color="#2563eb", alpha=0.78)
+        ax1.set_ylabel("trade_count", color="#2563eb")
+        ax1.tick_params(axis="y", labelcolor="#2563eb")
+        ax1.set_title("图3｜交易结构（交易次数 vs 最大回撤）")
+        ax1.grid(axis="y", alpha=0.2)
+        ax2 = ax1.twinx()
+        ax2.plot(df["symbol"], max_drawdown, color="#dc2626", marker="o", linewidth=2)
+        ax2.set_ylabel("max_drawdown(%)", color="#dc2626")
+        ax2.tick_params(axis="y", labelcolor="#dc2626")
+        fig.tight_layout()
+        out = self.plot_dir / f"optimal8_trade_structure_readable_{stamp}.png"
+        fig.savefig(out, dpi=160)
+        plt.close(fig)
+        return out
+
     def _plot_param_profile(self, df: pd.DataFrame, stamp: str) -> Path:
         fig, ax1 = plt.subplots(figsize=(12, 6))
         ax1.bar(df["symbol"], df["step"], color="#7c3aed", alpha=0.78)
@@ -131,11 +179,41 @@ class Optimal8ReadableReportGenerator:
 
     def _write_markdown(self, df: pd.DataFrame, charts, output_stem: str, stamp: str) -> Path:
         d = df.copy()
-        for c in ["precision", "recall", "false_positive_rate"]:
-            d[c] = (d[c] * 100).map(lambda x: f"{x:.1f}%")
+        for c in ["precision", "recall", "false_positive_rate", "annualized_excess_return", "max_drawdown"]:
+            if c in d.columns:
+                d[c] = (d[c].astype(float) * 100).map(lambda x: f"{x:.1f}%")
         d["objective_score"] = d["objective_score"].map(lambda x: f"{x:.3f}")
-        for c in ["step", "window_count", "signal_count", "true_positive", "false_positive"]:
-            d[c] = d[c].astype(int)
+        for c in ["step", "window_count", "signal_count", "true_positive", "false_positive", "trade_count"]:
+            if c in d.columns:
+                d[c] = d[c].astype(int)
+        if "calmar_ratio" in d.columns:
+            d["calmar_ratio"] = d["calmar_ratio"].map(lambda x: f"{float(x):.2f}")
+        if "turnover_rate" in d.columns:
+            d["turnover_rate"] = (d["turnover_rate"].astype(float) * 100).map(lambda x: f"{x:.1f}%")
+        if "whipsaw_rate" in d.columns:
+            d["whipsaw_rate"] = (d["whipsaw_rate"].astype(float) * 100).map(lambda x: f"{x:.1f}%")
+
+        detail_columns = [
+            "symbol",
+            "risk_band",
+            "suggest_position",
+            "objective_score",
+            "annualized_excess_return",
+            "calmar_ratio",
+            "max_drawdown",
+            "trade_count",
+            "turnover_rate",
+            "whipsaw_rate",
+            "precision",
+            "recall",
+            "false_positive_rate",
+            "signal_count",
+            "true_positive",
+            "false_positive",
+            "step",
+            "window_count",
+        ]
+        detail_columns = [column for column in detail_columns if column in d.columns]
 
         report = self.report_dir / f"{output_stem}_{stamp}.md"
         lines = [
@@ -169,22 +247,7 @@ class Optimal8ReadableReportGenerator:
             "",
             "## 指数明细（用于执行）",
             "",
-            d[
-                [
-                    "symbol",
-                    "risk_band",
-                    "suggest_position",
-                    "objective_score",
-                    "precision",
-                    "recall",
-                    "false_positive_rate",
-                    "signal_count",
-                    "true_positive",
-                    "false_positive",
-                    "step",
-                    "window_count",
-                ]
-            ].to_markdown(index=False),
+            d[detail_columns].to_markdown(index=False),
             "",
             "## 输出可读性优化点",
             "",
