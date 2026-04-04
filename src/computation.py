@@ -11,11 +11,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 
 from src.constants import ENABLE_JOBLIB_PARALLEL, OUTPUT_DIR, WINDOW_CONFIG
-from src.lppl_core import (
+from src.lppl_engine import (
     calculate_bottom_signal_strength,
     calculate_risk_level,
     detect_negative_bubble,
-    fit_single_window_task,
+    fit_single_window,
     validate_input_data,
 )
 
@@ -29,6 +29,29 @@ try:
 except ImportError:
     JOBLIB_AVAILABLE = False
     logger.warning("joblib not available, using ProcessPoolExecutor")
+
+
+def _fit_single_window_compat(task: Tuple[int, Any, Any]) -> Optional[Dict[str, Any]]:
+    """Adapt legacy computation tasks to the unified lppl_engine.fit_single_window API.
+
+    Legacy computation tasks are tuples of:
+    `(window_size, dates_series, prices_array)`.
+
+    The unified engine API expects:
+    `(close_prices, window_size, config=None)`.
+    """
+    window_size, dates_series, prices_array = task
+    result = fit_single_window(prices_array, window_size)
+    if result is None:
+        return None
+
+    last_date_raw = dates_series.iloc[-1] if hasattr(dates_series, "iloc") else dates_series[-1]
+    last_date = pd.Timestamp(last_date_raw)
+
+    adapted = dict(result)
+    adapted["window"] = int(result.get("window_size", window_size))
+    adapted["last_date"] = last_date
+    return adapted
 
 
 def performance_monitor(func):
@@ -163,7 +186,7 @@ class LPPLComputation:
                 timeout=300,
                 verbose=0
             )(
-                delayed(fit_single_window_task)(task) 
+                delayed(_fit_single_window_compat)(task)
                 for task in tasks
             )
             
@@ -187,7 +210,7 @@ class LPPLComputation:
                     batch = tasks[i:i + batch_size]
                     
                     future_to_window = {
-                        executor.submit(fit_single_window_task, task): task[0]
+                        executor.submit(_fit_single_window_compat, task): task[0]
                         for task in batch
                     }
                     

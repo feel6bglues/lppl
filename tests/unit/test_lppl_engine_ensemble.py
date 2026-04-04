@@ -8,6 +8,7 @@ import lppl_verify_v2
 from src.lppl_engine import (
     LPPLConfig,
     analyze_peak_ensemble,
+    calculate_risk_level,
     calculate_trend_scores,
     find_local_highs,
     process_single_day_ensemble,
@@ -175,6 +176,72 @@ class LPPLEnsembleTests(unittest.TestCase):
         self.assertAlmostEqual(result["consensus_rate"], 2 / 3)
         self.assertAlmostEqual(result["predicted_crash_days"], 15.0)
         self.assertGreater(result["signal_strength"], 0.0)
+
+    def test_process_single_day_ensemble_uses_valid_window_denominator_for_positive_consensus(self) -> None:
+        close_prices = np.array([100 + idx for idx in range(160)], dtype=float)
+        config = LPPLConfig(
+            window_range=[40, 50, 60],
+            r2_threshold=0.6,
+            consensus_threshold=0.5,
+            n_workers=1,
+        )
+
+        def fake_fit(subset, window_size, config=None):
+            if window_size == 40:
+                return {
+                    "r_squared": 0.8,
+                    "m": 0.5,
+                    "w": 8.0,
+                    "days_to_crash": 12,
+                    "params": (120.0, 0.5, 8.0, 1.0, -2.0, 0.1, 0.0),
+                }
+            if window_size == 50:
+                return {
+                    "r_squared": 0.75,
+                    "m": 0.4,
+                    "w": 9.0,
+                    "days_to_crash": 18,
+                    "params": (130.0, 0.4, 9.0, 1.0, 1.5, 0.1, 0.0),
+                }
+            if window_size == 60:
+                return {"r_squared": 0.55, "m": 0.5, "w": 8.0, "days_to_crash": 25}
+            return None
+
+        with patch("src.lppl_engine.fit_single_window", side_effect=fake_fit):
+            result = process_single_day_ensemble(
+                close_prices,
+                idx=100,
+                window_range=[40, 50, 60],
+                min_r2=config.r2_threshold,
+                consensus_threshold=config.consensus_threshold,
+                config=config,
+            )
+
+        self.assertIsNotNone(result)
+        self.assertAlmostEqual(result["positive_consensus_rate"], 0.5)
+        self.assertAlmostEqual(result["negative_consensus_rate"], 0.5)
+
+    def test_calculate_risk_level_respects_supplied_config_thresholds(self) -> None:
+        config = LPPLConfig(
+            window_range=[40, 60, 80],
+            r2_threshold=0.6,
+            danger_days=20,
+            warning_days=40,
+            watch_days=80,
+            n_workers=1,
+        )
+
+        risk_level, is_danger, is_warning = calculate_risk_level(
+            m=0.5,
+            w=8.0,
+            days_left=30.0,
+            r2=0.58,
+            config=config,
+        )
+
+        self.assertEqual(risk_level, "观察")
+        self.assertFalse(is_danger)
+        self.assertTrue(is_warning)
 
 
 if __name__ == "__main__":

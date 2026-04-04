@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-from scipy.optimize import differential_evolution, minimize
+from scipy.optimize import OptimizeWarning, differential_evolution, minimize
 
 try:
     from numba import njit
@@ -27,8 +27,35 @@ except ImportError:
             return func
         return decorator
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="scipy")
+warnings.filterwarnings("ignore", category=OptimizeWarning)
 
+
+
+
+def validate_input_data(
+    df,
+    symbol: str
+) -> Tuple[bool, str]:
+    """验证输入数据有效性"""
+    if df is None or df.empty:
+        return False, "DataFrame is None or empty"
+
+    from src.constants import REQUIRED_COLUMNS
+    missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    if missing_cols:
+        return False, f"Missing required columns: {missing_cols}"
+
+    if len(df) < 50:
+        return False, f"Insufficient data rows: {len(df)} < 50"
+
+    if df["close"].isnull().any():
+        return False, "Null values found in close column"
+
+    if (df["close"] <= 0).any():
+        return False, "Non-positive prices found in close column"
+
+    return True, "Validation passed"
 
 # ============================================================================
 # 配置类
@@ -49,12 +76,14 @@ class LPPLConfig:
     # 风险阈值 (与plan.md v1.2.0一致)
     m_bounds: Tuple[float, float] = (0.1, 0.9)
     w_bounds: Tuple[float, float] = (6, 13)
-    tc_bound: Tuple[float, float] = (1, 100)  # days after current_t
+    tc_bound: Tuple[float, float] = (1, 150)  # days after current_t
     
     # 信号阈值
     r2_threshold: float = 0.5
-    danger_days: int = 20
-    warning_days: int = 60
+    danger_r2_offset: float = 0.0
+    danger_days: int = 5
+    warning_days: int = 12
+    watch_days: int = 25
     
     # Ensemble配置
     consensus_threshold: float = 0.15
@@ -63,14 +92,52 @@ class LPPLConfig:
     n_workers: int = -1
     
     def __post_init__(self):
+        self.danger_days = max(1, int(self.danger_days))
+        self.warning_days = max(self.danger_days + 1, int(self.warning_days))
+        self.watch_days = max(self.warning_days + 1, int(self.watch_days))
         if self.n_workers == -1:
             import os
             self.n_workers = max(1, (os.cpu_count() or 4) - 2)
 
 
+class LPPLParams:
+    """LPPL 参数索引常量，避免硬编码"""
+    TC = 0    # 临界时间
+    M = 1     # 幂律指数
+    W = 2     # 角频率
+    A = 3     # 价格水平
+    B = 4     # 趋势幅度（正=泡沫，负=反泡沫）
+    C = 5     # 振荡幅度
+    PHI = 6   # 相位
+
+
 DEFAULT_CONFIG = LPPLConfig(
     window_range=list(range(40, 100, 20)),  # 与verify_lppl.py一致
 )
+
+
+def warning_r2_threshold(config: LPPLConfig) -> float:
+    return max(0.0, float(config.r2_threshold) - 0.05)
+
+
+def watch_r2_threshold(config: LPPLConfig) -> float:
+    return max(0.0, float(config.r2_threshold) - 0.15)
+
+
+def danger_r2_threshold(config: LPPLConfig) -> float:
+    return min(1.0, max(0.0, float(config.r2_threshold) + float(config.danger_r2_offset)))
+
+
+def classify_top_phase(days_left: float, r2: float, config: LPPLConfig) -> str:
+    if days_left < 0:
+        return "none"
+    if days_left < config.danger_days and r2 >= danger_r2_threshold(config):
+        return "danger"
+    if days_left < config.warning_days and r2 >= warning_r2_threshold(config):
+        return "warning"
+    if days_left < config.watch_days and r2 >= watch_r2_threshold(config):
+        return "watch"
+    return "none"
 
 
 # ============================================================================
@@ -215,8 +282,11 @@ def fit_single_window(close_prices: np.ndarray, window_size: int,
         
         rmse = np.sqrt(np.mean((fitted_curve - log_price_data) ** 2))
         
-        # Danger信号条件 (与verify_lppl.py:76一致)
-        is_danger = (0.1 < m < 0.9) and (6 < w < 13) and (days_to_crash < 20) and (r_squared > 0.5)
+        is_danger = (
+            (config.m_bounds[0] < m < config.m_bounds[1])
+            and (config.w_bounds[0] < w < config.w_bounds[1])
+            and classify_top_phase(days_to_crash, r_squared, config) == "danger"
+        )
         
         return {
             'window_size': window_size,
@@ -319,8 +389,11 @@ def fit_single_window_lbfgsb(close_prices: np.ndarray, window_size: int,
         
         rmse = np.sqrt(best_cost / len(log_price_data))
         
-        # Danger信号条件
-        is_danger = (0.1 < m < 0.9) and (6 < w < 13) and (days_to_crash < 20) and (r_squared > 0.5)
+        is_danger = (
+            (config.m_bounds[0] < m < config.m_bounds[1])
+            and (config.w_bounds[0] < w < config.w_bounds[1])
+            and classify_top_phase(days_to_crash, r_squared, config) == "danger"
+        )
         
         return {
             'window_size': window_size,
@@ -341,28 +414,37 @@ def fit_single_window_lbfgsb(close_prices: np.ndarray, window_size: int,
 # 风险判定
 # ============================================================================
 
-def calculate_risk_level(m: float, w: float, days_left: float,
-                        r2: float = 1.0) -> Tuple[str, bool, bool]:
+def calculate_risk_level(
+    m: float,
+    w: float,
+    days_left: float,
+    r2: float = 1.0,
+    config: Optional[LPPLConfig] = None,
+) -> Tuple[str, bool, bool]:
     """
     计算风险等级
     
     Returns:
         (risk_level, is_danger, is_warning)
     """
-    valid_model = (config.m_bounds[0] < m < config.m_bounds[1] and 
-                   config.w_bounds[0] < w < config.w_bounds[1])
+    active_config = config or DEFAULT_CONFIG
+    valid_model = (
+        active_config.m_bounds[0] < m < active_config.m_bounds[1]
+        and active_config.w_bounds[0] < w < active_config.w_bounds[1]
+    )
     
     if not valid_model:
         return "无效模型", False, False
     
-    is_danger = (days_left < config.danger_days) and (r2 > config.r2_threshold)
-    is_warning = (days_left < config.warning_days) and (r2 > config.r2_threshold * 0.6)
+    phase = classify_top_phase(days_left, r2, active_config)
+    is_danger = phase == "danger"
+    is_warning = phase in {"warning", "danger"}
     
     if days_left < 5:
         return "极高危", is_danger, is_warning
-    elif days_left < config.danger_days:
+    elif days_left < active_config.danger_days:
         return "高危", is_danger, is_warning
-    elif days_left < config.warning_days:
+    elif days_left < active_config.watch_days:
         return "观察", is_danger, is_warning
     else:
         return "安全", is_danger, is_warning
@@ -379,6 +461,46 @@ def validate_model(params: Dict, config: LPPLConfig = None) -> bool:
     return (config.m_bounds[0] < m < config.m_bounds[1] and
             config.w_bounds[0] < w < config.w_bounds[1] and
             r2 > config.r2_threshold)
+
+
+
+
+def detect_negative_bubble(m: float, w: float, b: float, days_left: float) -> Tuple[bool, str]:
+    """检测负泡沫（抄底信号）"""
+    is_negative = False
+    signal = "无抄底信号"
+
+    if 0.1 < m < 0.9 and 6 < w < 13:
+        if b > 0:
+            is_negative = True
+            if days_left < 20:
+                signal = "强抄底信号 (Strong Buy)"
+            elif days_left < 40:
+                signal = "中等抄底信号 (Buy)"
+            else:
+                signal = "弱抄底信号 (Watch for Buy)"
+
+    return is_negative, signal
+
+
+def calculate_bottom_signal_strength(m: float, w: float, b: float, rmse: float) -> float:
+    """计算抄底信号强度 (0-1)"""
+    strength = 0.0
+
+    if not (0.1 < m < 0.9 and 6 < w < 13):
+        return 0.0
+
+    if b <= 0:
+        return 0.0
+
+    m_score = max(0.0, 1.0 - abs(m - 0.5) / 0.4)
+    w_score = max(0.0, 1.0 - abs(w - 8.0) / 5.0)
+    b_score = max(0.0, min(b / 1.0, 1.0))
+    rmse_score = max(0.0, 1.0 - rmse / 0.1)
+
+    strength = (m_score * 0.3 + w_score * 0.3 + b_score * 0.2 + rmse_score * 0.2)
+
+    return min(max(strength, 0.0), 1.0)
 
 
 # ============================================================================
@@ -547,13 +669,12 @@ def calculate_trend_scores(daily_results: List[Dict],
     # 如果没有is_warning列，根据参数计算
     if 'is_warning' not in df.columns:
         is_warning_list = []
-        warning_r2_threshold = max(0.0, config.r2_threshold - 0.2)
         for _, row in df.iterrows():
+            phase = classify_top_phase(float(row["days_to_crash"]), float(row["r_squared"]), config)
             is_w = (
                 config.m_bounds[0] < row['m'] < config.m_bounds[1] and
                 config.w_bounds[0] < row['w'] < config.w_bounds[1] and
-                row['days_to_crash'] < config.warning_days and
-                row['r_squared'] > warning_r2_threshold
+                phase in {"watch", "warning", "danger"}
             )
             is_warning_list.append(is_w)
         df['is_warning'] = is_warning_list
@@ -809,16 +930,20 @@ def process_single_day_ensemble(close_prices: np.ndarray, idx: int,
     # 3. 共识度验证
     if consensus_rate < consensus_threshold:
         return None
-    
+
+    # 3.5 空数组保护
+    if valid_n == 0:
+        return None
+
     # 4. 崩溃时间聚类分析
     tc_array = np.array([fit['days_to_crash'] for fit in valid_fits])
     tc_std = np.std(tc_array)
 
-    positive_fits = [fit for fit in valid_fits if fit.get("params", (None, None, None, None, 0))[4] <= 0]
-    negative_fits = [fit for fit in valid_fits if fit.get("params", (None, None, None, None, 0))[4] > 0]
+    positive_fits = [fit for fit in valid_fits if fit.get("params", (0, 0, 0, 0, 0))[LPPLParams.B] <= 0]
+    negative_fits = [fit for fit in valid_fits if fit.get("params", (0, 0, 0, 0, 0))[LPPLParams.B] > 0]
 
-    positive_consensus_rate = len(positive_fits) / total_windows if total_windows > 0 else 0.0
-    negative_consensus_rate = len(negative_fits) / total_windows if total_windows > 0 else 0.0
+    positive_consensus_rate = len(positive_fits) / valid_n if valid_n > 0 else 0.0
+    negative_consensus_rate = len(negative_fits) / valid_n if valid_n > 0 else 0.0
     predicted_rebound_days = np.median([fit["days_to_crash"] for fit in negative_fits]) if negative_fits else None
     
     # 5. 信号强度计算
@@ -836,7 +961,3 @@ def process_single_day_ensemble(close_prices: np.ndarray, idx: int,
         'negative_consensus_rate': negative_consensus_rate,
         'predicted_rebound_days': predicted_rebound_days,
     }
-
-
-# 全局config引用
-config = DEFAULT_CONFIG

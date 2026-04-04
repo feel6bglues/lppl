@@ -28,8 +28,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import OptimizeWarning
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="scipy")
+warnings.filterwarnings("ignore", category=OptimizeWarning)
 
 # 添加项目根路径（兼容直接运行 src/cli/*.py）
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -139,10 +141,12 @@ def create_config(use_ensemble: bool = False) -> LPPLConfig:
         tol=0.05,       # 适度容忍
         m_bounds=(0.1, 0.9),
         w_bounds=(6.0, 13.0),
-        tc_bound=(1, 60),
+        tc_bound=(1, 150),
         r2_threshold=0.6 if use_ensemble else 0.5,
-        danger_days=20,
-        warning_days=60,
+        danger_r2_offset=0.0,
+        danger_days=5,
+        warning_days=12,
+        watch_days=25,
         # 12个窗口中，至少需要3个(25%)达成共识，才能触发信号
         consensus_threshold=0.25 if use_ensemble else 0.0,
         n_workers=CPU_CORES,
@@ -213,11 +217,13 @@ def run_verification(symbol: str, name: str,
         config.window_range = list(config_override.get("window_range", config.window_range))
         config.optimizer = str(config_override.get("optimizer", config.optimizer))
         config.r2_threshold = float(config_override.get("r2_threshold", config.r2_threshold))
+        config.danger_r2_offset = float(config_override.get("danger_r2_offset", config.danger_r2_offset))
         config.consensus_threshold = float(
             config_override.get("consensus_threshold", config.consensus_threshold)
         )
         config.danger_days = int(config_override.get("danger_days", config.danger_days))
         config.warning_days = int(config_override.get("warning_days", config.warning_days))
+        config.watch_days = int(config_override.get("watch_days", config.watch_days))
         scan_step = int(config_override.get("step", scan_step))
         ma_window = int(config_override.get("ma_window", ma_window))
         max_peaks = int(config_override.get("max_peaks", max_peaks))
@@ -580,16 +586,21 @@ def main():
     # 运行验证
     all_results = []
     optimal_data = None
+    optimal_config_failed = False
     if args.use_optimal_config:
         try:
             optimal_data = load_optimal_config(args.optimal_config_path)
             print(f"已加载最优参数配置: {args.optimal_config_path}")
         except Exception as e:
-            print(f"⚠️ 最优参数加载失败，整体回退默认参数: {e}")
+            print(f"⚠️ 最优参数文件加载失败，使用默认参数: {e}")
+            optimal_config_failed = True
 
     for symbol, name in symbols_to_verify.items():
         config_override = None
-        param_source = "default_cli"
+        if args.use_optimal_config and optimal_config_failed:
+            param_source = "default_fallback"
+        else:
+            param_source = "default_cli"
         if args.use_optimal_config and optimal_data is not None:
             base_config = create_config(args.ensemble)
             fallback = {

@@ -1,10 +1,40 @@
 # -*- coding: utf-8 -*-
+"""
+INTERNAL MODULE - DO NOT IMPORT DIRECTLY
+
+This module is deprecated and kept for backward compatibility only.
+
+For new code, use src.lppl_engine instead:
+    from src.lppl_engine import (
+        LPPLConfig,
+        classify_top_phase,
+        lppl_func,
+        cost_function,
+        analyze_peak,
+        analyze_peak_ensemble,
+    )
+
+Functions in this module may have different behavior from lppl_engine equivalents.
+See: docs/TECH_DEBT_AUDIT_BEGINNER_20260404.md for details.
+"""
+
 import logging
+import warnings
 from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+# Emit deprecation warning at module load
+warnings.warn(
+    "src.lppl_core is deprecated. Use src.lppl_engine for new code. "
+    "See TECH_DEBT_AUDIT_BEGINNER_20260404.md",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+__all__ = []  # Prevent "from src.lppl_core import *"
 
 NUMBA_AVAILABLE = False
 try:
@@ -65,17 +95,34 @@ def lppl_func(
     c: float,
     phi: float
 ) -> np.ndarray:
-    from src.constants import ENABLE_NUMBA_JIT
-    if NUMBA_AVAILABLE and ENABLE_NUMBA_JIT:
-        return _lppl_func_numba(t, tc, m, w, a, b, c, phi)
-    return _lppl_func_python(t, tc, m, w, a, b, c, phi)
+    """[DEPRECATED] Redirect to lppl_engine for unified implementation.
+
+    This function is kept for backward compatibility but will be removed in v2.0.
+    Import from src.lppl_engine import lppl_func directly.
+    """
+    warnings.warn(
+        "lppl_func from lppl_core is deprecated. Use from src.lppl_engine import lppl_func",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from src.lppl_engine import lppl_func as _engine_lppl_func
+    return _engine_lppl_func(t, tc, m, w, a, b, c, phi)
 
 
 def cost_function(params: Tuple, t: np.ndarray, log_prices: np.ndarray) -> float:
-    from src.constants import ENABLE_NUMBA_JIT
-    if NUMBA_AVAILABLE and ENABLE_NUMBA_JIT:
-        return _cost_function_numba(params, t, log_prices)
-    return _cost_function_python(params, t, log_prices)
+    """[DEPRECATED] Redirect to lppl_engine for unified implementation.
+
+    This function is kept for backward compatibility but will be removed in v2.0.
+    Import from src.lppl_engine import cost_function directly.
+    """
+    warnings.warn(
+        "cost_function from lppl_core is deprecated. Use from src.lppl_engine import cost_function",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    # Redirect to unified implementation
+    from src.lppl_engine import cost_function as _engine_cost_function
+    return _engine_cost_function(params, t, log_prices)
 
 
 def _cost_function_python(params: Tuple, t: np.ndarray, log_prices: np.ndarray) -> float:
@@ -85,7 +132,7 @@ def _cost_function_python(params: Tuple, t: np.ndarray, log_prices: np.ndarray) 
         residuals = prediction - log_prices
         return np.sum(residuals ** 2)
     except (FloatingPointError, OverflowError, ValueError):
-        return 1e10
+        return np.inf
 
 
 if NUMBA_AVAILABLE:
@@ -156,7 +203,7 @@ def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
             return None
 
         bounds = [
-            (current_t + 1, current_t + 100),
+            (current_t + 1, current_t + 150),
             (0.1, 0.9),
             (6, 13),
             (price_min, price_max * 1.1),
@@ -199,12 +246,13 @@ def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
 
 
 def calculate_risk_level(m: float, w: float, days_left: float) -> str:
+    # 与 lppl_engine.py LPPLConfig 保持一致: danger_days=5, warning_days=12, watch_days=25
     if 0.1 < m < 0.9 and 6 < w < 13:
         if days_left < 5:
             return "极高危 (DANGER)"
-        elif days_left < 20:
+        elif days_left < 12:
             return "高危 (Warning)"
-        elif days_left < 60:
+        elif days_left < 25:
             return "观察 (Watch)"
         else:
             return "安全 (Safe)"
@@ -238,11 +286,11 @@ def calculate_bottom_signal_strength(m: float, w: float, b: float, rmse: float) 
     if b <= 0:
         return 0.0
     
-    m_score = 1.0 - abs(m - 0.5) / 0.4
+    m_score = max(0.0, 1.0 - abs(m - 0.5) / 0.4)
     
-    w_score = 1.0 - abs(w - 8.0) / 5.0
+    w_score = max(0.0, 1.0 - abs(w - 8.0) / 5.0)
     
-    b_score = min(b / 1.0, 1.0)
+    b_score = max(0.0, min(b / 1.0, 1.0))
     
     rmse_score = max(0.0, 1.0 - rmse / 0.1)
     
