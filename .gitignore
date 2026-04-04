@@ -16,7 +16,10 @@ env/
 # Local IDE/editor metadata
 .trae/
 .claude/
+.codex
+.codex/
 .DS_Store
+unused/
 
 # Build and runtime artifacts
 output/
@@ -24,4 +27,3 @@ output/
 # Local data files
 data/*.parquet
 *.parquet
-
