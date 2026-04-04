@@ -71,39 +71,71 @@ def main() -> None:
     lppl_config.n_workers = 1
     lppl_config.optimizer = "lbfgsb" if lppl_config.optimizer == "de" else lppl_config.optimizer
     param_source = "default_cli"
+    fallback = {
+        "step": args.step,
+        "window_range": list(lppl_config.window_range),
+        "r2_threshold": lppl_config.r2_threshold,
+        "danger_r2_offset": lppl_config.danger_r2_offset,
+        "consensus_threshold": lppl_config.consensus_threshold,
+        "danger_days": lppl_config.danger_days,
+        "warning_days": lppl_config.warning_days,
+        "watch_days": lppl_config.watch_days,
+        "optimizer": lppl_config.optimizer,
+        "lookahead_days": 60,
+        "drop_threshold": 0.10,
+        "ma_window": 5,
+        "max_peaks": 10,
+        "signal_model": "multi_factor_v1",
+        "initial_position": 0.0,
+        "positive_consensus_threshold": lppl_config.consensus_threshold,
+        "negative_consensus_threshold": max(0.10, lppl_config.consensus_threshold - 0.05),
+        "rebound_days": lppl_config.danger_days,
+        "trend_fast_ma": 20,
+        "trend_slow_ma": 120,
+        "trend_slope_window": 10,
+        "atr_period": 14,
+        "atr_ma_window": 60,
+        "vol_breakout_mult": 1.05,
+        "buy_volatility_cap": 1.05,
+        "drawdown_confirm_threshold": 0.05,
+        "buy_vote_threshold": 3,
+        "sell_vote_threshold": 3,
+        "buy_confirm_days": 2,
+        "sell_confirm_days": 2,
+        "cooldown_days": 15,
+        "require_trend_recovery_for_buy": True,
+    }
 
     if args.use_optimal_config:
-        fallback = {
-            "step": args.step,
-            "window_range": list(lppl_config.window_range),
-            "r2_threshold": lppl_config.r2_threshold,
-            "consensus_threshold": lppl_config.consensus_threshold,
-            "danger_days": lppl_config.danger_days,
-            "warning_days": lppl_config.warning_days,
-            "optimizer": lppl_config.optimizer,
-            "lookahead_days": 60,
-            "drop_threshold": 0.10,
-            "ma_window": 5,
-            "max_peaks": 10,
-        }
-        optimal_data = load_optimal_config(args.optimal_config_path)
-        resolved, warnings = resolve_symbol_params(optimal_data, args.symbol, fallback)
-        for message in warnings:
-            print(f"⚠️ {message}")
+        try:
+            optimal_data = load_optimal_config(args.optimal_config_path)
+            resolved, warnings = resolve_symbol_params(optimal_data, args.symbol, fallback)
+            for message in warnings:
+                print(f"⚠️ {message}")
 
-        lppl_config.window_range = list(resolved["window_range"])
-        lppl_config.optimizer = resolved["optimizer"]
-        lppl_config.r2_threshold = resolved["r2_threshold"]
-        lppl_config.consensus_threshold = resolved["consensus_threshold"]
-        lppl_config.danger_days = resolved["danger_days"]
-        lppl_config.warning_days = resolved["warning_days"]
-        args.step = resolved["step"]
-        param_source = resolved["param_source"]
+            lppl_config.window_range = list(resolved["window_range"])
+            lppl_config.optimizer = resolved["optimizer"]
+            lppl_config.r2_threshold = resolved["r2_threshold"]
+            lppl_config.danger_r2_offset = resolved["danger_r2_offset"]
+            lppl_config.consensus_threshold = resolved["consensus_threshold"]
+            lppl_config.danger_days = resolved["danger_days"]
+            lppl_config.warning_days = resolved["warning_days"]
+            lppl_config.watch_days = resolved["watch_days"]
+            args.step = resolved["step"]
+            param_source = resolved["param_source"]
+        except Exception as exc:
+            print(f"⚠️ 最优参数文件加载失败，使用默认参数: {exc}")
+            resolved = dict(fallback)
+            param_source = "default_fallback"
+    else:
+        resolved = dict(fallback)
+
+    signal_config = InvestmentSignalConfig.from_mapping(args.symbol, resolved)
 
     signal_df = generate_investment_signals(
         df=df,
         symbol=args.symbol,
-        signal_config=InvestmentSignalConfig(),
+        signal_config=signal_config,
         lppl_config=lppl_config,
         use_ensemble=args.ensemble,
         start_date=args.start_date,

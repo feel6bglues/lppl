@@ -52,9 +52,11 @@ def main() -> None:
             "step": args.step,
             "window_range": list(config.window_range),
             "r2_threshold": config.r2_threshold,
+            "danger_r2_offset": config.danger_r2_offset,
             "consensus_threshold": config.consensus_threshold,
             "danger_days": config.danger_days,
             "warning_days": config.warning_days,
+            "watch_days": config.watch_days,
             "optimizer": config.optimizer,
             "lookahead_days": args.lookahead,
             "drop_threshold": args.drop_threshold,
@@ -70,15 +72,17 @@ def main() -> None:
             config.window_range = list(resolved["window_range"])
             config.optimizer = resolved["optimizer"]
             config.r2_threshold = resolved["r2_threshold"]
+            config.danger_r2_offset = resolved["danger_r2_offset"]
             config.consensus_threshold = resolved["consensus_threshold"]
             config.danger_days = resolved["danger_days"]
             config.warning_days = resolved["warning_days"]
+            config.watch_days = resolved["watch_days"]
             scan_step = resolved["step"]
             lookahead_days = resolved["lookahead_days"]
             drop_threshold = resolved["drop_threshold"]
             param_source = resolved["param_source"]
         except Exception as e:
-            print(f"⚠️ 最优参数加载失败，回退默认参数: {e}")
+            print(f"⚠️ 最优参数文件加载失败，使用默认参数: {e}")
             param_source = "default_fallback"
 
     print(

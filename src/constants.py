@@ -34,6 +34,7 @@ LOCAL_DATA_INDICES: List[str] = [
     "000300.SH",
     "000905.SH",
     "000852.SH",
+    "932000.SH",
 ]
 
 AKSHARE_INDICES: List[str] = [

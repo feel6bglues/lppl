@@ -22,7 +22,7 @@ class VerificationBaselineTests(unittest.TestCase):
             self.assertIn("first_danger_r2", case)
 
     def test_baseline_summary_csv_matches_fixture(self) -> None:
-        csv_path = "output/MA/summary/verification_baselines.csv"
+        csv_path = "tests/fixtures/verification_baselines.csv"
         self.assertTrue(os.path.exists(csv_path))
 
         df = pd.read_csv(csv_path)

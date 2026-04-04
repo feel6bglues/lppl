@@ -13,17 +13,28 @@ class OptimalParamsTests(unittest.TestCase):
             "step": 5,
             "window_range": [40, 60, 80],
             "r2_threshold": 0.6,
+            "danger_r2_offset": 0.0,
             "consensus_threshold": 0.25,
             "danger_days": 20,
             "warning_days": 60,
+            "watch_days": 90,
             "optimizer": "de",
             "lookahead_days": 60,
             "drop_threshold": 0.10,
             "ma_window": 5,
             "max_peaks": 10,
+            "warning_trade_enabled": True,
         }
         self.config_data = {
-            "defaults": {"optimizer": "lbfgsb", "drop_threshold": 0.12},
+            "defaults": {
+                "optimizer": "lbfgsb",
+                "drop_threshold": 0.12,
+                "signal_model": "multi_factor_v1",
+                "trend_fast_ma": 20,
+                "trend_slow_ma": 120,
+                "buy_vote_threshold": 3,
+                "buy_reentry_lookback": 20,
+            },
             "window_sets": {
                 "narrow_40_120": [40, 50, 60, 70, 80, 90, 100, 110, 120],
             },
@@ -32,8 +43,17 @@ class OptimalParamsTests(unittest.TestCase):
                     "step": 120,
                     "window_set": "narrow_40_120",
                     "r2_threshold": 0.50,
+                    "danger_r2_offset": -0.02,
                     "consensus_threshold": 0.20,
                     "danger_days": 20,
+                    "warning_days": 24,
+                    "watch_days": 36,
+                    "positive_consensus_threshold": 0.25,
+                    "sell_vote_threshold": 3,
+                    "cooldown_days": 20,
+                    "high_volatility_position_cap": 0.5,
+                    "post_sell_reentry_cooldown_days": 10,
+                    "warning_trade_enabled": False,
                 }
             },
         }
@@ -49,6 +69,19 @@ class OptimalParamsTests(unittest.TestCase):
         self.assertEqual(resolved["window_range"][-1], 120)
         self.assertEqual(resolved["optimizer"], "lbfgsb")
         self.assertAlmostEqual(resolved["drop_threshold"], 0.12)
+        self.assertAlmostEqual(resolved["danger_r2_offset"], -0.02)
+        self.assertEqual(resolved["warning_days"], 24)
+        self.assertEqual(resolved["watch_days"], 36)
+        self.assertEqual(resolved["signal_model"], "multi_factor_v1")
+        self.assertEqual(resolved["trend_fast_ma"], 20)
+        self.assertEqual(resolved["buy_vote_threshold"], 3)
+        self.assertEqual(resolved["positive_consensus_threshold"], 0.25)
+        self.assertEqual(resolved["sell_vote_threshold"], 3)
+        self.assertEqual(resolved["cooldown_days"], 20)
+        self.assertEqual(resolved["buy_reentry_lookback"], 20)
+        self.assertEqual(resolved["high_volatility_position_cap"], 0.5)
+        self.assertEqual(resolved["post_sell_reentry_cooldown_days"], 10)
+        self.assertFalse(resolved["warning_trade_enabled"])
 
     def test_resolve_symbol_params_fallback_when_symbol_missing(self) -> None:
         resolved, warnings = resolve_symbol_params(self.config_data, "399001.SZ", self.fallback)
@@ -67,6 +100,8 @@ class OptimalParamsTests(unittest.TestCase):
                     "step": -2,
                     "window_set": "missing_set",
                     "r2_threshold": 1.5,
+                    "warning_days": 10,
+                    "watch_days": 5,
                 }
             },
         }
@@ -75,6 +110,8 @@ class OptimalParamsTests(unittest.TestCase):
         self.assertEqual(resolved["step"], self.fallback["step"])
         self.assertEqual(resolved["window_range"], self.fallback["window_range"])
         self.assertEqual(resolved["r2_threshold"], self.fallback["r2_threshold"])
+        self.assertEqual(resolved["warning_days"], 21)
+        self.assertEqual(resolved["watch_days"], 22)
         self.assertGreaterEqual(len(warnings), 3)
 
     def test_load_optimal_config_reads_yaml(self) -> None:
@@ -101,6 +138,34 @@ symbols:
         self.assertIn("defaults", loaded)
         self.assertIn("window_sets", loaded)
         self.assertIn("symbols", loaded)
+
+    def test_repo_optimal_config_includes_large_cap_and_balanced_candidate_updates(self) -> None:
+        if optimal_params.yaml is None:
+            self.skipTest("PyYAML 未安装，跳过 YAML 读取测试")
+
+        loaded = load_optimal_config("config/optimal_params.yaml")
+
+        large_cap_expected = {
+            "000001.SH": (20, 250, 14, 20, 1.05, 1.15, True, 0.12),
+            "000016.SH": (20, 250, 14, 20, 1.05, 1.15, True, 0.12),
+            "000300.SH": (20, 250, 14, 20, 1.05, 1.15, True, 0.12),
+        }
+        balanced_expected = {
+            "399001.SZ": (10, 120, 14, 40, 1.00, 1.05, True, 0.15),
+            "000905.SH": (10, 120, 14, 40, 1.00, 1.05, True, 0.15),
+        }
+
+        for symbol, expected in {**large_cap_expected, **balanced_expected}.items():
+            symbol_cfg = loaded["symbols"][symbol]
+            self.assertEqual(symbol_cfg["signal_model"], "ma_cross_atr_v1")
+            self.assertEqual(symbol_cfg["trend_fast_ma"], expected[0])
+            self.assertEqual(symbol_cfg["trend_slow_ma"], expected[1])
+            self.assertEqual(symbol_cfg["atr_period"], expected[2])
+            self.assertEqual(symbol_cfg["atr_ma_window"], expected[3])
+            self.assertAlmostEqual(float(symbol_cfg["buy_volatility_cap"]), expected[4])
+            self.assertAlmostEqual(float(symbol_cfg["vol_breakout_mult"]), expected[5])
+            self.assertEqual(bool(symbol_cfg["enable_volatility_scaling"]), expected[6])
+            self.assertAlmostEqual(float(symbol_cfg["target_volatility"]), expected[7])
 
 
 if __name__ == "__main__":

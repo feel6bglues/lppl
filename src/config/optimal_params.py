@@ -15,14 +15,59 @@ ALLOWED_KEYS = {
     "window_set",
     "window_range",
     "r2_threshold",
+    "danger_r2_offset",
     "consensus_threshold",
     "danger_days",
     "warning_days",
+    "watch_days",
+    "warning_trade_enabled",
+    "full_exit_days",
     "optimizer",
     "lookahead_days",
     "drop_threshold",
     "ma_window",
     "max_peaks",
+    "signal_model",
+    "initial_position",
+    "positive_consensus_threshold",
+    "negative_consensus_threshold",
+    "rebound_days",
+    "trend_fast_ma",
+    "trend_slow_ma",
+    "trend_slope_window",
+    "atr_period",
+    "atr_ma_window",
+    "vol_breakout_mult",
+    "buy_volatility_cap",
+    "high_volatility_mult",
+    "high_volatility_position_cap",
+    "enable_volatility_scaling",
+    "target_volatility",
+    "enable_momentum_factor",
+    "momentum_windows",
+    "momentum_weight",
+    "momentum_threshold",
+    "strong_momentum_threshold",
+    "enable_market_state",
+    "adx_threshold_trending",
+    "adx_threshold_ranging",
+    "enable_52w_high_factor",
+    "proximity_52w_threshold",
+    "breakout_weight",
+    "drawdown_confirm_threshold",
+    "buy_reentry_drawdown_threshold",
+    "buy_reentry_lookback",
+    "buy_trend_slow_buffer",
+    "buy_vote_threshold",
+    "sell_vote_threshold",
+    "buy_confirm_days",
+    "sell_confirm_days",
+    "cooldown_days",
+    "post_sell_reentry_cooldown_days",
+    "min_hold_bars",
+    "allow_top_risk_override_min_hold",
+    "enable_regime_hysteresis",
+    "require_trend_recovery_for_buy",
 }
 
 
@@ -54,6 +99,27 @@ def _as_float(value: Any, key: str, warnings: List[str], fallback: float) -> flo
     except Exception:
         warnings.append(f"{key}={value} 非法，回退默认值 {fallback}")
         return fallback
+
+
+def _as_non_negative_float(value: Any, key: str, warnings: List[str], fallback: float) -> float:
+    try:
+        v = float(value)
+        if v < 0.0:
+            raise ValueError
+        return v
+    except Exception:
+        warnings.append(f"{key}={value} 非法，回退默认值 {fallback}")
+        return fallback
+
+
+def _as_bool(value: Any, fallback: bool) -> bool:
+    if value is None:
+        return fallback
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
 
 
 def load_optimal_config(path: str) -> Dict[str, Any]:
@@ -131,6 +197,14 @@ def resolve_symbol_params(
         warnings,
         int(fallback["warning_days"]),
     )
+    resolved["watch_days"] = _as_positive_int(
+        resolved.get("watch_days", fallback.get("watch_days", resolved["warning_days"])),
+        "watch_days",
+        warnings,
+        int(fallback.get("watch_days", resolved["warning_days"])),
+    )
+    resolved["warning_days"] = max(resolved["danger_days"] + 1, resolved["warning_days"])
+    resolved["watch_days"] = max(resolved["warning_days"] + 1, resolved["watch_days"])
     resolved["lookahead_days"] = _as_positive_int(
         resolved.get("lookahead_days", fallback["lookahead_days"]),
         "lookahead_days",
@@ -155,6 +229,12 @@ def resolve_symbol_params(
         warnings,
         float(fallback["r2_threshold"]),
     )
+    resolved["danger_r2_offset"] = _as_float(
+        resolved.get("danger_r2_offset", fallback.get("danger_r2_offset", 0.0)),
+        "danger_r2_offset",
+        warnings,
+        float(fallback.get("danger_r2_offset", 0.0)),
+    )
     resolved["consensus_threshold"] = _as_unit_float(
         resolved.get("consensus_threshold", fallback["consensus_threshold"]),
         "consensus_threshold",
@@ -168,6 +248,261 @@ def resolve_symbol_params(
         float(fallback["drop_threshold"]),
     )
     resolved["optimizer"] = str(resolved.get("optimizer", fallback["optimizer"]))
+    resolved["signal_model"] = str(resolved.get("signal_model", fallback.get("signal_model", "multi_factor_v1")))
+    resolved["initial_position"] = _as_unit_float(
+        resolved.get("initial_position", fallback.get("initial_position", 0.0)),
+        "initial_position",
+        warnings,
+        float(fallback.get("initial_position", 0.0)),
+    )
+    resolved["positive_consensus_threshold"] = _as_unit_float(
+        resolved.get("positive_consensus_threshold", resolved.get("consensus_threshold", fallback.get("consensus_threshold", 0.25))),
+        "positive_consensus_threshold",
+        warnings,
+        float(fallback.get("positive_consensus_threshold", fallback.get("consensus_threshold", 0.25))),
+    )
+    resolved["negative_consensus_threshold"] = _as_unit_float(
+        resolved.get("negative_consensus_threshold", resolved.get("consensus_threshold", fallback.get("consensus_threshold", 0.20))),
+        "negative_consensus_threshold",
+        warnings,
+        float(fallback.get("negative_consensus_threshold", fallback.get("consensus_threshold", 0.20))),
+    )
+    resolved["rebound_days"] = _as_positive_int(
+        resolved.get("rebound_days", fallback.get("rebound_days", fallback["danger_days"])),
+        "rebound_days",
+        warnings,
+        int(fallback.get("rebound_days", fallback["danger_days"])),
+    )
+    resolved["trend_fast_ma"] = _as_positive_int(
+        resolved.get("trend_fast_ma", fallback.get("trend_fast_ma", 20)),
+        "trend_fast_ma",
+        warnings,
+        int(fallback.get("trend_fast_ma", 20)),
+    )
+    resolved["trend_slow_ma"] = _as_positive_int(
+        resolved.get("trend_slow_ma", fallback.get("trend_slow_ma", 120)),
+        "trend_slow_ma",
+        warnings,
+        int(fallback.get("trend_slow_ma", 120)),
+    )
+    resolved["trend_slope_window"] = _as_positive_int(
+        resolved.get("trend_slope_window", fallback.get("trend_slope_window", 10)),
+        "trend_slope_window",
+        warnings,
+        int(fallback.get("trend_slope_window", 10)),
+    )
+    resolved["atr_period"] = _as_positive_int(
+        resolved.get("atr_period", fallback.get("atr_period", 14)),
+        "atr_period",
+        warnings,
+        int(fallback.get("atr_period", 14)),
+    )
+    resolved["atr_ma_window"] = _as_positive_int(
+        resolved.get("atr_ma_window", fallback.get("atr_ma_window", 60)),
+        "atr_ma_window",
+        warnings,
+        int(fallback.get("atr_ma_window", 60)),
+    )
+    resolved["vol_breakout_mult"] = _as_non_negative_float(
+        resolved.get("vol_breakout_mult", fallback.get("vol_breakout_mult", 1.05)),
+        "vol_breakout_mult",
+        warnings,
+        float(fallback.get("vol_breakout_mult", 1.05)),
+    )
+    resolved["buy_volatility_cap"] = _as_non_negative_float(
+        resolved.get("buy_volatility_cap", fallback.get("buy_volatility_cap", 1.05)),
+        "buy_volatility_cap",
+        warnings,
+        float(fallback.get("buy_volatility_cap", 1.05)),
+    )
+    resolved["high_volatility_mult"] = _as_non_negative_float(
+        resolved.get("high_volatility_mult", fallback.get("high_volatility_mult", 1.15)),
+        "high_volatility_mult",
+        warnings,
+        float(fallback.get("high_volatility_mult", 1.15)),
+    )
+    resolved["high_volatility_position_cap"] = _as_unit_float(
+        resolved.get("high_volatility_position_cap", fallback.get("high_volatility_position_cap", 0.5)),
+        "high_volatility_position_cap",
+        warnings,
+        float(fallback.get("high_volatility_position_cap", 0.5)),
+    )
+    resolved["enable_volatility_scaling"] = _as_bool(
+        resolved.get("enable_volatility_scaling", fallback.get("enable_volatility_scaling", False)),
+        bool(fallback.get("enable_volatility_scaling", False)),
+    )
+    resolved["target_volatility"] = _as_non_negative_float(
+        resolved.get("target_volatility", fallback.get("target_volatility", 0.15)),
+        "target_volatility",
+        warnings,
+        float(fallback.get("target_volatility", 0.15)),
+    )
+    resolved["enable_momentum_factor"] = _as_bool(
+        resolved.get("enable_momentum_factor", fallback.get("enable_momentum_factor", False)),
+        bool(fallback.get("enable_momentum_factor", False)),
+    )
+    momentum_windows = resolved.get("momentum_windows", fallback.get("momentum_windows", (20, 60)))
+    if isinstance(momentum_windows, (list, tuple)):
+        resolved["momentum_windows"] = tuple(
+            _as_positive_int(value, "momentum_windows", warnings, 20) for value in momentum_windows
+        )
+    else:
+        warnings.append(f"momentum_windows={momentum_windows} 非法，回退默认值 {(20, 60)}")
+        resolved["momentum_windows"] = tuple(fallback.get("momentum_windows", (20, 60)))
+    resolved["momentum_weight"] = _as_non_negative_float(
+        resolved.get("momentum_weight", fallback.get("momentum_weight", 1.0)),
+        "momentum_weight",
+        warnings,
+        float(fallback.get("momentum_weight", 1.0)),
+    )
+    resolved["momentum_threshold"] = _as_float(
+        resolved.get("momentum_threshold", fallback.get("momentum_threshold", 0.0)),
+        "momentum_threshold",
+        warnings,
+        float(fallback.get("momentum_threshold", 0.0)),
+    )
+    resolved["strong_momentum_threshold"] = _as_float(
+        resolved.get("strong_momentum_threshold", fallback.get("strong_momentum_threshold", 0.05)),
+        "strong_momentum_threshold",
+        warnings,
+        float(fallback.get("strong_momentum_threshold", 0.05)),
+    )
+    resolved["enable_market_state"] = _as_bool(
+        resolved.get("enable_market_state", fallback.get("enable_market_state", False)),
+        bool(fallback.get("enable_market_state", False)),
+    )
+    resolved["adx_threshold_trending"] = _as_non_negative_float(
+        resolved.get("adx_threshold_trending", fallback.get("adx_threshold_trending", 25.0)),
+        "adx_threshold_trending",
+        warnings,
+        float(fallback.get("adx_threshold_trending", 25.0)),
+    )
+    resolved["adx_threshold_ranging"] = _as_non_negative_float(
+        resolved.get("adx_threshold_ranging", fallback.get("adx_threshold_ranging", 20.0)),
+        "adx_threshold_ranging",
+        warnings,
+        float(fallback.get("adx_threshold_ranging", 20.0)),
+    )
+    resolved["enable_52w_high_factor"] = _as_bool(
+        resolved.get("enable_52w_high_factor", fallback.get("enable_52w_high_factor", False)),
+        bool(fallback.get("enable_52w_high_factor", False)),
+    )
+    resolved["proximity_52w_threshold"] = _as_unit_float(
+        resolved.get("proximity_52w_threshold", fallback.get("proximity_52w_threshold", 0.95)),
+        "proximity_52w_threshold",
+        warnings,
+        float(fallback.get("proximity_52w_threshold", 0.95)),
+    )
+    resolved["breakout_weight"] = _as_non_negative_float(
+        resolved.get("breakout_weight", fallback.get("breakout_weight", 0.25)),
+        "breakout_weight",
+        warnings,
+        float(fallback.get("breakout_weight", 0.25)),
+    )
+    resolved["drawdown_confirm_threshold"] = _as_unit_float(
+        resolved.get("drawdown_confirm_threshold", fallback.get("drawdown_confirm_threshold", 0.05)),
+        "drawdown_confirm_threshold",
+        warnings,
+        float(fallback.get("drawdown_confirm_threshold", 0.05)),
+    )
+    resolved["buy_reentry_drawdown_threshold"] = _as_unit_float(
+        resolved.get("buy_reentry_drawdown_threshold", fallback.get("buy_reentry_drawdown_threshold", 0.08)),
+        "buy_reentry_drawdown_threshold",
+        warnings,
+        float(fallback.get("buy_reentry_drawdown_threshold", 0.08)),
+    )
+    resolved["buy_reentry_lookback"] = _as_positive_int(
+        resolved.get("buy_reentry_lookback", fallback.get("buy_reentry_lookback", 20)),
+        "buy_reentry_lookback",
+        warnings,
+        int(fallback.get("buy_reentry_lookback", 20)),
+    )
+    resolved["buy_trend_slow_buffer"] = _as_unit_float(
+        resolved.get("buy_trend_slow_buffer", fallback.get("buy_trend_slow_buffer", 0.98)),
+        "buy_trend_slow_buffer",
+        warnings,
+        float(fallback.get("buy_trend_slow_buffer", 0.98)),
+    )
+    resolved["buy_vote_threshold"] = _as_positive_int(
+        resolved.get("buy_vote_threshold", fallback.get("buy_vote_threshold", 3)),
+        "buy_vote_threshold",
+        warnings,
+        int(fallback.get("buy_vote_threshold", 3)),
+    )
+    resolved["sell_vote_threshold"] = _as_positive_int(
+        resolved.get("sell_vote_threshold", fallback.get("sell_vote_threshold", 3)),
+        "sell_vote_threshold",
+        warnings,
+        int(fallback.get("sell_vote_threshold", 3)),
+    )
+    resolved["buy_confirm_days"] = _as_positive_int(
+        resolved.get("buy_confirm_days", fallback.get("buy_confirm_days", 2)),
+        "buy_confirm_days",
+        warnings,
+        int(fallback.get("buy_confirm_days", 2)),
+    )
+    resolved["sell_confirm_days"] = _as_positive_int(
+        resolved.get("sell_confirm_days", fallback.get("sell_confirm_days", 2)),
+        "sell_confirm_days",
+        warnings,
+        int(fallback.get("sell_confirm_days", 2)),
+    )
+    resolved["cooldown_days"] = _as_positive_int(
+        resolved.get("cooldown_days", fallback.get("cooldown_days", 15)),
+        "cooldown_days",
+        warnings,
+        int(fallback.get("cooldown_days", 15)),
+    )
+    resolved["post_sell_reentry_cooldown_days"] = _as_positive_int(
+        resolved.get(
+            "post_sell_reentry_cooldown_days",
+            fallback.get("post_sell_reentry_cooldown_days", 10),
+        ),
+        "post_sell_reentry_cooldown_days",
+        warnings,
+        int(fallback.get("post_sell_reentry_cooldown_days", 10)),
+    )
+    resolved["min_hold_bars"] = _as_non_negative_float(
+        resolved.get("min_hold_bars", fallback.get("min_hold_bars", 0)),
+        "min_hold_bars",
+        warnings,
+        float(fallback.get("min_hold_bars", 0)),
+    )
+    resolved["min_hold_bars"] = int(resolved["min_hold_bars"])
+    resolved["allow_top_risk_override_min_hold"] = _as_bool(
+        resolved.get(
+            "allow_top_risk_override_min_hold",
+            fallback.get("allow_top_risk_override_min_hold", True),
+        ),
+        bool(fallback.get("allow_top_risk_override_min_hold", True)),
+    )
+    resolved["warning_trade_enabled"] = _as_bool(
+        resolved.get(
+            "warning_trade_enabled",
+            fallback.get("warning_trade_enabled", True),
+        ),
+        bool(fallback.get("warning_trade_enabled", True)),
+    )
+    resolved["full_exit_days"] = _as_positive_int(
+        resolved.get("full_exit_days", fallback.get("full_exit_days", 3)),
+        "full_exit_days",
+        warnings,
+        int(fallback.get("full_exit_days", 3)),
+    )
+    resolved["enable_regime_hysteresis"] = _as_bool(
+        resolved.get(
+            "enable_regime_hysteresis",
+            fallback.get("enable_regime_hysteresis", True),
+        ),
+        bool(fallback.get("enable_regime_hysteresis", True)),
+    )
+    resolved["require_trend_recovery_for_buy"] = _as_bool(
+        resolved.get(
+            "require_trend_recovery_for_buy",
+            fallback.get("require_trend_recovery_for_buy", True),
+        ),
+        bool(fallback.get("require_trend_recovery_for_buy", True)),
+    )
 
     resolved["param_source"] = "optimal_yaml"
     return resolved, warnings

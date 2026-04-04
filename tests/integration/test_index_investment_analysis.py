@@ -3,6 +3,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from io import StringIO
 from unittest.mock import Mock, patch
 
 import pandas as pd
@@ -113,6 +114,84 @@ class IndexInvestmentAnalysisIntegrationTests(unittest.TestCase):
         self.assertTrue(any(name.endswith(".png") for name in os.listdir(plots_dir)))
         self.assertTrue(any(name.endswith(".md") for name in os.listdir(reports_dir)))
         self.assertTrue(any(name.endswith(".html") for name in os.listdir(reports_dir)))
+
+    def test_cli_falls_back_to_default_params_when_optimal_config_load_fails(self) -> None:
+        fake_df = self._make_price_df()
+        fake_data_manager = Mock()
+        fake_data_manager.get_data.return_value = fake_df
+
+        signal_df = fake_df.copy()
+        signal_df["symbol"] = "000001.SH"
+        signal_df["lppl_signal"] = ["none"] * 4
+        signal_df["signal_strength"] = [0.0] * 4
+        signal_df["position_reason"] = ["无信号"] * 4
+        signal_df["action"] = ["hold"] * 4
+        signal_df["target_position"] = [0.0] * 4
+
+        equity_df = signal_df.copy()
+        equity_df["executed_position"] = [0.0] * 4
+        equity_df["cash"] = [1000.0] * 4
+        equity_df["units"] = [0.0] * 4
+        equity_df["holdings_value"] = [0.0] * 4
+        equity_df["portfolio_value"] = [1000.0] * 4
+        equity_df["strategy_nav"] = [1.0] * 4
+        equity_df["benchmark_nav"] = [1.0, 1.0198, 1.0099, 1.0]
+        equity_df["daily_return"] = [0.0] * 4
+        equity_df["benchmark_return"] = [0.0, 0.0198, -0.0097, -0.0098]
+        equity_df["excess_return"] = [0.0, -0.0198, 0.0097, 0.0098]
+        equity_df["drawdown"] = [0.0] * 4
+
+        trades_df = pd.DataFrame(
+            columns=[
+                "date",
+                "symbol",
+                "trade_type",
+                "price",
+                "target_position",
+                "executed_position",
+                "units",
+                "cash_after_trade",
+                "portfolio_value_after_trade",
+            ]
+        )
+        summary = {
+            "symbol": "000001.SH",
+            "name": "上证综指",
+            "start_date": "2021-01-01",
+            "end_date": "2021-01-04",
+            "final_nav": 1.0,
+            "total_return": 0.0,
+            "benchmark_return": 0.0,
+            "annualized_return": 0.0,
+            "max_drawdown": 0.0,
+            "trade_count": 0,
+            "signal_count": 0,
+            "average_position": 0.0,
+            "latest_action": "hold",
+            "latest_signal": "none",
+        }
+
+        stdout = StringIO()
+        with patch("src.cli.index_investment_analysis.DataManager", return_value=fake_data_manager), \
+             patch("src.cli.index_investment_analysis.load_optimal_config", side_effect=FileNotFoundError("missing")), \
+             patch("src.cli.index_investment_analysis.generate_investment_signals", return_value=signal_df), \
+             patch("src.cli.index_investment_analysis.run_strategy_backtest", return_value=(equity_df, trades_df, summary)), \
+             patch("sys.stdout", new=stdout):
+            argv = [
+                "index_investment_analysis.py",
+                "--symbol",
+                "000001.SH",
+                "--output",
+                self.temp_dir,
+                "--use-optimal-config",
+            ]
+            with patch.object(sys, "argv", argv):
+                main()
+
+        summary_path = os.path.join(self.temp_dir, "summary", "summary_000001_SH_single_window.csv")
+        summary_df = pd.read_csv(summary_path)
+        self.assertEqual(summary_df.iloc[0]["param_source"], "default_fallback")
+        self.assertIn("最优参数文件加载失败，使用默认参数: missing", stdout.getvalue())
 
 
 if __name__ == "__main__":
