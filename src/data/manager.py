@@ -253,12 +253,12 @@ class DataManager:
     def _get_last_date_from_file(self, symbol: str) -> Optional[datetime]:
         if not validate_symbol(symbol):
             raise ValueError(f"Invalid symbol: {symbol}")
-        
+
         file_path = self._get_file_path(symbol)
-        
+
         if not os.path.exists(file_path):
             return None
-        
+
         try:
             df = pd.read_parquet(file_path)
             if df.empty:
@@ -272,31 +272,31 @@ class DataManager:
     def _append_data_to_file(self, symbol: str, new_data: pd.DataFrame) -> bool:
         if not validate_symbol(symbol):
             raise ValueError(f"Invalid symbol: {symbol}")
-        
+
         if new_data is None or new_data.empty:
             logger.warning(f"No new data to append for {symbol}")
             return False
-        
+
         file_path = self._get_file_path(symbol)
-        
+
         try:
             if os.path.exists(file_path):
                 existing_df = pd.read_parquet(file_path)
                 existing_df["date"] = pd.to_datetime(existing_df["date"])
                 new_data["date"] = pd.to_datetime(new_data["date"])
-                
+
                 combined_df = pd.concat([existing_df, new_data], ignore_index=True)
                 combined_df = combined_df.drop_duplicates(subset=["date"], keep="last")
                 combined_df = combined_df.sort_values("date").reset_index(drop=True)
             else:
                 new_data["date"] = pd.to_datetime(new_data["date"])
                 combined_df = new_data.sort_values("date").reset_index(drop=True)
-            
+
             is_valid, msg = validate_dataframe(combined_df, symbol)
             if not is_valid:
                 logger.error(f"Combined data validation failed for {symbol}: {msg}")
                 return False
-            
+
             combined_df.to_parquet(file_path, index=False)
             logger.info(f"Data appended for {symbol}, total rows: {len(combined_df)}")
             return True
@@ -307,37 +307,37 @@ class DataManager:
     def incremental_update_data(self, symbol: str) -> Tuple[str, int]:
         if not validate_symbol(symbol):
             raise ValueError(f"Invalid symbol: {symbol}")
-        
+
         if not ENABLE_INCREMENTAL_UPDATE:
             logger.info(f"Incremental update disabled, fetching full data for {symbol}")
             df = self._fetch_akshare_data(symbol) if self._is_akshare_index(symbol) else None
             return ("full_fetch", len(df) if df is not None else 0)
-        
+
         last_date = self._get_last_date_from_file(symbol)
         today = datetime.now().date()
-        
+
         if last_date is None:
             logger.info(f"No existing data for {symbol}, performing full fetch")
             df = self._fetch_akshare_data(symbol) if self._is_akshare_index(symbol) else None
             return ("full_fetch", len(df) if df is not None else 0)
-        
+
         days_diff = (today - last_date.date()).days
-        
+
         if days_diff <= 0:
             logger.info(f"Data for {symbol} is already up-to-date (last date: {last_date.date()})")
             return ("up_to_date", 0)
-        
+
         logger.info(f"Incremental update for {symbol}: {days_diff} days to fetch (from {last_date.date()} to {today})")
-        
+
         if not self._is_akshare_index(symbol):
             logger.warning(f"Incremental update not supported for local data index {symbol}")
             return ("not_supported", 0)
-        
+
         try:
             pure_symbol = symbol.replace(".SH", "").replace(".SZ", "")
             start_date = (last_date + pd.Timedelta(days=1)).strftime("%Y%m%d")
             end_date = today.strftime("%Y%m%d")
-            
+
             if symbol == "932000.SH":
                 new_df = ak.stock_zh_index_hist_csindex(
                     symbol=pure_symbol,
@@ -357,22 +357,22 @@ class DataManager:
                     end_date=end_date
                 )
                 new_df = new_df.rename(columns=DATA_COLUMNS)
-            
+
             if new_df is None or new_df.empty:
                 logger.info(f"No new data available for {symbol} from {start_date} to {end_date}")
                 return ("no_new_data", 0)
-            
+
             new_df["date"] = pd.to_datetime(new_df["date"])
-            
+
             rows_added = len(new_df)
-            
+
             if self._append_data_to_file(symbol, new_df):
                 logger.info(f"Incremental update successful for {symbol}: {rows_added} rows added")
                 return ("incremental", rows_added)
             else:
                 logger.warning(f"Failed to append incremental data for {symbol}")
                 return ("append_failed", 0)
-                
+
         except Exception as e:
             logger.error(f"Error during incremental update for {symbol}: {e}")
             return ("error", 0)

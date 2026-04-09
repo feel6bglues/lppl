@@ -11,11 +11,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 
 from src.constants import ENABLE_JOBLIB_PARALLEL, OUTPUT_DIR, WINDOW_CONFIG
-from src.lppl_engine import (
+from src.lppl_core import (
     calculate_bottom_signal_strength,
     calculate_risk_level,
     detect_negative_bubble,
-    fit_single_window,
+    fit_single_window_task,
     validate_input_data,
 )
 
@@ -29,29 +29,6 @@ try:
 except ImportError:
     JOBLIB_AVAILABLE = False
     logger.warning("joblib not available, using ProcessPoolExecutor")
-
-
-def _fit_single_window_compat(task: Tuple[int, Any, Any]) -> Optional[Dict[str, Any]]:
-    """Adapt legacy computation tasks to the unified lppl_engine.fit_single_window API.
-
-    Legacy computation tasks are tuples of:
-    `(window_size, dates_series, prices_array)`.
-
-    The unified engine API expects:
-    `(close_prices, window_size, config=None)`.
-    """
-    window_size, dates_series, prices_array = task
-    result = fit_single_window(prices_array, window_size)
-    if result is None:
-        return None
-
-    last_date_raw = dates_series.iloc[-1] if hasattr(dates_series, "iloc") else dates_series[-1]
-    last_date = pd.Timestamp(last_date_raw)
-
-    adapted = dict(result)
-    adapted["window"] = int(result.get("window_size", window_size))
-    adapted["last_date"] = last_date
-    return adapted
 
 
 def performance_monitor(func):
@@ -120,11 +97,11 @@ class LPPLComputation:
             last_date = res["last_date"]
             if not hasattr(last_date, 'strftime'):
                 last_date = pd.Timestamp(last_date)
-            
+
             crash_date = last_date + timedelta(days=int(days_left))
 
             risk = calculate_risk_level(m, w, days_left)
-            
+
             is_negative, bottom_signal = detect_negative_bubble(m, w, b, days_left)
             bottom_strength = calculate_bottom_signal_strength(m, w, b, res['rmse']) if is_negative else 0.0
 
@@ -153,15 +130,15 @@ class LPPLComputation:
 
         tasks = []
         windows = WINDOW_CONFIG.all_windows
-        
+
         dates_array = df['date'].values
         prices_array = df['close'].values
-        
+
         for window in windows:
             if len(df) >= window:
                 tasks.append((
-                    window, 
-                    dates_array[-window:], 
+                    window,
+                    dates_array[-window:],
                     prices_array[-window:]
                 ))
 
@@ -186,16 +163,16 @@ class LPPLComputation:
                 timeout=300,
                 verbose=0
             )(
-                delayed(_fit_single_window_compat)(task)
+                delayed(fit_single_window_task)(task)
                 for task in tasks
             )
-            
+
             for i, res in enumerate(parallel_results):
                 window = tasks[i][0]
                 if res is not None:
                     print(".", end="", flush=True)
                     cnt_success += 1
-                    
+
                     category = WINDOW_CONFIG.get_category(window)
                     if res["rmse"] < results[category]["rmse"]:
                         results[category]["rmse"] = res["rmse"]
@@ -204,16 +181,16 @@ class LPPLComputation:
                     print("x", end="", flush=True)
         else:
             batch_size = self.max_workers * 2
-            
+
             with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
                 for i in range(0, len(tasks), batch_size):
                     batch = tasks[i:i + batch_size]
-                    
+
                     future_to_window = {
-                        executor.submit(_fit_single_window_compat, task): task[0]
+                        executor.submit(fit_single_window_task, task): task[0]
                         for task in batch
                     }
-                    
+
                     for future in as_completed(future_to_window):
                         window = future_to_window[future]
                         try:
@@ -221,7 +198,7 @@ class LPPLComputation:
                             if res:
                                 print(".", end="", flush=True)
                                 cnt_success += 1
-                                
+
                                 category = WINDOW_CONFIG.get_category(window)
                                 if res["rmse"] < results[category]["rmse"]:
                                     results[category]["rmse"] = res["rmse"]
@@ -314,7 +291,7 @@ class LPPLComputation:
 
         if data_date is None:
             data_date = datetime.now().strftime('%Y%m%d')
-        
+
         filename = f"lppl_report_{data_date}.md"
         file_path = os.path.join(self.output_dir, filename)
 
@@ -366,7 +343,7 @@ class LPPLComputation:
 
         if data_date is None:
             data_date = datetime.now().strftime('%Y%m%d')
-        
+
         filename = f"lppl_params_{data_date}.json"
         file_path = os.path.join(self.output_dir, filename)
 

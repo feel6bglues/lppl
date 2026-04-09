@@ -74,7 +74,7 @@ def main() -> int:
             data_date = datetime.now().strftime('%Y%m%d')
         else:
             logger.info(f"计算完成: 生成 {len(report_data)} 条扫描结果")
-            
+
             if params_data:
                 data_dates = []
                 for param in params_data:
@@ -86,7 +86,7 @@ def main() -> int:
                             data_dates.append(data_date_val)
                         except ValueError:
                             pass
-                
+
                 if data_dates:
                     latest_data_date = max(data_dates)
                     data_date = latest_data_date.strftime('%Y%m%d')
@@ -94,11 +94,11 @@ def main() -> int:
                     data_date = datetime.now().strftime('%Y%m%d')
             else:
                 data_date = datetime.now().strftime('%Y%m%d')
-            
+
             markdown_path = computation.generate_markdown(report_data, data_date=data_date)
             if not markdown_path:
                 logger.warning("警告: 无法生成Markdown报告")
-            
+
             if params_data:
                 params_path = computation.save_params_to_json(params_data, data_date=data_date)
                 if params_path:

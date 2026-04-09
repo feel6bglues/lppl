@@ -36,7 +36,7 @@ class SignalTuningTests(unittest.TestCase):
         scored = score_signal_tuning_results(df)
 
         self.assertGreater(float(scored.iloc[0]["objective_score"]), float(scored.iloc[1]["objective_score"]))
-        self.assertEqual(scored.iloc[0]["risk_band"], "Safe")
+        self.assertEqual(scored.iloc[0]["risk_band"], "Watch")
 
     def test_score_signal_tuning_results_marks_low_trade_candidates_ineligible(self) -> None:
         df = pd.DataFrame(

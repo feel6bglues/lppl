@@ -37,6 +37,7 @@ symbols:
     window_set: narrow_40_120
     r2_threshold: 0.50
     consensus_threshold: 0.20
+    danger_days: 20
     positive_consensus_threshold: 0.25
     negative_consensus_threshold: 0.20
     sell_vote_threshold: 3
@@ -45,20 +46,12 @@ symbols:
     buy_confirm_days: 2
     cooldown_days: 20
     optimizer: lbfgsb
-    signal_model: ma_cross_atr_v1
-    trend_fast_ma: 20
-    trend_slow_ma: 250
-    atr_period: 14
-    atr_ma_window: 20
-    buy_volatility_cap: 1.05
-    vol_breakout_mult: 1.15
-    enable_volatility_scaling: true
-    target_volatility: 0.12
   "399001.SZ":
     step: 120
     window_set: wide_30_180
     r2_threshold: 0.50
     consensus_threshold: 0.30
+    danger_days: 20
     positive_consensus_threshold: 0.25
     negative_consensus_threshold: 0.20
     sell_vote_threshold: 2
@@ -66,21 +59,14 @@ symbols:
     sell_confirm_days: 2
     buy_confirm_days: 2
     cooldown_days: 15
+    vol_breakout_mult: 1.03
     optimizer: lbfgsb
-    signal_model: ma_cross_atr_v1
-    trend_fast_ma: 10
-    trend_slow_ma: 120
-    atr_period: 14
-    atr_ma_window: 40
-    buy_volatility_cap: 1.00
-    vol_breakout_mult: 1.05
-    enable_volatility_scaling: true
-    target_volatility: 0.15
   "399006.SZ":
     step: 60
     window_set: wide_30_180
     r2_threshold: 0.50
     consensus_threshold: 0.30
+    danger_days: 20
     positive_consensus_threshold: 0.20
     negative_consensus_threshold: 0.20
     sell_vote_threshold: 2
@@ -96,6 +82,7 @@ symbols:
     window_set: wide_30_180
     r2_threshold: 0.50
     consensus_threshold: 0.20
+    danger_days: 20
     positive_consensus_threshold: 0.25
     negative_consensus_threshold: 0.20
     sell_vote_threshold: 2
@@ -103,22 +90,16 @@ symbols:
     sell_confirm_days: 2
     buy_confirm_days: 2
     cooldown_days: 15
+    vol_breakout_mult: 1.00
+    buy_volatility_cap: 1.00
     drawdown_confirm_threshold: 0.08
     optimizer: lbfgsb
-    signal_model: ma_cross_atr_v1
-    trend_fast_ma: 20
-    trend_slow_ma: 250
-    atr_period: 14
-    atr_ma_window: 20
-    buy_volatility_cap: 1.05
-    vol_breakout_mult: 1.15
-    enable_volatility_scaling: true
-    target_volatility: 0.12
   "000300.SH":
     step: 120
     window_set: narrow_40_120
     r2_threshold: 0.50
     consensus_threshold: 0.25
+    danger_days: 20
     positive_consensus_threshold: 0.30
     negative_consensus_threshold: 0.20
     sell_vote_threshold: 2
@@ -126,22 +107,16 @@ symbols:
     sell_confirm_days: 2
     buy_confirm_days: 2
     cooldown_days: 10
+    vol_breakout_mult: 1.00
+    buy_volatility_cap: 1.00
     drawdown_confirm_threshold: 0.08
     optimizer: lbfgsb
-    signal_model: ma_cross_atr_v1
-    trend_fast_ma: 20
-    trend_slow_ma: 250
-    atr_period: 14
-    atr_ma_window: 20
-    buy_volatility_cap: 1.05
-    vol_breakout_mult: 1.15
-    enable_volatility_scaling: true
-    target_volatility: 0.12
   "000905.SH":
     step: 120
     window_set: narrow_40_120
     r2_threshold: 0.50
     consensus_threshold: 0.20
+    danger_days: 20
     positive_consensus_threshold: 0.20
     negative_consensus_threshold: 0.20
     sell_vote_threshold: 2
@@ -149,21 +124,14 @@ symbols:
     sell_confirm_days: 2
     buy_confirm_days: 2
     cooldown_days: 15
+    vol_breakout_mult: 1.03
     optimizer: lbfgsb
-    signal_model: ma_cross_atr_v1
-    trend_fast_ma: 10
-    trend_slow_ma: 120
-    atr_period: 14
-    atr_ma_window: 40
-    buy_volatility_cap: 1.00
-    vol_breakout_mult: 1.05
-    enable_volatility_scaling: true
-    target_volatility: 0.15
   "000852.SH":
     step: 120
     window_set: narrow_40_120
     r2_threshold: 0.50
     consensus_threshold: 0.20
+    danger_days: 20
     positive_consensus_threshold: 0.20
     negative_consensus_threshold: 0.20
     sell_vote_threshold: 2
@@ -179,6 +147,7 @@ symbols:
     window_set: narrow_40_120
     r2_threshold: 0.50
     consensus_threshold: 0.25
+    danger_days: 20
     positive_consensus_threshold: 0.20
     negative_consensus_threshold: 0.20
     sell_vote_threshold: 2

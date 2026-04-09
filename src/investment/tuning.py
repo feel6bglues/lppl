@@ -30,14 +30,6 @@ SCORING_PROFILES: Dict[str, Dict[str, float]] = {
         "turnover_rate": 0.15,
         "whipsaw_rate": 0.05,
     },
-    "high_beta_recovery": {
-        "calmar_ratio": 0.30,
-        "annualized_excess_return": 0.30,
-        "max_drawdown": 0.15,
-        "trade_count": 0.15,
-        "turnover_rate": 0.05,
-        "whipsaw_rate": 0.05,
-    },
 }
 
 
@@ -51,19 +43,12 @@ def _risk_band(row: pd.Series) -> str:
     max_drawdown = float(row.get("max_drawdown", 0.0))
     annualized_excess_return = float(row.get("annualized_excess_return", 0.0))
     calmar_ratio = float(row.get("calmar_ratio", 0.0))
-    trade_count = float(row.get("trade_count", 0.0))
 
-    # 第一层：极端风险（不可接受）
-    if max_drawdown <= -0.40:
+    if max_drawdown <= -0.25 or annualized_excess_return <= 0.0:
         return "DANGER"
-    # 第二层："无为策略"（负超额 + 低交易频率）
-    if annualized_excess_return <= -0.05 and trade_count < 3:
-        return "DANGER"
-    # 第三层：负超额 → Warning
-    if annualized_excess_return <= 0.0:
+    if max_drawdown <= -0.18 or calmar_ratio < 0.20:
         return "Warning"
-    # 第四层：正超额但回撤/Calmar 不佳
-    if max_drawdown <= -0.25 or calmar_ratio < 0.30:
+    if max_drawdown <= -0.10 or calmar_ratio < 0.50:
         return "Watch"
     return "Safe"
 
@@ -92,7 +77,9 @@ def _build_reject_reason(
         reasons.append("non_positive_excess")
     if float(row.get("max_drawdown", 0.0)) <= float(max_drawdown_cap):
         reasons.append("max_drawdown_cap")
-    if float(row.get("turnover_rate", 0.0)) >= float(turnover_cap):
+
+    turnover_to_check = row.get("annualized_turnover_rate", row.get("turnover_rate", 0.0))
+    if float(turnover_to_check) >= float(turnover_cap):
         reasons.append("turnover_cap")
     if float(row.get("whipsaw_rate", 0.0)) > float(whipsaw_cap):
         reasons.append("whipsaw_cap")
@@ -138,6 +125,8 @@ def score_signal_tuning_results(
         if column not in scored.columns:
             scored[column] = 0.0
 
+    scored["turnover_for_ranking"] = scored.get("annualized_turnover_rate", scored.get("turnover_rate", 0.0))
+
     metric_ranks = pd.DataFrame(index=scored.index)
     metric_ranks["calmar_ratio_rank"] = _rank_metric(scored["calmar_ratio"], higher_is_better=True)
     metric_ranks["annualized_excess_return_rank"] = _rank_metric(
@@ -145,7 +134,7 @@ def score_signal_tuning_results(
     )
     metric_ranks["max_drawdown_rank"] = _rank_metric(scored["max_drawdown"], higher_is_better=True)
     metric_ranks["trade_count_rank"] = _rank_metric(scored["trade_count"], higher_is_better=True)
-    metric_ranks["turnover_rate_rank"] = _rank_metric(scored["turnover_rate"], higher_is_better=False)
+    metric_ranks["turnover_rate_rank"] = _rank_metric(scored["turnover_for_ranking"], higher_is_better=False)
     metric_ranks["whipsaw_rate_rank"] = _rank_metric(scored["whipsaw_rate"], higher_is_better=False)
 
     scored["objective_score"] = (

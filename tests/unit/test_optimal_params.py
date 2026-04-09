@@ -24,6 +24,11 @@ class OptimalParamsTests(unittest.TestCase):
             "ma_window": 5,
             "max_peaks": 10,
             "warning_trade_enabled": True,
+            "regime_filter_ma": 120,
+            "regime_filter_buffer": 1.0,
+            "regime_filter_reduce_enabled": True,
+            "risk_drawdown_stop_threshold": 0.15,
+            "risk_drawdown_lookback": 120,
         }
         self.config_data = {
             "defaults": {
@@ -54,6 +59,11 @@ class OptimalParamsTests(unittest.TestCase):
                     "high_volatility_position_cap": 0.5,
                     "post_sell_reentry_cooldown_days": 10,
                     "warning_trade_enabled": False,
+                    "regime_filter_ma": 200,
+                    "regime_filter_buffer": 1.02,
+                    "regime_filter_reduce_enabled": True,
+                    "risk_drawdown_stop_threshold": 0.12,
+                    "risk_drawdown_lookback": 160,
                 }
             },
         }
@@ -82,6 +92,11 @@ class OptimalParamsTests(unittest.TestCase):
         self.assertEqual(resolved["high_volatility_position_cap"], 0.5)
         self.assertEqual(resolved["post_sell_reentry_cooldown_days"], 10)
         self.assertFalse(resolved["warning_trade_enabled"])
+        self.assertEqual(resolved["regime_filter_ma"], 200)
+        self.assertAlmostEqual(resolved["regime_filter_buffer"], 1.02)
+        self.assertTrue(resolved["regime_filter_reduce_enabled"])
+        self.assertAlmostEqual(resolved["risk_drawdown_stop_threshold"], 0.12)
+        self.assertEqual(resolved["risk_drawdown_lookback"], 160)
 
     def test_resolve_symbol_params_fallback_when_symbol_missing(self) -> None:
         resolved, warnings = resolve_symbol_params(self.config_data, "399001.SZ", self.fallback)
@@ -138,34 +153,6 @@ symbols:
         self.assertIn("defaults", loaded)
         self.assertIn("window_sets", loaded)
         self.assertIn("symbols", loaded)
-
-    def test_repo_optimal_config_includes_large_cap_and_balanced_candidate_updates(self) -> None:
-        if optimal_params.yaml is None:
-            self.skipTest("PyYAML 未安装，跳过 YAML 读取测试")
-
-        loaded = load_optimal_config("config/optimal_params.yaml")
-
-        large_cap_expected = {
-            "000001.SH": (20, 250, 14, 20, 1.05, 1.15, True, 0.12),
-            "000016.SH": (20, 250, 14, 20, 1.05, 1.15, True, 0.12),
-            "000300.SH": (20, 250, 14, 20, 1.05, 1.15, True, 0.12),
-        }
-        balanced_expected = {
-            "399001.SZ": (10, 120, 14, 40, 1.00, 1.05, True, 0.15),
-            "000905.SH": (10, 120, 14, 40, 1.00, 1.05, True, 0.15),
-        }
-
-        for symbol, expected in {**large_cap_expected, **balanced_expected}.items():
-            symbol_cfg = loaded["symbols"][symbol]
-            self.assertEqual(symbol_cfg["signal_model"], "ma_cross_atr_v1")
-            self.assertEqual(symbol_cfg["trend_fast_ma"], expected[0])
-            self.assertEqual(symbol_cfg["trend_slow_ma"], expected[1])
-            self.assertEqual(symbol_cfg["atr_period"], expected[2])
-            self.assertEqual(symbol_cfg["atr_ma_window"], expected[3])
-            self.assertAlmostEqual(float(symbol_cfg["buy_volatility_cap"]), expected[4])
-            self.assertAlmostEqual(float(symbol_cfg["vol_breakout_mult"]), expected[5])
-            self.assertEqual(bool(symbol_cfg["enable_volatility_scaling"]), expected[6])
-            self.assertAlmostEqual(float(symbol_cfg["target_volatility"]), expected[7])
 
 
 if __name__ == "__main__":

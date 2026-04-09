@@ -41,23 +41,15 @@ ALLOWED_KEYS = {
     "buy_volatility_cap",
     "high_volatility_mult",
     "high_volatility_position_cap",
-    "enable_volatility_scaling",
-    "target_volatility",
-    "enable_momentum_factor",
-    "momentum_windows",
-    "momentum_weight",
-    "momentum_threshold",
-    "strong_momentum_threshold",
-    "enable_market_state",
-    "adx_threshold_trending",
-    "adx_threshold_ranging",
-    "enable_52w_high_factor",
-    "proximity_52w_threshold",
-    "breakout_weight",
     "drawdown_confirm_threshold",
     "buy_reentry_drawdown_threshold",
     "buy_reentry_lookback",
     "buy_trend_slow_buffer",
+    "regime_filter_ma",
+    "regime_filter_buffer",
+    "regime_filter_reduce_enabled",
+    "risk_drawdown_stop_threshold",
+    "risk_drawdown_lookback",
     "buy_vote_threshold",
     "sell_vote_threshold",
     "buy_confirm_days",
@@ -327,78 +319,6 @@ def resolve_symbol_params(
         warnings,
         float(fallback.get("high_volatility_position_cap", 0.5)),
     )
-    resolved["enable_volatility_scaling"] = _as_bool(
-        resolved.get("enable_volatility_scaling", fallback.get("enable_volatility_scaling", False)),
-        bool(fallback.get("enable_volatility_scaling", False)),
-    )
-    resolved["target_volatility"] = _as_non_negative_float(
-        resolved.get("target_volatility", fallback.get("target_volatility", 0.15)),
-        "target_volatility",
-        warnings,
-        float(fallback.get("target_volatility", 0.15)),
-    )
-    resolved["enable_momentum_factor"] = _as_bool(
-        resolved.get("enable_momentum_factor", fallback.get("enable_momentum_factor", False)),
-        bool(fallback.get("enable_momentum_factor", False)),
-    )
-    momentum_windows = resolved.get("momentum_windows", fallback.get("momentum_windows", (20, 60)))
-    if isinstance(momentum_windows, (list, tuple)):
-        resolved["momentum_windows"] = tuple(
-            _as_positive_int(value, "momentum_windows", warnings, 20) for value in momentum_windows
-        )
-    else:
-        warnings.append(f"momentum_windows={momentum_windows} 非法，回退默认值 {(20, 60)}")
-        resolved["momentum_windows"] = tuple(fallback.get("momentum_windows", (20, 60)))
-    resolved["momentum_weight"] = _as_non_negative_float(
-        resolved.get("momentum_weight", fallback.get("momentum_weight", 1.0)),
-        "momentum_weight",
-        warnings,
-        float(fallback.get("momentum_weight", 1.0)),
-    )
-    resolved["momentum_threshold"] = _as_float(
-        resolved.get("momentum_threshold", fallback.get("momentum_threshold", 0.0)),
-        "momentum_threshold",
-        warnings,
-        float(fallback.get("momentum_threshold", 0.0)),
-    )
-    resolved["strong_momentum_threshold"] = _as_float(
-        resolved.get("strong_momentum_threshold", fallback.get("strong_momentum_threshold", 0.05)),
-        "strong_momentum_threshold",
-        warnings,
-        float(fallback.get("strong_momentum_threshold", 0.05)),
-    )
-    resolved["enable_market_state"] = _as_bool(
-        resolved.get("enable_market_state", fallback.get("enable_market_state", False)),
-        bool(fallback.get("enable_market_state", False)),
-    )
-    resolved["adx_threshold_trending"] = _as_non_negative_float(
-        resolved.get("adx_threshold_trending", fallback.get("adx_threshold_trending", 25.0)),
-        "adx_threshold_trending",
-        warnings,
-        float(fallback.get("adx_threshold_trending", 25.0)),
-    )
-    resolved["adx_threshold_ranging"] = _as_non_negative_float(
-        resolved.get("adx_threshold_ranging", fallback.get("adx_threshold_ranging", 20.0)),
-        "adx_threshold_ranging",
-        warnings,
-        float(fallback.get("adx_threshold_ranging", 20.0)),
-    )
-    resolved["enable_52w_high_factor"] = _as_bool(
-        resolved.get("enable_52w_high_factor", fallback.get("enable_52w_high_factor", False)),
-        bool(fallback.get("enable_52w_high_factor", False)),
-    )
-    resolved["proximity_52w_threshold"] = _as_unit_float(
-        resolved.get("proximity_52w_threshold", fallback.get("proximity_52w_threshold", 0.95)),
-        "proximity_52w_threshold",
-        warnings,
-        float(fallback.get("proximity_52w_threshold", 0.95)),
-    )
-    resolved["breakout_weight"] = _as_non_negative_float(
-        resolved.get("breakout_weight", fallback.get("breakout_weight", 0.25)),
-        "breakout_weight",
-        warnings,
-        float(fallback.get("breakout_weight", 0.25)),
-    )
     resolved["drawdown_confirm_threshold"] = _as_unit_float(
         resolved.get("drawdown_confirm_threshold", fallback.get("drawdown_confirm_threshold", 0.05)),
         "drawdown_confirm_threshold",
@@ -422,6 +342,43 @@ def resolve_symbol_params(
         "buy_trend_slow_buffer",
         warnings,
         float(fallback.get("buy_trend_slow_buffer", 0.98)),
+    )
+    resolved["regime_filter_ma"] = _as_positive_int(
+        resolved.get("regime_filter_ma", fallback.get("regime_filter_ma", resolved["trend_slow_ma"])),
+        "regime_filter_ma",
+        warnings,
+        int(fallback.get("regime_filter_ma", resolved["trend_slow_ma"])),
+    )
+    resolved["regime_filter_buffer"] = _as_non_negative_float(
+        resolved.get("regime_filter_buffer", fallback.get("regime_filter_buffer", 1.0)),
+        "regime_filter_buffer",
+        warnings,
+        float(fallback.get("regime_filter_buffer", 1.0)),
+    )
+    resolved["regime_filter_reduce_enabled"] = _as_bool(
+        resolved.get(
+            "regime_filter_reduce_enabled",
+            fallback.get("regime_filter_reduce_enabled", True),
+        ),
+        bool(fallback.get("regime_filter_reduce_enabled", True)),
+    )
+    resolved["risk_drawdown_stop_threshold"] = _as_unit_float(
+        resolved.get(
+            "risk_drawdown_stop_threshold",
+            fallback.get("risk_drawdown_stop_threshold", 0.15),
+        ),
+        "risk_drawdown_stop_threshold",
+        warnings,
+        float(fallback.get("risk_drawdown_stop_threshold", 0.15)),
+    )
+    resolved["risk_drawdown_lookback"] = _as_positive_int(
+        resolved.get(
+            "risk_drawdown_lookback",
+            fallback.get("risk_drawdown_lookback", 120),
+        ),
+        "risk_drawdown_lookback",
+        warnings,
+        int(fallback.get("risk_drawdown_lookback", 120)),
     )
     resolved["buy_vote_threshold"] = _as_positive_int(
         resolved.get("buy_vote_threshold", fallback.get("buy_vote_threshold", 3)),

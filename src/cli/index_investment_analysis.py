@@ -107,26 +107,21 @@ def main() -> None:
     }
 
     if args.use_optimal_config:
-        try:
-            optimal_data = load_optimal_config(args.optimal_config_path)
-            resolved, warnings = resolve_symbol_params(optimal_data, args.symbol, fallback)
-            for message in warnings:
-                print(f"⚠️ {message}")
+        optimal_data = load_optimal_config(args.optimal_config_path)
+        resolved, warnings = resolve_symbol_params(optimal_data, args.symbol, fallback)
+        for message in warnings:
+            print(f"⚠️ {message}")
 
-            lppl_config.window_range = list(resolved["window_range"])
-            lppl_config.optimizer = resolved["optimizer"]
-            lppl_config.r2_threshold = resolved["r2_threshold"]
-            lppl_config.danger_r2_offset = resolved["danger_r2_offset"]
-            lppl_config.consensus_threshold = resolved["consensus_threshold"]
-            lppl_config.danger_days = resolved["danger_days"]
-            lppl_config.warning_days = resolved["warning_days"]
-            lppl_config.watch_days = resolved["watch_days"]
-            args.step = resolved["step"]
-            param_source = resolved["param_source"]
-        except Exception as exc:
-            print(f"⚠️ 最优参数文件加载失败，使用默认参数: {exc}")
-            resolved = dict(fallback)
-            param_source = "default_fallback"
+        lppl_config.window_range = list(resolved["window_range"])
+        lppl_config.optimizer = resolved["optimizer"]
+        lppl_config.r2_threshold = resolved["r2_threshold"]
+        lppl_config.danger_r2_offset = resolved["danger_r2_offset"]
+        lppl_config.consensus_threshold = resolved["consensus_threshold"]
+        lppl_config.danger_days = resolved["danger_days"]
+        lppl_config.warning_days = resolved["warning_days"]
+        lppl_config.watch_days = resolved["watch_days"]
+        args.step = resolved["step"]
+        param_source = resolved["param_source"]
     else:
         resolved = dict(fallback)
 

@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""Investment strategy module.
+
+Provides:
+- Configuration dataclasses for signal generation and backtesting
+- Technical indicator computation
+- Signal evaluation models (LPPL, multi-factor)
+- Backtesting engine
+- Tuning and scoring utilities
+"""
 from .backtest import (
     BacktestConfig,
     InvestmentSignalConfig,
@@ -7,36 +16,37 @@ from .backtest import (
     run_strategy_backtest,
     summarize_strategy_performance,
 )
-from .group_rescan import (
-    BALANCED_PLAN,
-    HIGH_BETA_PLAN,
-    LARGE_CAP_YAML_PARAMS,
-    build_candidate_yaml_lines,
-    build_merged_candidate_yaml_lines,
-    execute_group_rescan,
-    select_balanced_yaml_candidate,
-    summarize_rescan_results,
-    write_candidate_yaml,
-    write_merged_candidate_yaml,
+from .config import BacktestConfig as BacktestConfigBase
+from .config import InvestmentSignalConfig as InvestmentSignalConfigBase
+from .indicators import compute_indicators, normalize_price_frame
+from .signal_models import (
+    evaluate_multi_factor_adaptive,
+    map_ensemble_signal,
+    map_single_window_signal,
+    resolve_action,
 )
 from .tuning import score_signal_tuning_results
 
 __all__ = [
+    # Configs (from backtest.py for backward compatibility)
     "BacktestConfig",
     "InvestmentSignalConfig",
-    "BALANCED_PLAN",
-    "HIGH_BETA_PLAN",
-    "LARGE_CAP_YAML_PARAMS",
-    "build_candidate_yaml_lines",
-    "build_merged_candidate_yaml_lines",
+    # Configs (from config module)
+    "BacktestConfigBase",
+    "InvestmentSignalConfigBase",
+    # Indicators
+    "normalize_price_frame",
+    "compute_indicators",
+    # Signal models
+    "resolve_action",
+    "evaluate_multi_factor_adaptive",
+    "map_single_window_signal",
+    "map_ensemble_signal",
+    # Backtest engine
     "calculate_drawdown",
-    "execute_group_rescan",
     "generate_investment_signals",
     "run_strategy_backtest",
-    "score_signal_tuning_results",
-    "select_balanced_yaml_candidate",
-    "summarize_rescan_results",
     "summarize_strategy_performance",
-    "write_merged_candidate_yaml",
-    "write_candidate_yaml",
+    # Tuning
+    "score_signal_tuning_results",
 ]

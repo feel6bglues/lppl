@@ -93,17 +93,13 @@ def _resolve_configs(
     use_ensemble: bool,
 ) -> Tuple[Dict[str, object], object]:
     lppl_config = create_config(use_ensemble)
-    lppl_config.n_workers = 1
+    lppl_config.n_workers = -1  # 自动使用所有CPU核心
     lppl_config.optimizer = "lbfgsb" if lppl_config.optimizer == "de" else lppl_config.optimizer
     fallback = _fallback_config(base_step, use_ensemble)
-    resolved = dict(fallback)
-    try:
-        optimal_data = load_optimal_config(optimal_config_path)
-        resolved, warnings = resolve_symbol_params(optimal_data, symbol, fallback)
-        for message in warnings:
-            print(f"⚠️ {message}")
-    except Exception as exc:
-        print(f"⚠️ 最优参数文件加载失败，使用默认参数: {exc}")
+    optimal_data = load_optimal_config(optimal_config_path)
+    resolved, warnings = resolve_symbol_params(optimal_data, symbol, fallback)
+    for message in warnings:
+        print(f"⚠️ {message}")
 
     lppl_config.window_range = list(resolved["window_range"])
     lppl_config.optimizer = resolved["optimizer"]
@@ -118,7 +114,12 @@ def _resolve_configs(
 
 def _candidate_grid(
     args: argparse.Namespace,
-) -> Iterable[Tuple[float, float, int, int, int, int, float, float, int, float]]:
+) -> Iterable[Tuple[float, float, int, int, int, int, float, float, int, float, bool, int, float, float, float, bool]]:
+    first_cross_only = getattr(args, "first_cross_only", "false")
+    cross_persistence = getattr(args, "cross_persistence", "1")
+    atr_deadband = getattr(args, "atr_deadband", "0.0")
+    slope_threshold = getattr(args, "slope_threshold", "0.0")
+    atr_stop_mult = getattr(args, "atr_stop_mult", "0.0")
     return product(
         parse_float_list(args.positive_offsets),
         parse_float_list(args.negative_offsets),
@@ -130,7 +131,25 @@ def _candidate_grid(
         parse_float_list(args.drawdown_grid),
         parse_int_list(args.cooldown_grid),
         parse_float_list(args.buy_volatility_cap_grid),
+        parse_bool_list(first_cross_only),
+        parse_int_list(cross_persistence),
+        parse_float_list(atr_deadband),
+        parse_float_list(slope_threshold),
+        parse_float_list(atr_stop_mult),
     )
+
+
+def parse_bool_list(value: str) -> List[bool]:
+    result = []
+    for x in value.split(","):
+        x = x.strip().lower()
+        if x in ("true", "1", "yes", "on"):
+            result.append(True)
+        elif x in ("false", "0", "no", "off"):
+            result.append(False)
+        else:
+            raise ValueError(f"Invalid boolean value: {x}")
+    return result
 
 
 def _run_single_symbol(
@@ -162,6 +181,11 @@ def _run_single_symbol(
             drawdown_confirm_threshold,
             cooldown_days,
             buy_volatility_cap,
+            first_cross_only,
+            cross_persistence,
+            atr_deadband,
+            slope_threshold,
+            atr_stop_mult,
         ) = candidate
         candidate_mapping = dict(resolved)
         candidate_mapping.update(
@@ -176,6 +200,13 @@ def _run_single_symbol(
                 "drawdown_confirm_threshold": drawdown_confirm_threshold,
                 "cooldown_days": cooldown_days,
                 "buy_volatility_cap": buy_volatility_cap,
+                "signal_model": "multi_factor_v1",
+                "first_cross_only": first_cross_only,
+                "cross_persistence": cross_persistence,
+                "atr_deadband": atr_deadband,
+                "slope_threshold": slope_threshold,
+                "atr_stop_mult": atr_stop_mult,
+                "atr_stop_enabled": atr_stop_mult > 0,
             }
         )
         signal_config = InvestmentSignalConfig.from_mapping(symbol, candidate_mapping)
@@ -220,6 +251,12 @@ def _run_single_symbol(
                 "drawdown_confirm_threshold": drawdown_confirm_threshold,
                 "cooldown_days": cooldown_days,
                 "buy_volatility_cap": buy_volatility_cap,
+                "first_cross_only": first_cross_only,
+                "cross_persistence": cross_persistence,
+                "atr_deadband": atr_deadband,
+                "slope_threshold": slope_threshold,
+                "atr_stop_mult": atr_stop_mult,
+                "atr_stop_enabled": atr_stop_mult > 0,
                 **summary,
             }
         )
@@ -311,6 +348,11 @@ def main() -> None:
     parser.add_argument("--drawdown-grid", default="0.05,0.08,0.10", help="回撤确认阈值")
     parser.add_argument("--cooldown-grid", default="10,15", help="冷却期天数")
     parser.add_argument("--buy-volatility-cap-grid", default="1.00,1.05", help="买入波动率上限")
+    parser.add_argument("--first-cross-only", default="false,true", help="首次交叉触发")
+    parser.add_argument("--cross-persistence", default="3,5", help="交叉持续天数")
+    parser.add_argument("--atr-deadband", default="0.0,0.3,0.5", help="ATR死区")
+    parser.add_argument("--slope-threshold", default="0.0,0.001", help="MA斜率门槛")
+    parser.add_argument("--atr-stop-mult", default="0.0,2.0,2.5,3.0", help="ATR止损倍数")
     parser.add_argument(
         "--scoring-profile",
         default="balanced",

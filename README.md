@@ -389,6 +389,9 @@ echo "=== 4. 集成测试 ==="
 echo "=== 5. Smoke Test (单指数验证) ==="
 .venv/bin/python lppl_verify_v2.py --symbol 000001.SH --max-peaks 1 || exit 1
 
+echo "=== 6. Wyckoff Analysis Smoke Test ==="
+.venv/bin/python wyckoff_analysis.py --symbol 000001.SH || exit 1
+
 echo "=== 所有验证通过 ==="
 ```
 
