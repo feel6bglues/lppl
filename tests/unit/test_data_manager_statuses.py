@@ -5,7 +5,12 @@ from unittest.mock import Mock
 
 import pandas as pd
 
-from src.data.manager import DataAvailabilityStatus, DataManager, summarize_update_results
+from src.data.manager import (
+    DataAvailabilityStatus,
+    DataManager,
+    summarize_update_results,
+    validate_symbol,
+)
 
 
 class DataManagerStatusTests(unittest.TestCase):
@@ -101,6 +106,24 @@ class DataManagerStatusTests(unittest.TestCase):
         status = self.manager._get_local_index_status("000001.SH")
 
         self.assertEqual(status, DataAvailabilityStatus.MISSING)
+
+    def test_validate_symbol_accepts_stock_and_index_formats(self) -> None:
+        self.assertTrue(validate_symbol("000001.SH"))
+        self.assertTrue(validate_symbol("600859.SH"))
+        self.assertTrue(validate_symbol("002216.SZ"))
+        self.assertTrue(validate_symbol("300442.SZ"))
+        self.assertFalse(validate_symbol("600859"))
+        self.assertFalse(validate_symbol("ABC859.SH"))
+
+    def test_get_data_reads_stock_from_tdx_before_cache(self) -> None:
+        stock_df = self._make_dataframe(datetime.now().strftime("%Y-%m-%d"))
+        self.manager.tdx_reader.daily.return_value = stock_df
+
+        result = self.manager.get_data("600859.SH")
+
+        self.assertIsNotNone(result)
+        self.assertEqual(len(result), len(stock_df))
+        self.manager.tdx_reader.daily.assert_called_once_with("600859.SH")
 
 
 if __name__ == "__main__":

@@ -5,9 +5,9 @@ Wyckoff 融合引擎
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
-from src.wyckoff.models import ImageEvidenceBundle, AnalysisResult, WyckoffReport
+from src.wyckoff.models import AnalysisResult, ImageEvidenceBundle, WyckoffReport
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,10 @@ class FusionEngine:
         
         # 从报告中提取核心字段
         result.symbol = report.symbol
-        result.analysis_date = report.signal.analysis_date if hasattr(report.signal, 'analysis_date') else ""
+        if report.structure and getattr(report.structure, "current_date", None):
+            result.analysis_date = str(report.structure.current_date)[:10]
+        else:
+            result.analysis_date = ""
         result.input_sources = ["data"]
         
         # 处理图像证据
@@ -104,7 +107,11 @@ class FusionEngine:
         conflicts = []
         
         # 阶段冲突检测
-        data_phase = report.signal.phase if hasattr(report.signal, 'phase') else "unknown"
+        data_phase = (
+            report.signal.phase.value
+            if hasattr(report.signal, "phase") and hasattr(report.signal.phase, "value")
+            else str(getattr(report.signal, "phase", "unknown"))
+        )
         image_phase_hint = image_evidence.visual_phase_hint
         
         conflict_key = (data_phase, image_phase_hint)
@@ -116,9 +123,9 @@ class FusionEngine:
         if image_evidence.visual_trend != "unclear":
             # 简单逻辑：数据看多 vs 图像看空
             if data_phase in ['accumulation', 'markup'] and image_evidence.visual_trend == 'downtrend':
-                conflicts.append(f"趋势冲突：数据看多，图像显示下降趋势")
+                conflicts.append("趋势冲突：数据看多，图像显示下降趋势")
             elif data_phase in ['distribution', 'markdown'] and image_evidence.visual_trend == 'uptrend':
-                conflicts.append(f"趋势冲突：数据看空，图像显示上升趋势")
+                conflicts.append("趋势冲突：数据看空，图像显示上升趋势")
         
         # 图像质量警告
         if image_evidence.image_quality in ['low', 'unusable']:
@@ -161,6 +168,10 @@ class FusionEngine:
         # T+1 零容错阻止：最高优先级，直接返回
         if report.trading_plan and getattr(report.trading_plan, 't1_blocked', False):
             return 'no_trade_zone'
+
+        # 盈亏比硬门槛：不足 1:2.5 一律不准入场
+        if report.risk_reward and getattr(report.risk_reward, "reward_risk_ratio", 0) < 2.5:
+            return "no_trade_zone"
         
         # 数据引擎主判：从 trading_plan.direction 与 signal.signal_type 推导决策
         # WyckoffSignal 没有 action 字段，必须通过 signal_type 和 phase 判断

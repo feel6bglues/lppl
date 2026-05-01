@@ -111,7 +111,7 @@ class TradingPlan:
     confidence: ConfidenceLevel = ConfidenceLevel.D
     preconditions: str = ""  # 执行前提
     current_qualification: str = ""  # 当前定性
-    spring_cooldown_days: int = 3  # Spring 冷静期
+    spring_cooldown_days: int = 0  # Spring 冷静期
     t1_blocked: bool = False  # T+1 零容错阻止
 
 
@@ -241,6 +241,33 @@ class AnalysisState:
 
 
 @dataclass
+class TimeframeSnapshot:
+    """单一周期快照"""
+    period: str
+    phase: WyckoffPhase = WyckoffPhase.UNKNOWN
+    current_price: Optional[float] = None
+    current_date: Optional[str] = None
+    trading_range_high: Optional[float] = None
+    trading_range_low: Optional[float] = None
+    bc_price: Optional[float] = None
+    sc_price: Optional[float] = None
+    signal_type: str = "no_signal"
+    signal_description: str = ""
+
+
+@dataclass
+class MultiTimeframeContext:
+    """多周期上下文"""
+    enabled: bool = False
+    monthly: Optional[TimeframeSnapshot] = None
+    weekly: Optional[TimeframeSnapshot] = None
+    daily: Optional[TimeframeSnapshot] = None
+    alignment: str = "single_timeframe"
+    summary: str = ""
+    constraint_note: str = ""
+
+
+@dataclass
 class WyckoffReport:
     """威科夫分析报告"""
     symbol: str
@@ -257,6 +284,7 @@ class WyckoffReport:
     image_evidence: Optional[ImageEvidenceBundle] = None
     analysis_result: Optional[AnalysisResult] = None
     analysis_state: Optional[AnalysisState] = None
+    multi_timeframe: Optional[MultiTimeframeContext] = None
     
     def to_markdown(self) -> str:
         """转换为 Markdown 格式"""
@@ -264,6 +292,30 @@ class WyckoffReport:
             f"# 威科夫分析报告 - {self.symbol}",
             f"**分析周期**: {self.period}",
             "",
+        ]
+
+        if self.multi_timeframe and self.multi_timeframe.enabled:
+            lines.extend([
+                "## Step -1: 多周期总览",
+                f"- **一致性**: {self.multi_timeframe.alignment}",
+                f"- **结论摘要**: {self.multi_timeframe.summary}",
+                f"- **约束说明**: {self.multi_timeframe.constraint_note}",
+            ])
+            if self.multi_timeframe.monthly:
+                lines.append(
+                    f"- **月线**: {self.multi_timeframe.monthly.phase.value} @ {self.multi_timeframe.monthly.current_date}"
+                )
+            if self.multi_timeframe.weekly:
+                lines.append(
+                    f"- **周线**: {self.multi_timeframe.weekly.phase.value} @ {self.multi_timeframe.weekly.current_date}"
+                )
+            if self.multi_timeframe.daily:
+                lines.append(
+                    f"- **日线**: {self.multi_timeframe.daily.phase.value} @ {self.multi_timeframe.daily.current_date}"
+                )
+            lines.append("")
+
+        lines.extend([
             "## Step 0: BC 定位扫描",
             f"- **BC点**: {self.structure.bc_point.date if self.structure.bc_point else '未找到'} @ {self.structure.bc_point.price if self.structure.bc_point else 'N/A'}",
             f"- **SC点**: {self.structure.sc_point.date if self.structure.sc_point else '未找到'} @ {self.structure.sc_point.price if self.structure.sc_point else 'N/A'}",
@@ -273,7 +325,7 @@ class WyckoffReport:
             f"- **震荡区间**: {self.structure.trading_range_low} - {self.structure.trading_range_high}",
             f"- **当前价格**: {self.structure.current_price}",
             "",
-        ]
+        ])
         
         limit_moves_str = ""
         if self.limit_moves:
@@ -337,7 +389,7 @@ class WyckoffReport:
             lines.append(f"- **【Spring冷静期】**: {self.trading_plan.spring_cooldown_days}天")
         
         if self.trading_plan.t1_blocked:
-            lines.append(f"- **【T+1零容错】**: ❌ 阻止入场")
+            lines.append("- **【T+1零容错】**: ❌ 阻止入场")
         
         lines.append(f"**【置信度等级】**: {self.trading_plan.confidence.value}")
         

@@ -11,12 +11,12 @@
     python wyckoff_analysis.py --symbol 000001.SH --mode fusion --chart-dir charts/000001
 """
 
-import argparse
+import logging
 import os
 import sys
-import logging
-from pathlib import Path
+from argparse import ArgumentParser
 from datetime import datetime
+from pathlib import Path
 from typing import Dict
 
 import pandas as pd
@@ -28,8 +28,8 @@ if str(PROJECT_ROOT) not in sys.path:
 from src.cli.lppl_verify_v2 import SYMBOLS
 from src.data.manager import DataManager
 from src.wyckoff import WyckoffAnalyzer, WyckoffReport
-from src.wyckoff.image_engine import ImageEngine
 from src.wyckoff.fusion_engine import FusionEngine
+from src.wyckoff.image_engine import ImageEngine
 from src.wyckoff.state import StateManager
 
 logging.basicConfig(
@@ -70,6 +70,11 @@ def _save_all_outputs(
     
     symbol_slug = symbol.replace(".", "_")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    analysis_date = (
+        str(report.structure.current_date)[:10]
+        if report.structure and getattr(report.structure, "current_date", None)
+        else datetime.now().strftime("%Y-%m-%d")
+    )
     
     # 1. raw/analysis_<symbol>.json
     raw_analysis = {
@@ -77,6 +82,7 @@ def _save_all_outputs(
         "period": report.period,
         "structure": {
             "phase": report.structure.phase.value if hasattr(report.structure.phase, 'value') else str(report.structure.phase),
+            "current_date": analysis_date,
             "bc_point": {
                 "date": report.structure.bc_point.date if report.structure.bc_point else None,
                 "price": report.structure.bc_point.price if report.structure.bc_point else None,
@@ -105,6 +111,27 @@ def _save_all_outputs(
             "trigger_condition": report.trading_plan.trigger_condition if report.trading_plan else None,
             "invalidation_point": report.trading_plan.invalidation_point if report.trading_plan else None,
         } if report.trading_plan else None,
+        "multi_timeframe": {
+            "enabled": report.multi_timeframe.enabled if report.multi_timeframe else False,
+            "alignment": report.multi_timeframe.alignment if report.multi_timeframe else "",
+            "summary": report.multi_timeframe.summary if report.multi_timeframe else "",
+            "constraint_note": report.multi_timeframe.constraint_note if report.multi_timeframe else "",
+            "monthly_phase": (
+                report.multi_timeframe.monthly.phase.value
+                if report.multi_timeframe and report.multi_timeframe.monthly
+                else ""
+            ),
+            "weekly_phase": (
+                report.multi_timeframe.weekly.phase.value
+                if report.multi_timeframe and report.multi_timeframe.weekly
+                else ""
+            ),
+            "daily_phase": (
+                report.multi_timeframe.daily.phase.value
+                if report.multi_timeframe and report.multi_timeframe.daily
+                else ""
+            ),
+        },
     }
     with open(os.path.join(output_dirs["raw"], f"analysis_{symbol_slug}_{timestamp}.json"), "w", encoding="utf-8") as f:
         json.dump(raw_analysis, f, ensure_ascii=False, indent=2)
@@ -124,11 +151,11 @@ def _save_all_outputs(
     summary_data = [
         ["symbol", "asset_type", "analysis_date", "phase", "micro_action", "decision", "confidence", 
          "bc_found", "spring_detected", "rr_assessment", "t1_risk_assessment", "trigger", 
-         "invalidation", "target_1", "abandon_reason"],
+         "invalidation", "target_1", "abandon_reason", "mtf_alignment", "monthly_phase", "weekly_phase", "daily_phase"],
         [
             report.symbol,
             "stock" if symbol.endswith(('.SH', '.SZ')) else "index",
-            datetime.now().strftime('%Y-%m-%d'),
+            analysis_date,
             report.structure.phase.value if report.structure and hasattr(report.structure.phase, 'value') else "unknown",
             report.signal.signal_type if report.signal else "N/A",
             analysis_result.decision if analysis_result else (report.trading_plan.direction if report.trading_plan else "N/A"),
@@ -141,6 +168,10 @@ def _save_all_outputs(
             report.trading_plan.invalidation_point if report.trading_plan else "N/A",
             report.trading_plan.first_target if report.trading_plan else "N/A",
             analysis_result.abandon_reason if analysis_result else "",
+            report.multi_timeframe.alignment if report.multi_timeframe else "",
+            report.multi_timeframe.monthly.phase.value if report.multi_timeframe and report.multi_timeframe.monthly else "",
+            report.multi_timeframe.weekly.phase.value if report.multi_timeframe and report.multi_timeframe.weekly else "",
+            report.multi_timeframe.daily.phase.value if report.multi_timeframe and report.multi_timeframe.daily else "",
         ]
     ]
     import csv
@@ -229,16 +260,18 @@ def markdown_to_html(md_text: str) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="威科夫 A 股实战分析")
+    parser = ArgumentParser(description="威科夫 A 股实战分析")
     parser.add_argument("--symbol", "-s", default="000001.SH", help="指数代码")
     parser.add_argument("--lookback", "-l", type=int, default=120, help="回看天数")
     parser.add_argument("--output", "-o", default="output/wyckoff", help="输出目录")
     parser.add_argument("--verbose", "-v", action="store_true", help="详细输出")
+    parser.add_argument("--as-of", default=None, help="历史回放截止日期，格式 YYYY-MM-DD")
     # 多模态分析参数 (PRD第7节输入模式)
     parser.add_argument("--input-file", default=None, help="标准OHLCV文件路径")
     parser.add_argument("--chart-dir", default=None, help="图表文件夹路径（可选）")
     parser.add_argument("--chart-files", default=None, help="显式图片文件列表（逗号分隔）")
     parser.add_argument("--mode", choices=["data-only", "images-only", "fusion"], default="data-only", help="分析模式")
+    parser.add_argument("--multi-timeframe", action="store_true", help="使用日线合成周线/月线进行多周期分析")
     args = parser.parse_args()
 
     # 数据源选择 (PRD第7节: 数据-only / 图片-only / 数据+图片融合)
@@ -254,19 +287,26 @@ def main() -> None:
         symbol_from_file = os.path.basename(args.input_file).split('.')[0]
         if not args.symbol or args.symbol == "000001.SH":
             args.symbol = symbol_from_file
-    elif args.symbol in SYMBOLS:
+    elif args.symbol:
         # 从DataManager加载
-        logger.info(f"正在加载 {args.symbol} ({SYMBOLS[args.symbol]}) 数据...")
+        symbol_label = SYMBOLS.get(args.symbol, args.symbol)
+        logger.info(f"正在加载 {args.symbol} ({symbol_label}) 数据...")
         data_manager = DataManager()
         df = data_manager.get_data(args.symbol)
     else:
-        raise SystemExit(f"请提供 --symbol 或 --input-file")
+        raise SystemExit("请提供 --symbol 或 --input-file")
     
     if df is None or df.empty:
         raise SystemExit(f"无法获取 {args.symbol} 数据，请检查数据源")
 
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
+
+    if args.as_of:
+        as_of = pd.to_datetime(args.as_of)
+        df = df[df["date"] <= as_of].copy().reset_index(drop=True)
+        if df.empty:
+            raise SystemExit(f"{args.symbol} 在 {args.as_of} 之前无可用数据")
 
     logger.info(f"数据加载完成，共 {len(df)} 条记录，最新日期：{df['date'].iloc[-1].date()}")
     
@@ -277,16 +317,14 @@ def main() -> None:
     # 多模态分析
     image_evidence = None
     analysis_result = None
-    analysis_state = None
     
     # 图像输入 (支持 --chart-dir 或 --chart-files，参考SPEC_IMAGE_ENGINE第1-2节)
     if args.mode in ["images-only", "fusion"] and (args.chart_dir or args.chart_files):
-        logger.info(f"正在扫描图表...")
+        logger.info("正在扫描图表...")
         image_engine = ImageEngine()
         
         if args.chart_files:
             # 显式文件列表模式
-            from pathlib import Path
             file_list = [f.strip() for f in args.chart_files.split(',')]
             manifest = image_engine.scan_chart_files(file_list, args.symbol)
         else:
@@ -306,7 +344,13 @@ def main() -> None:
     logger.info("正在执行威科夫分析...")
     
     analyzer = WyckoffAnalyzer(lookback_days=args.lookback)
-    report = analyzer.analyze(df, symbol=args.symbol, period="日线", image_evidence=image_evidence)
+    report = analyzer.analyze(
+        df,
+        symbol=args.symbol,
+        period="日线",
+        image_evidence=image_evidence,
+        multi_timeframe=args.multi_timeframe,
+    )
     
     if args.mode == "fusion":
         logger.info("正在执行融合分析...")
@@ -318,7 +362,7 @@ def main() -> None:
         
         # 状态管理
         state_manager = StateManager()
-        analysis_state = state_manager.update_state(
+        state_manager.update_state(
             symbol=args.symbol,
             analysis_result=analysis_result,
             output_path=os.path.join(output_dirs["state"], f"{args.symbol.replace('.', '_')}_wyckoff_state.json")

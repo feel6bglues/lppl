@@ -6,9 +6,10 @@
 """
 
 import logging
+import re
 import struct
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import pandas as pd
 
@@ -37,15 +38,28 @@ class TDXReader:
             raise FileNotFoundError(f"TDX directory not found: {tdxdir}")
         logger.info(f"TDXReader initialized with tdxdir: {tdxdir}")
 
-    def _get_file_path(self, lppl_code: str) -> Optional[Path]:
-        """根据LPPL代码获取通达信文件路径"""
-        if lppl_code not in LPPL_TO_TDX_MAP:
-            logger.warning(f"Symbol {lppl_code} not in TDX map")
+    def _parse_lppl_code(self, lppl_code: str) -> Optional[Tuple[str, str]]:
+        """解析 LPPL 代码为通达信 market/code。"""
+        if lppl_code in LPPL_TO_TDX_MAP:
+            market_info = LPPL_TO_TDX_MAP[lppl_code]
+            return market_info["market"], market_info["code"]
+
+        match = re.fullmatch(r"(\d{6})\.(SH|SZ)", lppl_code)
+        if not match:
+            logger.warning(f"Unsupported LPPL symbol format: {lppl_code}")
             return None
 
-        market_info = LPPL_TO_TDX_MAP[lppl_code]
-        market = market_info["market"]
-        code = market_info["code"]
+        code, exchange = match.groups()
+        market = exchange.lower()
+        return market, code
+
+    def _get_file_path(self, lppl_code: str) -> Optional[Path]:
+        """根据LPPL代码获取通达信文件路径"""
+        parsed = self._parse_lppl_code(lppl_code)
+        if parsed is None:
+            return None
+
+        market, code = parsed
 
         file_path = self.tdxdir / market / "lday" / f"{market}{code}.day"
 

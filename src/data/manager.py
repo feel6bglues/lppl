@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import re
 from datetime import datetime
 from typing import Any, Dict, Optional, Tuple
 
@@ -94,7 +95,9 @@ def validate_dataframe(df: pd.DataFrame, symbol: str) -> Tuple[bool, str]:
 def validate_symbol(symbol: str) -> bool:
     if not symbol or not isinstance(symbol, str):
         return False
-    return symbol in INDICES
+    if symbol in INDICES:
+        return True
+    return re.fullmatch(r"\d{6}\.(SH|SZ)", symbol) is not None
 
 
 class DataManager:
@@ -431,6 +434,11 @@ class DataManager:
 
         if symbol in LOCAL_DATA_INDICES:
             return self._read_from_tdx(symbol)
+
+        # 个股优先从本地通达信读取，失败后再回退到缓存 parquet
+        tdx_df = self._read_from_tdx(symbol)
+        if tdx_df is not None and not tdx_df.empty:
+            return tdx_df
 
         if self._is_akshare_index(symbol):
             file_path = self._get_file_path(symbol)
