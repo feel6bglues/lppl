@@ -67,6 +67,7 @@ class SupportResistance:
 class WyckoffStructure:
     """威科夫结构"""
     phase: WyckoffPhase = WyckoffPhase.UNKNOWN
+    unknown_candidate: str = ""
     bc_point: Optional[BCPoint] = None
     sc_point: Optional[SCPoint] = None
     support_levels: List[SupportResistance] = field(default_factory=list)
@@ -245,6 +246,7 @@ class TimeframeSnapshot:
     """单一周期快照"""
     period: str
     phase: WyckoffPhase = WyckoffPhase.UNKNOWN
+    unknown_candidate: str = ""
     current_price: Optional[float] = None
     current_date: Optional[str] = None
     trading_range_high: Optional[float] = None
@@ -322,6 +324,7 @@ class WyckoffReport:
             "",
             "## Step 1: 大局观与宏观定调",
             f"- **当前阶段**: {self.structure.phase.value}",
+            f"- **Unknown子状态**: {self.structure.unknown_candidate or 'N/A'}",
             f"- **震荡区间**: {self.structure.trading_range_low} - {self.structure.trading_range_high}",
             f"- **当前价格**: {self.structure.current_price}",
             "",

@@ -70,6 +70,7 @@ class WyckoffAnalyzer:
         return TimeframeSnapshot(
             period=report.period,
             phase=report.structure.phase,
+            unknown_candidate=report.structure.unknown_candidate,
             current_price=report.structure.current_price,
             current_date=report.structure.current_date,
             trading_range_high=report.structure.trading_range_high,
@@ -328,6 +329,17 @@ class WyckoffAnalyzer:
                     "短线盈亏比不再有效，按 No Trade Zone 处理"
                 )
                 final_report.trading_plan.preconditions = "等待回踩 LPS/BUEC 或重新形成可定义低风险结构"
+            elif final_report.trading_plan.direction == "空仓观望" and rr_ratio >= 2.5:
+                if "Lack of Supply / Test" in markup_context or "Shakeout/Test" in markup_context:
+                    final_report.trading_plan.direction = "买入观察 / 轻仓试探"
+                    final_report.trading_plan.preconditions = (
+                        "月线与周线同向偏多，日线处于回踩测试区，仅允许围绕 LPS/Test 轻仓试探"
+                    )
+                elif "Lack of Supply" in markup_context or "SOS" in markup_context:
+                    final_report.trading_plan.direction = "持有观察 / 空仓者观望"
+                    final_report.trading_plan.preconditions = (
+                        "月线与周线同向偏多，日线处于推进或蓄势段，优先持有观察，空仓者等待更优击球点"
+                    )
             if final_report.signal.confidence == ConfidenceLevel.A:
                 final_report.signal.confidence = ConfidenceLevel.B
             final_report.trading_plan.confidence = final_report.signal.confidence
@@ -363,18 +375,21 @@ class WyckoffAnalyzer:
             and monthly_phase == WyckoffPhase.MARKUP
             and weekly_phase in {WyckoffPhase.MARKUP, WyckoffPhase.UNKNOWN}
         ):
+            unknown_candidate = final_report.structure.unknown_candidate
             trigger_parts = ["等待 ST 缩量确认"]
             if final_report.structure.trading_range_high is not None:
                 trigger_parts.append(
                     f"或放量突破 {final_report.structure.trading_range_high:.2f} 后再确认"
                 )
             qualification = "上级周期仍偏多，"
-            if "Phase A/AR" in markup_context:
-                qualification += "日线正在 Phase A/AR 反弹观察区，暂不追价，等待 ST 或 Phase B 边界清晰"
-            elif "SC/ST" in markup_context:
-                qualification += "日线正在 SC/ST 候选扰动区，等待吸收完成后的二次确认"
+            if unknown_candidate == "phase_a_candidate":
+                qualification += "日线按再积累 / Phase A-AR 反弹观察区处理，暂不追价，等待 ST 或 Phase B 边界清晰"
+            elif unknown_candidate == "sc_st_candidate":
+                qualification += "日线按再积累 / SC-ST 候选扰动区处理，等待吸收完成后的二次确认"
+            elif unknown_candidate == "upthrust_candidate":
+                qualification += "日线按再积累 / Phase B-Upthrust 候选区处理，优先等待假突破失败后的回落确认"
             else:
-                qualification += "日线仍在再平衡/Phase B 观察区，等待更清晰的 TR 结构"
+                qualification += "日线按再积累 / Phase B 观察区处理，等待更清晰的 TR 结构"
             final_report.trading_plan.current_qualification = qualification
             final_report.trading_plan.trigger_condition = "，".join(trigger_parts)
             final_report.trading_plan.invalidation_point = (
@@ -389,6 +404,16 @@ class WyckoffAnalyzer:
             )
             final_report.trading_plan.preconditions = "上级周期偏多，但日线尚未给出可执行的 LPS/Breakout 触发"
             final_report.trading_plan.confidence = ConfidenceLevel.C
+            if (
+                weekly_phase == WyckoffPhase.MARKUP
+                and rr_ratio >= 2.5
+                and unknown_candidate in {"phase_a_candidate", "sc_st_candidate"}
+            ):
+                final_report.trading_plan.direction = "买入观察 / 轻仓试探"
+                final_report.trading_plan.preconditions = (
+                    "上级周期偏多，日线已进入 Phase A/AR 或 SC/ST 低位候选区，"
+                    "仅允许围绕 ST/AR 确认做轻仓试探"
+                )
             constraint_note = "上级周期偏多，保留日线 Phase A/B 结构化等待计划"
 
         if (
@@ -876,6 +901,14 @@ class WyckoffAnalyzer:
         structure.current_price = current_price
         structure.current_date = str(df.iloc[-1]["date"])
 
+        if structure.phase == WyckoffPhase.UNKNOWN:
+            structure.unknown_candidate = self._classify_unknown_candidate(
+                df=df,
+                structure=structure,
+            )
+        else:
+            structure.unknown_candidate = ""
+
         # --- 支撑 / 阻力位（BC/SC 作为关键锚点） ---
         if bc_point is not None:
             structure.support_levels.append(
@@ -897,6 +930,60 @@ class WyckoffAnalyzer:
             )
 
         return structure
+
+    def _classify_unknown_candidate(
+        self,
+        df: pd.DataFrame,
+        structure: WyckoffStructure,
+    ) -> str:
+        if structure.phase != WyckoffPhase.UNKNOWN or df.empty:
+            return ""
+
+        if structure.trading_range_low is None or structure.trading_range_high is None:
+            return "unknown_range"
+
+        last_row = df.iloc[-1]
+        close_price = float(last_row["close"])
+        open_price = float(last_row["open"])
+        high_price = float(last_row["high"])
+        low_price = float(last_row["low"])
+        body = abs(close_price - open_price)
+        upper_wick = high_price - max(close_price, open_price)
+        lower_wick = min(close_price, open_price) - low_price
+        avg_vol20 = float(df.tail(min(20, len(df)))["volume"].mean())
+        vol_ratio = float(last_row["volume"]) / avg_vol20 if avg_vol20 > 0 else 1.0
+
+        range_low = structure.trading_range_low
+        range_high = structure.trading_range_high
+        if range_high <= range_low:
+            return "unknown_range"
+
+        range_span = range_high - range_low
+        relative_position = (close_price - range_low) / range_span
+        close_location = (close_price - low_price) / max(high_price - low_price, 0.01)
+
+        if (
+            relative_position <= 0.38
+            and close_location >= 0.58
+            and (lower_wick > max(body, 0.01) or vol_ratio >= 1.05)
+        ):
+            return "sc_st_candidate"
+        if (
+            relative_position <= 0.50
+            and close_price >= open_price
+            and close_location >= 0.62
+            and vol_ratio >= 0.95
+        ):
+            return "phase_a_candidate"
+        if (
+            relative_position >= 0.62
+            and upper_wick > max(body * 1.2, 0.01)
+            and vol_ratio >= 1.0
+        ):
+            return "upthrust_candidate"
+        if 0.38 < relative_position < 0.68:
+            return "phase_b_range"
+        return "unknown_range"
     
     def _detect_wyckoff_signals(
         self, 
@@ -1034,6 +1121,15 @@ class WyckoffAnalyzer:
         return "当前处于 Markdown/派发下跌阶段，A 股禁止做空，建议空仓观望"
 
     def _describe_unknown_context(self, df: pd.DataFrame, structure: WyckoffStructure) -> str:
+        if structure.unknown_candidate == "phase_a_candidate":
+            return "阶段不明确，但正在演化为 Phase A/AR 反弹观察区，建议继续空仓等待 ST 或 TR 边界明确"
+        if structure.unknown_candidate == "sc_st_candidate":
+            return "阶段不明确，当前出现 SC/ST 候选扰动，但证据不足，建议空仓观望"
+        if structure.unknown_candidate == "upthrust_candidate":
+            return "阶段不明确，当前更像 Phase B / Upthrust 观察区，建议空仓等待方向重新选择"
+        if structure.unknown_candidate == "phase_b_range":
+            return "阶段不明确，当前更像 Phase B 震荡观察区，建议等待 TR 边界和 ST/UT 进一步清晰"
+
         last_row = df.iloc[-1]
         avg_vol20 = float(df.tail(min(20, len(df)))["volume"].mean())
         vol_ratio = float(last_row["volume"]) / avg_vol20 if avg_vol20 > 0 else 1.0
@@ -1044,13 +1140,38 @@ class WyckoffAnalyzer:
         body = abs(close_price - open_price)
         upper_wick = high_price - max(close_price, open_price)
         lower_wick = min(close_price, open_price) - low_price
+        range_low = structure.trading_range_low
+        range_high = structure.trading_range_high
+        relative_position = 0.5
+        close_location = 0.5
+        if range_low is not None and range_high is not None and range_high > range_low:
+            range_span = range_high - range_low
+            relative_position = (close_price - range_low) / range_span
+            close_location = (close_price - low_price) / max(high_price - low_price, 0.01)
 
         if structure.sc_point is not None and close_price >= structure.sc_point.price * 1.08 and vol_ratio >= 1.2:
             return "阶段不明确，但正在演化为 Phase A/AR 反弹观察区，建议继续空仓等待 ST 或 TR 边界明确"
-        if upper_wick > max(body * 1.5, 0.01) and vol_ratio >= 1.1:
+        if (
+            relative_position >= 0.62
+            and upper_wick > max(body * 1.2, 0.01)
+            and vol_ratio >= 1.0
+        ):
             return "阶段不明确，当前更像 Phase B / Upthrust 观察区，建议空仓等待方向重新选择"
-        if lower_wick > max(body * 1.5, 0.01) and vol_ratio >= 1.2:
+        if (
+            relative_position <= 0.38
+            and close_location >= 0.58
+            and (lower_wick > max(body, 0.01) or vol_ratio >= 1.05)
+        ):
             return "阶段不明确，当前出现 SC/ST 候选扰动，但证据不足，建议空仓观望"
+        if (
+            relative_position <= 0.50
+            and close_price >= open_price
+            and close_location >= 0.62
+            and vol_ratio >= 0.95
+        ):
+            return "阶段不明确，但正在演化为 Phase A/AR 反弹观察区，建议继续空仓等待 ST 或 TR 边界明确"
+        if 0.38 < relative_position < 0.68:
+            return "阶段不明确，当前更像 Phase B 震荡观察区，建议等待 TR 边界和 ST/UT 进一步清晰"
         return "阶段不明确，当前存在较强不确定性，建议空仓观望"
 
     def _describe_markup_context(
@@ -1196,6 +1317,17 @@ class WyckoffAnalyzer:
                 proj.stop_loss = structure.trading_range_low * 0.98
             if structure.trading_range_high is not None:
                 proj.first_target = structure.trading_range_high
+        elif (
+            structure.phase == WyckoffPhase.UNKNOWN
+            and structure.trading_range_low is not None
+            and structure.trading_range_high is not None
+            and any(
+                keyword in signal.description
+                for keyword in ("Phase A/AR", "SC/ST")
+            )
+        ):
+            proj.stop_loss = structure.trading_range_low * 0.98
+            proj.first_target = structure.trading_range_high
 
         if proj.stop_loss is not None:
             proj.risk_amount = current_price - proj.stop_loss
@@ -1204,9 +1336,23 @@ class WyckoffAnalyzer:
 
         if proj.risk_amount and proj.risk_amount > 0:
             proj.reward_risk_ratio = proj.reward_amount / proj.risk_amount
-            proj.structure_based = (
-                f"基于结构边界 {structure.trading_range_low} - {structure.trading_range_high}"
-            )
+            if structure.phase == WyckoffPhase.UNKNOWN:
+                if "Phase A/AR" in signal.description:
+                    proj.structure_based = (
+                        f"基于 Phase A/AR 候选结构边界 {structure.trading_range_low} - {structure.trading_range_high}"
+                    )
+                elif "SC/ST" in signal.description:
+                    proj.structure_based = (
+                        f"基于 SC/ST 候选结构边界 {structure.trading_range_low} - {structure.trading_range_high}"
+                    )
+                else:
+                    proj.structure_based = (
+                        f"基于结构边界 {structure.trading_range_low} - {structure.trading_range_high}"
+                    )
+            else:
+                proj.structure_based = (
+                    f"基于结构边界 {structure.trading_range_low} - {structure.trading_range_high}"
+                )
         
         return proj
     
@@ -1300,9 +1446,69 @@ class WyckoffAnalyzer:
                     plan.direction = "持有观察 / 空仓者观望"
             else:
                 plan.current_qualification = signal.description
-                plan.trigger_condition = "N/A"
-                plan.invalidation_point = "N/A"
-                plan.first_target = "N/A"
+                if "Phase A/AR" in signal.description:
+                    plan.trigger_condition = (
+                        f"等待 {structure.trading_range_low:.2f} 一带完成 ST 缩量确认，"
+                        f"或重新放量攻击 {structure.trading_range_high:.2f}"
+                        if structure.trading_range_low is not None and structure.trading_range_high is not None
+                        else "等待 ST 缩量确认或 TR 上沿重新发起攻击"
+                    )
+                    plan.invalidation_point = (
+                        f"有效失守 {structure.trading_range_low:.2f} 则放弃 Phase A/AR 设想"
+                        if structure.trading_range_low is not None
+                        else "失守近期低点则放弃 Phase A/AR 设想"
+                    )
+                    plan.first_target = (
+                        f"第一观察目标 {structure.trading_range_high:.2f}"
+                        if structure.trading_range_high is not None
+                        else "第一观察目标 TR 上沿"
+                    )
+                elif "SC/ST" in signal.description:
+                    plan.trigger_condition = (
+                        "等待 SC 后的 AR 反弹出现，并观察 ST 二次回测是否缩量止跌"
+                    )
+                    plan.invalidation_point = (
+                        f"若继续跌破 {structure.trading_range_low:.2f} 则回归更弱结构"
+                        if structure.trading_range_low is not None
+                        else "若继续跌破近期低点则回归更弱结构"
+                    )
+                    plan.first_target = (
+                        f"第一观察目标 {structure.trading_range_high:.2f}"
+                        if structure.trading_range_high is not None
+                        else "第一观察目标 AR 高点确认"
+                    )
+                elif "Upthrust" in signal.description:
+                    plan.trigger_condition = (
+                        f"等待价格从 {structure.trading_range_high:.2f} 一带回落并重新选择方向"
+                        if structure.trading_range_high is not None
+                        else "等待上沿假突破回落后重新选择方向"
+                    )
+                    plan.invalidation_point = (
+                        f"若继续站稳 {structure.trading_range_high:.2f} 上方，则当前 Upthrust 假设失效"
+                        if structure.trading_range_high is not None
+                        else "若继续强势上攻，则当前 Upthrust 假设失效"
+                    )
+                    plan.first_target = (
+                        f"第一观察目标回到区间中枢，关注 {((structure.trading_range_low or 0.0) + (structure.trading_range_high or 0.0)) / 2:.2f}"
+                        if structure.trading_range_low is not None and structure.trading_range_high is not None
+                        else "第一观察目标为区间中枢确认"
+                    )
+                elif "Phase B" in signal.description:
+                    plan.trigger_condition = (
+                        f"等待 {structure.trading_range_low:.2f}-{structure.trading_range_high:.2f} 区间边界被明确测试"
+                        if structure.trading_range_low is not None and structure.trading_range_high is not None
+                        else "等待 TR 边界被再次明确测试"
+                    )
+                    plan.invalidation_point = "区间边界未明确前不执行"
+                    plan.first_target = (
+                        f"第一观察目标 {structure.trading_range_high:.2f}"
+                        if structure.trading_range_high is not None
+                        else "第一观察目标 TR 上沿"
+                    )
+                else:
+                    plan.trigger_condition = "N/A"
+                    plan.invalidation_point = "N/A"
+                    plan.first_target = "N/A"
             return plan
         
         if structure.phase == WyckoffPhase.MARKDOWN:

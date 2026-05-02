@@ -31,6 +31,8 @@ class WyckoffLatestStockBatchIntegrationTests(unittest.TestCase):
             output_dir = Path(temp_dir)
             rows = analyze_latest_batch(5, output_dir)
             self.assertEqual(len(rows), 5)
+            self.assertIn("unknown_candidate", rows[0])
+            self.assertIn("daily_unknown_candidate", rows[0])
             write_outputs(output_dir, rows)
             self.assertTrue((output_dir / "latest_5_stock_summary.csv").exists())
             self.assertTrue((output_dir / "latest_5_stock_summary.md").exists())

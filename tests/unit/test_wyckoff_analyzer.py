@@ -715,6 +715,279 @@ class TestWyckoffAnalyzer(unittest.TestCase):
         self.assertIn("上级周期仍偏多", merged.trading_plan.current_qualification)
         self.assertIn("ST", merged.trading_plan.trigger_condition)
 
+    def test_multiframe_fully_aligned_los_test_high_rr_gets_buy_watch(self):
+        analyzer = WyckoffAnalyzer()
+        daily_report = WyckoffReport(
+            symbol="000001.SH",
+            period="日线",
+            structure=WyckoffStructure(
+                phase=WyckoffPhase.MARKUP,
+                current_price=13.7,
+                current_date="2026-04-29",
+                trading_range_low=11.8,
+                trading_range_high=25.6,
+            ),
+            signal=WyckoffSignal(
+                signal_type="no_signal",
+                confidence=ConfidenceLevel.B,
+                phase=WyckoffPhase.MARKUP,
+                description="当前处于 Markup 回踩中的 Lack of Supply / Test 观察区，等待缩量测试结束",
+            ),
+            risk_reward=RiskRewardProjection(
+                entry_price=13.7,
+                stop_loss=11.8,
+                first_target=25.6,
+                reward_risk_ratio=6.2,
+            ),
+            trading_plan=TradingPlan(
+                direction="空仓观望",
+                current_qualification="当前处于 Markup 回踩中的 Lack of Supply / Test 观察区，等待缩量测试结束",
+                trigger_condition="等待回踩确认",
+                invalidation_point="跌破 11.8",
+                first_target="25.6",
+                confidence=ConfidenceLevel.B,
+            ),
+        )
+        weekly_report = WyckoffReport(
+            symbol="000001.SH",
+            period="周线",
+            structure=WyckoffStructure(
+                phase=WyckoffPhase.MARKUP,
+                current_price=13.7,
+                current_date="2026-04-25",
+            ),
+            signal=WyckoffSignal(
+                signal_type="no_signal",
+                confidence=ConfidenceLevel.B,
+                phase=WyckoffPhase.MARKUP,
+                description="周线上涨延续",
+            ),
+            risk_reward=RiskRewardProjection(),
+            trading_plan=TradingPlan(direction="空仓观望", confidence=ConfidenceLevel.B),
+        )
+        monthly_report = WyckoffReport(
+            symbol="000001.SH",
+            period="月线",
+            structure=WyckoffStructure(
+                phase=WyckoffPhase.MARKUP,
+                current_price=13.7,
+                current_date="2026-04-30",
+            ),
+            signal=WyckoffSignal(
+                signal_type="no_signal",
+                confidence=ConfidenceLevel.B,
+                phase=WyckoffPhase.MARKUP,
+                description="月线上涨延续",
+            ),
+            risk_reward=RiskRewardProjection(),
+            trading_plan=TradingPlan(direction="空仓观望", confidence=ConfidenceLevel.B),
+        )
+
+        merged = analyzer._merge_multitimeframe_reports(
+            symbol="000001.SH",
+            daily_report=daily_report,
+            weekly_report=weekly_report,
+            monthly_report=monthly_report,
+        )
+
+        self.assertEqual(merged.trading_plan.direction, "买入观察 / 轻仓试探")
+
+    def test_multiframe_bullish_unknown_high_rr_gets_buy_watch(self):
+        analyzer = WyckoffAnalyzer()
+        daily_report = WyckoffReport(
+            symbol="000001.SH",
+            period="日线",
+            structure=WyckoffStructure(
+                phase=WyckoffPhase.UNKNOWN,
+                unknown_candidate="phase_a_candidate",
+                current_price=8.7,
+                current_date="2026-04-29",
+                trading_range_low=8.0,
+                trading_range_high=10.5,
+            ),
+            signal=WyckoffSignal(
+                signal_type="no_signal",
+                confidence=ConfidenceLevel.C,
+                phase=WyckoffPhase.UNKNOWN,
+                description="阶段不明确，但正在演化为 Phase A/AR 反弹观察区，建议继续空仓等待 ST 或 TR 边界明确",
+            ),
+            risk_reward=RiskRewardProjection(
+                entry_price=8.7,
+                stop_loss=7.84,
+                first_target=10.5,
+                reward_risk_ratio=2.6,
+            ),
+            trading_plan=TradingPlan(
+                direction="空仓观望",
+                current_qualification="阶段不明确，但正在演化为 Phase A/AR 反弹观察区，建议继续空仓等待 ST 或 TR 边界明确",
+                trigger_condition="等待 ST 缩量确认",
+                invalidation_point="失守 8.00 则回到更弱结构",
+                first_target="第一观察目标 10.50",
+                confidence=ConfidenceLevel.C,
+            ),
+        )
+        weekly_report = WyckoffReport(
+            symbol="000001.SH",
+            period="周线",
+            structure=WyckoffStructure(
+                phase=WyckoffPhase.MARKUP,
+                current_price=8.7,
+                current_date="2026-04-25",
+            ),
+            signal=WyckoffSignal(
+                signal_type="no_signal",
+                confidence=ConfidenceLevel.B,
+                phase=WyckoffPhase.MARKUP,
+                description="周线上涨延续",
+            ),
+            risk_reward=RiskRewardProjection(),
+            trading_plan=TradingPlan(direction="空仓观望", confidence=ConfidenceLevel.B),
+        )
+        monthly_report = WyckoffReport(
+            symbol="000001.SH",
+            period="月线",
+            structure=WyckoffStructure(
+                phase=WyckoffPhase.MARKUP,
+                current_price=8.7,
+                current_date="2026-04-30",
+            ),
+            signal=WyckoffSignal(
+                signal_type="no_signal",
+                confidence=ConfidenceLevel.B,
+                phase=WyckoffPhase.MARKUP,
+                description="月线上涨延续",
+            ),
+            risk_reward=RiskRewardProjection(),
+            trading_plan=TradingPlan(direction="空仓观望", confidence=ConfidenceLevel.B),
+        )
+
+        merged = analyzer._merge_multitimeframe_reports(
+            symbol="000001.SH",
+            daily_report=daily_report,
+            weekly_report=weekly_report,
+            monthly_report=monthly_report,
+        )
+
+        self.assertEqual(merged.trading_plan.direction, "买入观察 / 轻仓试探")
+        self.assertIn("ST/AR", merged.trading_plan.preconditions)
+
+    def test_unknown_context_identifies_sc_st_candidate_near_range_low(self):
+        analyzer = WyckoffAnalyzer()
+        df = pd.DataFrame(
+            {
+                "date": pd.date_range("2026-04-01", periods=30, freq="D"),
+                "open": [9.7] * 29 + [9.2],
+                "high": [10.6] * 29 + [9.4],
+                "low": [8.9] * 29 + [8.6],
+                "close": [9.6] * 29 + [9.35],
+                "volume": [100.0] * 29 + [110.0],
+            }
+        )
+        structure = WyckoffStructure(
+            phase=WyckoffPhase.UNKNOWN,
+            trading_range_low=8.6,
+            trading_range_high=10.6,
+            current_price=9.35,
+        )
+
+        description = analyzer._describe_unknown_context(df, structure)
+
+        self.assertIn("SC/ST", description)
+
+    def test_unknown_phase_a_ar_gets_range_rr_projection_and_plan(self):
+        analyzer = WyckoffAnalyzer()
+        structure = WyckoffStructure(
+            phase=WyckoffPhase.UNKNOWN,
+            trading_range_low=8.0,
+            trading_range_high=10.5,
+            current_price=8.7,
+            current_date="2026-04-29",
+        )
+        signal = WyckoffSignal(
+            signal_type="no_signal",
+            confidence=ConfidenceLevel.C,
+            phase=WyckoffPhase.UNKNOWN,
+            description="阶段不明确，但正在演化为 Phase A/AR 反弹观察区，建议继续空仓等待 ST 或 TR 边界明确",
+        )
+
+        risk_reward = analyzer._calculate_risk_reward(self._create_sample_data(), structure, signal)
+        plan = analyzer._build_trading_plan(structure, signal, risk_reward)
+
+        self.assertGreater(risk_reward.reward_risk_ratio, 0)
+        self.assertIn("Phase A/AR", risk_reward.structure_based)
+        self.assertIn("ST", plan.trigger_condition)
+        self.assertIn("10.50", plan.first_target)
+        self.assertIn("8.00", plan.invalidation_point)
+
+    def test_unknown_phase_b_upthrust_gets_structured_wait_plan(self):
+        analyzer = WyckoffAnalyzer()
+        structure = WyckoffStructure(
+            phase=WyckoffPhase.UNKNOWN,
+            unknown_candidate="upthrust_candidate",
+            trading_range_low=11.2,
+            trading_range_high=12.8,
+            current_price=12.55,
+            current_date="2026-04-29",
+        )
+        signal = WyckoffSignal(
+            signal_type="no_signal",
+            confidence=ConfidenceLevel.C,
+            phase=WyckoffPhase.UNKNOWN,
+            description="阶段不明确，当前更像 Phase B / Upthrust 观察区，建议空仓等待方向重新选择",
+        )
+
+        risk_reward = analyzer._calculate_risk_reward(self._create_sample_data(), structure, signal)
+        plan = analyzer._build_trading_plan(structure, signal, risk_reward)
+
+        self.assertEqual(risk_reward.reward_risk_ratio, 0.0)
+        self.assertIn("Upthrust", plan.current_qualification)
+        self.assertIn("回落", plan.trigger_condition)
+        self.assertIn("12.80", plan.invalidation_point)
+
+    def test_unknown_candidate_field_flows_into_timeframe_snapshot(self):
+        analyzer = WyckoffAnalyzer()
+        report = WyckoffReport(
+            symbol="000001.SH",
+            period="日线",
+            structure=WyckoffStructure(
+                phase=WyckoffPhase.UNKNOWN,
+                unknown_candidate="phase_a_candidate",
+                current_price=8.7,
+                current_date="2026-04-29",
+            ),
+            signal=WyckoffSignal(
+                signal_type="no_signal",
+                confidence=ConfidenceLevel.C,
+                phase=WyckoffPhase.UNKNOWN,
+                description="阶段不明确，但正在演化为 Phase A/AR 反弹观察区，建议继续空仓等待 ST 或 TR 边界明确",
+            ),
+            risk_reward=RiskRewardProjection(),
+            trading_plan=TradingPlan(direction="空仓观望", confidence=ConfidenceLevel.C),
+        )
+
+        snapshot = analyzer._build_timeframe_snapshot(report)
+
+        self.assertEqual(snapshot.unknown_candidate, "phase_a_candidate")
+
+    def test_determine_structure_sets_nonempty_unknown_candidate_after_range_build(self):
+        analyzer = WyckoffAnalyzer()
+        closes = [10.2] * 95 + [9.8, 9.6, 9.4, 9.5, 9.7]
+        df = pd.DataFrame(
+            {
+                "date": pd.date_range("2026-01-01", periods=100, freq="D"),
+                "open": closes,
+                "high": [c + 0.4 for c in closes[:-5]] + [10.0, 9.9, 9.8, 9.9, 9.95],
+                "low": [c - 0.4 for c in closes[:-5]] + [9.4, 9.1, 8.9, 9.0, 9.1],
+                "close": closes,
+                "volume": [100.0] * 97 + [120.0, 110.0, 105.0],
+            }
+        )
+
+        structure = analyzer._determine_wyckoff_structure(df, bc_point=None, sc_point=None)
+
+        self.assertEqual(structure.phase, WyckoffPhase.UNKNOWN)
+        self.assertIn(structure.unknown_candidate, {"phase_a_candidate", "sc_st_candidate", "phase_b_range", "upthrust_candidate"})
+
 
 if __name__ == "__main__":
     unittest.main()

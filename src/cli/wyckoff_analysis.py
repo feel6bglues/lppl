@@ -82,6 +82,7 @@ def _save_all_outputs(
         "period": report.period,
         "structure": {
             "phase": report.structure.phase.value if hasattr(report.structure.phase, 'value') else str(report.structure.phase),
+            "unknown_candidate": report.structure.unknown_candidate if report.structure else "",
             "current_date": analysis_date,
             "bc_point": {
                 "date": report.structure.bc_point.date if report.structure.bc_point else None,
@@ -131,6 +132,11 @@ def _save_all_outputs(
                 if report.multi_timeframe and report.multi_timeframe.daily
                 else ""
             ),
+            "daily_unknown_candidate": (
+                report.multi_timeframe.daily.unknown_candidate
+                if report.multi_timeframe and report.multi_timeframe.daily
+                else ""
+            ),
         },
     }
     with open(os.path.join(output_dirs["raw"], f"analysis_{symbol_slug}_{timestamp}.json"), "w", encoding="utf-8") as f:
@@ -151,7 +157,7 @@ def _save_all_outputs(
     summary_data = [
         ["symbol", "asset_type", "analysis_date", "phase", "micro_action", "decision", "confidence", 
          "bc_found", "spring_detected", "rr_assessment", "t1_risk_assessment", "trigger", 
-         "invalidation", "target_1", "abandon_reason", "mtf_alignment", "monthly_phase", "weekly_phase", "daily_phase"],
+         "invalidation", "target_1", "abandon_reason", "mtf_alignment", "monthly_phase", "weekly_phase", "daily_phase", "daily_unknown_candidate"],
         [
             report.symbol,
             "stock" if symbol.endswith(('.SH', '.SZ')) else "index",
@@ -172,6 +178,7 @@ def _save_all_outputs(
             report.multi_timeframe.monthly.phase.value if report.multi_timeframe and report.multi_timeframe.monthly else "",
             report.multi_timeframe.weekly.phase.value if report.multi_timeframe and report.multi_timeframe.weekly else "",
             report.multi_timeframe.daily.phase.value if report.multi_timeframe and report.multi_timeframe.daily else "",
+            report.multi_timeframe.daily.unknown_candidate if report.multi_timeframe and report.multi_timeframe.daily else "",
         ]
     ]
     import csv

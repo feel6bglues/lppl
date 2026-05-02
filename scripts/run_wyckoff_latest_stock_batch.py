@@ -120,6 +120,8 @@ def build_failure_row(
         "monthly_phase": "",
         "weekly_phase": "",
         "daily_phase": "",
+        "unknown_candidate": "",
+        "daily_unknown_candidate": "",
         "mtf_alignment": "",
         "report_path": "",
     }
@@ -208,6 +210,12 @@ def analyze_single_symbol(
             report.multi_timeframe.daily.phase.value
             if report.multi_timeframe and report.multi_timeframe.daily
             else report.structure.phase.value
+        ),
+        "unknown_candidate": report.structure.unknown_candidate,
+        "daily_unknown_candidate": (
+            report.multi_timeframe.daily.unknown_candidate
+            if report.multi_timeframe and report.multi_timeframe.daily
+            else report.structure.unknown_candidate
         ),
         "mtf_alignment": report.multi_timeframe.alignment if report.multi_timeframe else "",
         "signal_type": report.signal.signal_type,
