@@ -19,7 +19,7 @@ from src.constants import (
     REQUIRED_COLUMNS,
     TDX_DATA_DIR,
 )
-from src.exceptions import DataFetchError, DataValidationError
+from src.exceptions import DataFetchError, DataValidationError, InvalidInputDataError
 
 logger = logging.getLogger(__name__)
 
@@ -607,3 +607,69 @@ class DataManager:
             else:
                 logger.warning(f"No valid data retrieved for {symbol}")
         return all_data
+
+    def normalize_symbol(self, symbol: str) -> str:
+        symbol = symbol.strip().upper()
+
+        if re.fullmatch(r"\d{6}\.(SH|SZ)", symbol):
+            return symbol
+
+        if re.fullmatch(r"\d{6}", symbol):
+            return f"{symbol}.SH"
+
+        match = re.search(r"(\d{6})", symbol)
+        if match:
+            code = match.group(1)
+            if "SZ" in symbol:
+                return f"{code}.SZ"
+            return f"{code}.SH"
+
+        raise ValueError(f"Unable to parse symbol: {symbol}")
+
+    def classify_asset_type(self, symbol: str) -> str:
+        normalized = self.normalize_symbol(symbol)
+        if normalized in INDICES:
+            return "index"
+        if normalized.startswith("399") or normalized.startswith("932000"):
+            return "index"
+        return "stock"
+
+    def read_from_file(self, file_path: str) -> pd.DataFrame:
+        if not os.path.exists(file_path):
+            raise InvalidInputDataError(f"File does not exist: {file_path}")
+
+        if file_path.endswith(".parquet"):
+            df = pd.read_parquet(file_path)
+        elif file_path.endswith(".csv"):
+            df = pd.read_csv(file_path)
+        else:
+            raise InvalidInputDataError(f"Unsupported file format: {file_path}")
+
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        df = df.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+
+        is_valid, msg = validate_dataframe(df, "file_input")
+        if not is_valid:
+            raise InvalidInputDataError(f"File data validation failed: {msg}")
+
+        return df
+
+    def get_wyckoff_data(
+        self,
+        symbol: Optional[str] = None,
+        input_file: Optional[str] = None,
+    ) -> Tuple[pd.DataFrame, str, str]:
+        if input_file:
+            return self.read_from_file(input_file), "unknown", "file"
+
+        if not symbol:
+            raise InvalidInputDataError("Either symbol or input_file is required")
+
+        normalized = self.normalize_symbol(symbol)
+        asset_type = self.classify_asset_type(normalized)
+        df = self.get_data(normalized)
+
+        if df is None or df.empty:
+            raise InvalidInputDataError(f"Unable to load data for {normalized}")
+
+        return df, asset_type, "data"

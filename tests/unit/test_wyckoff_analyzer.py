@@ -84,6 +84,16 @@ class TestWyckoffAnalyzer(unittest.TestCase):
         self.assertIsInstance(report, WyckoffReport)
         self.assertEqual(report.symbol, "000001.SH")
         self.assertIn(report.structure.phase, [WyckoffPhase.MARKUP, WyckoffPhase.ACCUMULATION])
+
+    def test_analyze_uptrend_with_pullback_stays_markup_or_accumulation(self):
+        """上涨趋势中的正常回撤不应被降级为 UNKNOWN"""
+        np.random.seed(51)
+        df = self._create_sample_data(days=120, trend="up")
+
+        analyzer = WyckoffAnalyzer(lookback_days=120)
+        report = analyzer.analyze(df, symbol="000001.SH", period="日线")
+
+        self.assertIn(report.structure.phase, [WyckoffPhase.MARKUP, WyckoffPhase.ACCUMULATION])
     
     def test_analyze_downtrend(self):
         """测试下跌趋势分析"""

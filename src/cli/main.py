@@ -2,8 +2,14 @@
 import logging
 import sys
 from datetime import datetime
+from typing import Callable, List, Optional
 
 logger = logging.getLogger(__name__)
+
+ENTRYPOINT_ALIASES = {
+    "wyckoff": "src.cli.wyckoff_analysis",
+    "wyckoff-multimodal": "src.cli.wyckoff_multimodal_analysis",
+}
 
 
 def setup_logging(level: int = logging.INFO) -> None:
@@ -16,7 +22,35 @@ def setup_logging(level: int = logging.INFO) -> None:
     )
 
 
-def main() -> int:
+def dispatch_subcommand(argv: Optional[List[str]] = None) -> Optional[int]:
+    args = list(sys.argv[1:] if argv is None else argv)
+    if not args:
+        return None
+
+    module_path = ENTRYPOINT_ALIASES.get(args[0])
+    if module_path is None:
+        return None
+
+    module = __import__(module_path, fromlist=["main"])
+    sub_main: Callable[[], int] = getattr(module, "main")
+
+    original_argv = sys.argv[:]
+    sys.argv = [original_argv[0], *args[1:]]
+    try:
+        result = sub_main()
+    except SystemExit as exc:
+        result = exc.code if isinstance(exc.code, int) else 0
+    finally:
+        sys.argv = original_argv
+
+    return 0 if result is None else result
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    dispatched = dispatch_subcommand(argv)
+    if dispatched is not None:
+        return dispatched
+
     setup_logging()
     logger.info("=" * 80)
     logger.info("LPPL模型扫描系统 - 主程序入口")

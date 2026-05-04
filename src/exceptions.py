@@ -22,3 +22,27 @@ class ComputationError(LPPLException):
 
 class ConfigurationError(LPPLException):
     pass
+
+
+class WyckoffError(LPPLException):
+    pass
+
+
+class BCNotFoundError(WyckoffError):
+    pass
+
+
+class InvalidInputDataError(WyckoffError):
+    pass
+
+
+class ImageProcessingError(WyckoffError):
+    pass
+
+
+class FusionConflictError(WyckoffError):
+    pass
+
+
+class RuleEngineError(WyckoffError):
+    pass

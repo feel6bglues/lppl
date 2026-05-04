@@ -864,6 +864,14 @@ class WyckoffAnalyzer:
                 and relative_position >= 0.70
             ):
                 structure.phase = WyckoffPhase.MARKUP
+            elif (
+                short_trend_pct >= 0.05
+                and ma5 >= ma20
+                and current_price >= ma20 * 0.99
+                and relative_position >= 0.65
+            ):
+                # 强势上涨过程中的正常回撤不应直接降级为 UNKNOWN。
+                structure.phase = WyckoffPhase.MARKUP
             elif short_trend_pct <= -0.03 and current_price < ma20:
                 structure.phase = WyckoffPhase.MARKDOWN
             elif (

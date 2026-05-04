@@ -123,3 +123,76 @@ ENABLE_NUMBA_JIT: bool = True
 ENABLE_JOBLIB_PARALLEL: bool = True
 ENABLE_INCREMENTAL_UPDATE: bool = True
 ENABLE_NEGATIVE_BUBBLE: bool = True
+
+WYCKOFF_PHASES: List[str] = [
+    "accumulation",
+    "markup",
+    "distribution",
+    "markdown",
+]
+
+WYCKOFF_DIRECTIONS: List[str] = [
+    "bullish",
+    "bearish",
+    "neutral",
+]
+
+WYCKOFF_CONFIDENCE_LEVELS: List[str] = [
+    "very_high",
+    "high",
+    "medium",
+    "low",
+    "very_low",
+]
+
+VOLUME_LABELS: List[str] = [
+    "very_low",
+    "low",
+    "normal",
+    "high",
+    "very_high",
+    "climax",
+]
+
+IMAGE_QUALITY_LEVELS: List[str] = [
+    "low",
+    "medium",
+    "high",
+    "ultra",
+]
+
+VISUAL_TRENDS: List[str] = [
+    "strong_uptrend",
+    "weak_uptrend",
+    "sideways",
+    "weak_downtrend",
+    "strong_downtrend",
+]
+
+TIMEFRAME_HINTS: List[str] = [
+    "intraday",
+    "short_term",
+    "medium_term",
+    "long_term",
+    "multi_year",
+]
+
+VISUAL_ANOMALIES: List[str] = [
+    "gap_up",
+    "gap_down",
+    "spike_high",
+    "spike_low",
+    "doji",
+    "engulfing",
+    "divergence",
+]
+
+WYCKOFF_OUTPUT_DIR: str = os.environ.get(
+    "LPPL_WYCKOFF_OUTPUT_DIR",
+    os.path.join(OUTPUT_DIR, "wyckoff"),
+)
+
+MIN_WYCKOFF_DATA_ROWS: int = 200
+BC_LOOKBACK_WINDOW: int = 20
+SPRING_FREEZE_DAYS: int = 3
+MIN_RR_RATIO: float = 2.5

@@ -11,6 +11,7 @@ from src.data.manager import (
     summarize_update_results,
     validate_symbol,
 )
+from src.exceptions import InvalidInputDataError
 
 
 class DataManagerStatusTests(unittest.TestCase):
@@ -114,6 +115,45 @@ class DataManagerStatusTests(unittest.TestCase):
         self.assertTrue(validate_symbol("300442.SZ"))
         self.assertFalse(validate_symbol("600859"))
         self.assertFalse(validate_symbol("ABC859.SH"))
+
+    def test_normalize_symbol_supports_common_inputs(self) -> None:
+        self.assertEqual(self.manager.normalize_symbol("600519"), "600519.SH")
+        self.assertEqual(self.manager.normalize_symbol("600519.sh"), "600519.SH")
+        self.assertEqual(self.manager.normalize_symbol("002216.SZ"), "002216.SZ")
+        self.assertEqual(self.manager.normalize_symbol("sz300442"), "300442.SZ")
+
+    def test_classify_asset_type_distinguishes_index_and_stock(self) -> None:
+        self.assertEqual(self.manager.classify_asset_type("000300.SH"), "index")
+        self.assertEqual(self.manager.classify_asset_type("600519.SH"), "stock")
+
+    def test_read_from_file_loads_csv_and_validates(self) -> None:
+        df = self._make_dataframe(datetime.now().strftime("%Y-%m-%d"))
+        file_path = f"{self.temp_dir.name}/sample.csv"
+        df.to_csv(file_path, index=False)
+
+        result = self.manager.read_from_file(file_path)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(len(result), len(df))
+
+    def test_read_from_file_raises_for_invalid_data(self) -> None:
+        invalid_df = pd.DataFrame({"date": ["2026-01-01"], "open": [1.0]})
+        file_path = f"{self.temp_dir.name}/invalid.csv"
+        invalid_df.to_csv(file_path, index=False)
+
+        with self.assertRaises(InvalidInputDataError):
+            self.manager.read_from_file(file_path)
+
+    def test_get_wyckoff_data_prefers_file_input(self) -> None:
+        df = self._make_dataframe(datetime.now().strftime("%Y-%m-%d"))
+        file_path = f"{self.temp_dir.name}/sample.csv"
+        df.to_csv(file_path, index=False)
+
+        result_df, asset_type, input_source = self.manager.get_wyckoff_data(input_file=file_path)
+
+        self.assertIsNotNone(result_df)
+        self.assertEqual(asset_type, "unknown")
+        self.assertEqual(input_source, "file")
 
     def test_get_data_reads_stock_from_tdx_before_cache(self) -> None:
         stock_df = self._make_dataframe(datetime.now().strftime("%Y-%m-%d"))

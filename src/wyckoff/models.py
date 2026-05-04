@@ -5,7 +5,7 @@ Wyckoff Analysis Data Models
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class WyckoffPhase(Enum):
@@ -114,6 +114,68 @@ class TradingPlan:
     current_qualification: str = ""  # 当前定性
     spring_cooldown_days: int = 0  # Spring 冷静期
     t1_blocked: bool = False  # T+1 零容错阻止
+    current_assessment: str = ""  # 新规则引擎字段
+    execution_preconditions: List[str] = field(default_factory=list)  # 新规则引擎字段
+    entry_trigger: str = ""  # 新规则引擎字段
+    invalidation: str = ""  # 新规则引擎字段
+    target_1: str = ""  # 新规则引擎字段
+
+    def __post_init__(self) -> None:
+        if self.entry_trigger and not self.trigger_condition:
+            self.trigger_condition = self.entry_trigger
+        elif self.trigger_condition and not self.entry_trigger:
+            self.entry_trigger = self.trigger_condition
+
+        if self.invalidation and not self.invalidation_point:
+            self.invalidation_point = self.invalidation
+        elif self.invalidation_point and not self.invalidation:
+            self.invalidation = self.invalidation_point
+
+        if self.target_1 and not self.first_target:
+            self.first_target = self.target_1
+        elif self.first_target and not self.target_1:
+            self.target_1 = self.first_target
+
+        if self.current_assessment and not self.current_qualification:
+            self.current_qualification = self.current_assessment
+        elif self.current_qualification and not self.current_assessment:
+            self.current_assessment = self.current_qualification
+
+        if self.execution_preconditions and not self.preconditions:
+            self.preconditions = "; ".join(self.execution_preconditions)
+        elif self.preconditions and not self.execution_preconditions:
+            self.execution_preconditions = [self.preconditions]
+
+
+@dataclass
+class ChartManifestItem:
+    """图片清单中的单个文件"""
+    file_path: str
+    file_name: str
+    relative_dir: str
+    modified_time: str
+    symbol: str
+    inferred_timeframe: str
+    image_quality: str
+
+
+@dataclass
+class ChartManifest:
+    """图片清单摘要"""
+    files: List[ChartManifestItem] = field(default_factory=list)
+    total_count: int = 0
+    usable_count: int = 0
+    scan_time: str = ""
+
+
+@dataclass
+class VisualEvidence:
+    """单张或一组图表的视觉结论"""
+    visual_trend: str = "unclear"
+    visual_phase_hint: str = "unclear"
+    visual_boundaries: Dict[str, Any] = field(default_factory=dict)
+    visual_anomalies: List[str] = field(default_factory=list)
+    visual_volume_label: str = "unclear"
 
 
 class LimitMoveType(Enum):
@@ -167,6 +229,133 @@ class ImageEvidenceBundle:
     visual_anomalies: List[str] = field(default_factory=list)  # 视觉异常 (长上影/长下影/跳空/假突破/快速收回/放量滞涨)
     visual_volume_labels: str = "unclear"  # 视觉量能标签 (extreme_high/above_average/contracted/extreme_contracted/unclear)
     trust_level: str = "medium"  # 信任级别 (high/medium/low)
+    manifest: Optional[ChartManifest] = None  # 新图像引擎字段
+    detected_timeframes: List[str] = field(default_factory=list)  # 新图像引擎字段
+    overall_image_quality: str = ""  # 新图像引擎字段
+    visual_evidence_list: List[VisualEvidence] = field(default_factory=list)  # 新图像引擎字段
+
+    def __post_init__(self) -> None:
+        if self.manifest is None:
+            manifest_items = [
+                ChartManifestItem(
+                    file_path=file_path,
+                    file_name=file_path.split("/")[-1],
+                    relative_dir="",
+                    modified_time="",
+                    symbol="unassigned",
+                    inferred_timeframe=self.detected_timeframe,
+                    image_quality=self.image_quality,
+                )
+                for file_path in self.files
+            ]
+            self.manifest = ChartManifest(
+                files=manifest_items,
+                total_count=len(manifest_items),
+                usable_count=len(manifest_items),
+                scan_time="",
+            )
+
+        if self.detected_timeframes:
+            if not self.detected_timeframe or self.detected_timeframe == "unknown_tf":
+                self.detected_timeframe = self.detected_timeframes[0]
+        elif self.detected_timeframe and self.detected_timeframe != "unknown_tf":
+            self.detected_timeframes = [self.detected_timeframe]
+
+        if self.overall_image_quality:
+            if not self.image_quality:
+                self.image_quality = self.overall_image_quality
+        else:
+            self.overall_image_quality = self.image_quality
+
+        if not self.visual_evidence_list and (
+            self.visual_trend != "unclear"
+            or self.visual_phase_hint != "unclear"
+            or self.visual_boundaries
+            or self.visual_anomalies
+            or self.visual_volume_labels != "unclear"
+        ):
+            boundaries: Dict[str, Any]
+            if isinstance(self.visual_boundaries, dict):
+                boundaries = self.visual_boundaries
+            else:
+                boundaries = {"levels": self.visual_boundaries}
+            self.visual_evidence_list = [
+                VisualEvidence(
+                    visual_trend=self.visual_trend,
+                    visual_phase_hint=self.visual_phase_hint,
+                    visual_boundaries=boundaries,
+                    visual_anomalies=self.visual_anomalies,
+                    visual_volume_label=self.visual_volume_labels,
+                )
+            ]
+
+
+@dataclass
+class PreprocessingResult:
+    trend_direction: str
+    volume_label: str
+    volatility_layer: str
+    local_highs: List[Dict[str, Any]] = field(default_factory=list)
+    local_lows: List[Dict[str, Any]] = field(default_factory=list)
+    gap_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    long_wick_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    limit_anomalies: List[Dict[str, Any]] = field(default_factory=list)
+
+
+@dataclass
+class BCResult:
+    found: bool
+    candidate_index: int
+    candidate_date: str
+    candidate_price: float
+    volume_label: str
+    enhancement_signals: List[str] = field(default_factory=list)
+
+
+@dataclass
+class PhaseResult:
+    phase: str
+    boundary_upper_zone: str
+    boundary_lower_zone: str
+    boundary_sources: List[str] = field(default_factory=list)
+
+
+@dataclass
+class EffortResult:
+    phenomena: List[str] = field(default_factory=list)
+    accumulation_evidence: float = 0.0
+    distribution_evidence: float = 0.0
+    net_bias: str = "neutral"
+
+
+@dataclass
+class PhaseCTestResult:
+    spring_detected: bool = False
+    utad_detected: bool = False
+    st_detected: bool = False
+    false_breakout_detected: bool = False
+    spring_date: Optional[str] = None
+    utad_date: Optional[str] = None
+
+
+@dataclass
+class CounterfactualResult:
+    is_utad_not_breakout: str = "unknown"
+    is_distribution_not_accumulation: str = "unknown"
+    is_chaos_not_phase_c: str = "unknown"
+    liquidity_vacuum_risk: str = "unknown"
+    total_pro_score: float = 0.0
+    total_con_score: float = 0.0
+    conclusion_overturned: bool = False
+
+
+@dataclass
+class RiskAssessment:
+    t1_risk_level: str = "unknown"
+    t1_structural_description: str = ""
+    rr_ratio: float = 0.0
+    rr_assessment: str = "fail"
+    freeze_until: Optional[str] = None
 
 
 @dataclass
@@ -205,6 +394,10 @@ class AnalysisResult:
     confidence: str = "D"  # A/B/C/D
     abandon_reason: str = ""  # 放弃原因
     conflicts: List[str] = field(default_factory=list)  # 冲突列表
+    image_bundle: Optional[ImageEvidenceBundle] = None
+    consistency_score: str = ""
+    weekly_context: str = ""
+    intraday_context: str = ""
 
 
 @dataclass
@@ -234,10 +427,29 @@ class AnalysisState:
     # 上下文
     weekly_context: str = ""
     intraday_context: str = ""
-    conflict_summary: str = ""
+    conflict_summary: Any = field(default_factory=list)
     
     # 决策记录
     last_decision: str = ""
+    abandon_reason: str = ""
+
+
+@dataclass
+class DailyRuleResult:
+    symbol: str
+    asset_type: str
+    analysis_date: str
+    input_source: str
+    preprocessing: PreprocessingResult
+    bc_result: BCResult
+    phase_result: PhaseResult
+    effort_result: Optional[EffortResult]
+    phase_c_test: Optional[PhaseCTestResult]
+    counterfactual: Optional[CounterfactualResult]
+    risk: Optional[RiskAssessment]
+    plan: Optional[TradingPlan]
+    confidence: str = "D"
+    decision: str = "abandon"
     abandon_reason: str = ""
 
 

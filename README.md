@@ -11,13 +11,17 @@ lppl/
 ├── lppl_walk_forward.py    # 兼容入口（wrapper）
 ├── index_investment_analysis.py  # 指数投资分析入口（wrapper）
 ├── generate_optimal8_report.py  # 兼容入口（wrapper）
+├── wyckoff_analysis.py     # 兼容入口（wrapper）
+├── wyckoff_multimodal_analysis.py # 兼容入口（wrapper）
 ├── src/
 │   ├── cli/                # 实际 CLI 实现
 │   │   ├── main.py
 │   │   ├── lppl_verify_v2.py
 │   │   ├── lppl_walk_forward.py
 │   │   ├── index_investment_analysis.py
-│   │   └── generate_optimal8_report.py
+│   │   ├── generate_optimal8_report.py
+│   │   ├── wyckoff_analysis.py
+│   │   └── wyckoff_multimodal_analysis.py
 │   ├── constants.py        # 配置常量
 │   ├── lppl_core.py        # LPPL 核心算法
 │   ├── lppl_engine.py      # LPPL 计算引擎
@@ -64,6 +68,10 @@ lppl/
 文档入口：
 - 详细使用说明：`docs/使用文档.md`
 - 历史规划归档：`docs/archive/`
+
+入口约定：
+- 优先使用统一入口 `python main.py <subcommand>`
+- 根目录 `*.py` wrapper 继续保留用于兼容旧命令，但不再是首选
 
 ## 环境配置
 
@@ -211,6 +219,9 @@ pip install -r requirements.txt
   --buy-confirms 2 \
   --vol-breakout-grid 1.05 \
   --drawdown-grid 0.05
+
+# Wyckoff 多模态最小链路
+.venv/bin/python main.py wyckoff-multimodal --symbol 000300.SH
 ```
 
 ## 运行指南
@@ -226,6 +237,23 @@ pip install -r requirements.txt
 - `output/lppl_report_YYYYMMDD.md` - Markdown 报告
 - `output/lppl_report_YYYYMMDD.html` - HTML 可视化报告
 - `output/lppl_params_YYYYMMDD.json` - 完整参数 JSON
+
+### 统一入口 - Wyckoff
+
+```bash
+# 旧 Wyckoff CLI
+.venv/bin/python main.py wyckoff --symbol 000001.SH
+
+# 新多模态 Wyckoff CLI
+.venv/bin/python main.py wyckoff-multimodal --symbol 000300.SH
+.venv/bin/python main.py wyckoff-multimodal --symbol 600519.SH --chart-dir output/MA/plots
+.venv/bin/python main.py wyckoff-multimodal --input-file data/600519.parquet
+```
+
+说明：
+- `wyckoff` 对应 `src/cli/wyckoff_analysis.py`
+- `wyckoff-multimodal` 对应 `src/cli/wyckoff_multimodal_analysis.py`
+- 根目录 `wyckoff_analysis.py` 和 `wyckoff_multimodal_analysis.py` 仅作为兼容 wrapper 保留
 
 ### 验证程序 - LPPL 验证
 

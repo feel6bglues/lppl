@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from src.wyckoff.models import ImageEvidenceBundle
+from src.wyckoff.models import ChartManifest, ChartManifestItem, ImageEvidenceBundle
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +37,11 @@ SYMBOL_PATTERNS = [
 class ImageEngine:
     """图像引擎 - 负责扫描和处理图表图片"""
     
-    def __init__(self):
+    def __init__(self, config=None):
         self.supported_formats = SUPPORTED_IMAGE_FORMATS
         self.timeframe_patterns = TIMEFRAME_PATTERNS
         self.symbol_patterns = SYMBOL_PATTERNS
+        self.config = config
     
     def scan_chart_directory(
         self,
@@ -265,6 +266,18 @@ class ImageEngine:
             ImageEvidenceBundle 图像证据包
         """
         files = [f['file_path'] for f in manifest.get('files', [])]
+        manifest_items = [
+            ChartManifestItem(
+                file_path=f['file_path'],
+                file_name=f['file_name'],
+                relative_dir=f.get('relative_dir', ''),
+                modified_time=f.get('modified_time', ''),
+                symbol=f.get('symbol', 'unassigned'),
+                inferred_timeframe=f.get('timeframe', 'unknown_tf'),
+                image_quality=f.get('image_quality', 'medium'),
+            )
+            for f in manifest.get('files', [])
+        ]
         
         if not files:
             return ImageEvidenceBundle(
@@ -314,7 +327,15 @@ class ImageEngine:
             visual_boundaries=[],
             visual_anomalies=[],
             visual_volume_labels="unclear",
-            trust_level=trust_level
+            trust_level=trust_level,
+            manifest=ChartManifest(
+                files=manifest_items,
+                total_count=len(manifest_items),
+                usable_count=len(manifest_items),
+                scan_time="",
+            ),
+            detected_timeframes=[detected_timeframe] if detected_timeframe != "unknown_tf" else [],
+            overall_image_quality=overall_quality,
         )
     
     def generate_chart_manifest_json(
@@ -367,6 +388,22 @@ class ImageEngine:
             self.generate_chart_manifest_json(manifest, output_manifest_path)
         
         return evidence, manifest
+
+    def run(
+        self,
+        chart_dir: Optional[str] = None,
+        chart_files: Optional[List[str]] = None,
+        explicit_symbol: Optional[str] = None,
+    ) -> ImageEvidenceBundle:
+        """兼容新多模态 CLI 的统一入口。"""
+        if chart_files:
+            manifest = self.scan_chart_files(chart_files, explicit_symbol)
+        elif chart_dir:
+            manifest = self.scan_chart_directory(chart_dir, explicit_symbol)
+        else:
+            return ImageEvidenceBundle()
+
+        return self.extract_visual_evidence(manifest)
 
 
 def main():

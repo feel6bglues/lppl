@@ -5,24 +5,37 @@ Wyckoff Analysis Module
 """
 
 from src.wyckoff.analyzer import WyckoffAnalyzer
-from src.wyckoff.fusion_engine import FusionEngine
+from src.wyckoff.config import WyckoffConfig, load_config
+from src.wyckoff.data_engine import DataEngine
+from src.wyckoff.fusion_engine import FusionEngine, StateManager as MultimodalStateManager
 from src.wyckoff.image_engine import ImageEngine
 from src.wyckoff.models import (
     AnalysisResult,
     AnalysisState,
     BCPoint,
+    BCResult,
+    ChartManifest,
+    ChartManifestItem,
     ChipAnalysis,
     ConfidenceLevel,
+    CounterfactualResult,
+    DailyRuleResult,
+    EffortResult,
     ImageEvidenceBundle,
     LimitMove,
     LimitMoveType,
     MultiTimeframeContext,
+    PhaseCTestResult,
+    PhaseResult,
+    PreprocessingResult,
     RiskRewardProjection,
+    RiskAssessment,
     SCPoint,
     StressTest,
     SupportResistance,
     TimeframeSnapshot,
     TradingPlan,
+    VisualEvidence,
     VolumeLevel,
     WyckoffPhase,
     WyckoffReport,
@@ -40,6 +53,9 @@ __all__ = [
     "WyckoffReport",
     "VolumeLevel",
     "BCPoint",
+    "BCResult",
+    "ChartManifest",
+    "ChartManifestItem",
     "SCPoint",
     "SupportResistance",
     "WyckoffStructure",
@@ -53,7 +69,19 @@ __all__ = [
     "StressTest",
     "TimeframeSnapshot",
     "ChipAnalysis",
+    "PreprocessingResult",
+    "PhaseResult",
+    "EffortResult",
+    "PhaseCTestResult",
+    "CounterfactualResult",
+    "RiskAssessment",
+    "DailyRuleResult",
+    "VisualEvidence",
     "ImageEngine",
     "FusionEngine",
     "StateManager",
+    "DataEngine",
+    "WyckoffConfig",
+    "load_config",
+    "MultimodalStateManager",
 ]

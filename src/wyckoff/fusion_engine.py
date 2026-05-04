@@ -4,10 +4,12 @@ Wyckoff 融合引擎
 负责融合数据引擎和图像引擎的分析结果，处理冲突，输出最终决策
 """
 
+import json
 import logging
+from pathlib import Path
 from typing import List, Optional
 
-from src.wyckoff.models import AnalysisResult, ImageEvidenceBundle, WyckoffReport
+from src.wyckoff.models import AnalysisResult, AnalysisState, ImageEvidenceBundle, WyckoffReport
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +17,8 @@ logger = logging.getLogger(__name__)
 class FusionEngine:
     """融合引擎 - 融合数据与图像分析结果"""
     
-    def __init__(self):
+    def __init__(self, config=None):
+        self.config = config
         # 冲突矩阵定义
         self.conflict_matrix = {
             ('accumulation', 'possible_distribution'): 'high',
@@ -39,6 +42,9 @@ class FusionEngine:
         Returns:
             AnalysisResult 融合分析结果
         """
+        if hasattr(report, "phase_result") and hasattr(report, "bc_result"):
+            return self._fuse_daily_rule_result(report, image_evidence)
+
         # 初始化结果
         result = AnalysisResult()
         
@@ -90,6 +96,49 @@ class FusionEngine:
         result.abandon_reason = self._get_abandon_reason(report, image_evidence)
         
         return result
+
+    def _fuse_daily_rule_result(self, result_obj, image_evidence: Optional[ImageEvidenceBundle]) -> AnalysisResult:
+        result = AnalysisResult(
+            symbol=result_obj.symbol,
+            asset_type=result_obj.asset_type,
+            analysis_date=result_obj.analysis_date,
+            input_sources=["data"] + (["images"] if image_evidence else []),
+            timeframes_seen=image_evidence.detected_timeframes if image_evidence else [],
+            bc_found=result_obj.bc_result.found,
+            phase=result_obj.phase_result.phase,
+            micro_action=result_obj.plan.current_assessment if result_obj.plan else "",
+            boundary_upper_zone=result_obj.phase_result.boundary_upper_zone,
+            boundary_lower_zone=result_obj.phase_result.boundary_lower_zone,
+            volume_profile_label=result_obj.preprocessing.volume_label,
+            spring_detected=result_obj.phase_c_test.spring_detected if result_obj.phase_c_test else False,
+            utad_detected=result_obj.phase_c_test.utad_detected if result_obj.phase_c_test else False,
+            counterfactual_summary=(
+                "conclusion_overturned"
+                if result_obj.counterfactual and result_obj.counterfactual.conclusion_overturned
+                else "not_overturned"
+            ),
+            t1_risk_assessment=result_obj.risk.t1_risk_level if result_obj.risk else "unknown",
+            rr_assessment=result_obj.risk.rr_assessment if result_obj.risk else "fail",
+            trigger=result_obj.plan.entry_trigger if result_obj.plan else "",
+            invalidation=result_obj.plan.invalidation if result_obj.plan else "",
+            target_1=result_obj.plan.target_1 if result_obj.plan else "",
+            confidence=result_obj.confidence,
+            abandon_reason=result_obj.abandon_reason,
+            image_bundle=image_evidence,
+        )
+        result.conflicts = self._detect_daily_rule_conflicts(result_obj, image_evidence) if image_evidence else []
+        result.consistency_score = "high_alignment" if not result.conflicts else "conflicted"
+
+        if result.rr_assessment == "fail":
+            result.decision = "abandon"
+            if not result.abandon_reason:
+                result.abandon_reason = "unfavorable_rr_or_structure"
+        elif result_obj.phase_result.phase in ["distribution", "markdown"]:
+            result.decision = "watch_only"
+        else:
+            result.decision = result_obj.decision
+
+        return result
     
     def _extract_timeframes(self, image_evidence: ImageEvidenceBundle) -> List[str]:
         """从图像证据提取时间周期"""
@@ -131,6 +180,31 @@ class FusionEngine:
         if image_evidence.image_quality in ['low', 'unusable']:
             conflicts.append(f"图像质量警告：{image_evidence.image_quality}，可能影响判断")
         
+        return conflicts
+
+    def _detect_daily_rule_conflicts(
+        self,
+        rule_result,
+        image_evidence: ImageEvidenceBundle,
+    ) -> List[str]:
+        conflicts = []
+        image_phase_hint = "unclear"
+        image_trend = "unclear"
+        if image_evidence.visual_evidence_list:
+            image_phase_hint = image_evidence.visual_evidence_list[0].visual_phase_hint
+            image_trend = image_evidence.visual_evidence_list[0].visual_trend
+
+        conflict_key = (rule_result.phase_result.phase, image_phase_hint)
+        if conflict_key in self.conflict_matrix:
+            conflicts.append(
+                f"阶段冲突：数据={rule_result.phase_result.phase}, 图像={image_phase_hint}, 严重程度={self.conflict_matrix[conflict_key]}"
+            )
+
+        if rule_result.phase_result.phase in ['distribution', 'markdown'] and image_trend == 'uptrend':
+            conflicts.append("趋势冲突：数据看空，图像显示上升趋势")
+        elif rule_result.phase_result.phase in ['accumulation', 'markup'] and image_trend == 'downtrend':
+            conflicts.append("趋势冲突：数据看多，图像显示下降趋势")
+
         return conflicts
     
     def _map_phase(self, phase: str) -> str:
@@ -237,3 +311,79 @@ class FusionEngine:
             reasons.append("数据与图像结论冲突")
         
         return "; ".join(reasons) if reasons else ""
+
+
+class StateManager:
+    """兼容新多模态 CLI 的轻量状态管理器。"""
+
+    def __init__(self, output_dir: str):
+        self.output_dir = Path(output_dir)
+        self.state_dir = self.output_dir / "state"
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+
+    def _get_state_path(self, symbol: str) -> Path:
+        return self.state_dir / f"{symbol.replace('.', '_')}_wyckoff_state.json"
+
+    def create_state_from_result(self, analysis_result: AnalysisResult) -> AnalysisState:
+        return AnalysisState(
+            symbol=analysis_result.symbol,
+            asset_type=analysis_result.asset_type,
+            analysis_date=analysis_result.analysis_date,
+            last_phase=analysis_result.phase,
+            last_micro_action=analysis_result.micro_action,
+            last_confidence=analysis_result.confidence,
+            bc_found=analysis_result.bc_found,
+            spring_detected=analysis_result.spring_detected,
+            freeze_until=None,
+            watch_status="watching" if analysis_result.decision in ["watch_only", "long_setup"] else "none",
+            trigger_armed=analysis_result.decision == "long_setup",
+            trigger_text=analysis_result.trigger,
+            invalid_level=analysis_result.invalidation,
+            target_1=analysis_result.target_1,
+            weekly_context=analysis_result.weekly_context,
+            intraday_context=analysis_result.intraday_context,
+            conflict_summary=analysis_result.conflicts,
+            last_decision=analysis_result.decision,
+            abandon_reason=analysis_result.abandon_reason,
+        )
+
+    def save_state(self, state: AnalysisState) -> str:
+        state_path = self._get_state_path(state.symbol)
+        payload = {
+            "symbol": state.symbol,
+            "asset_type": state.asset_type,
+            "analysis_date": state.analysis_date,
+            "last_phase": state.last_phase,
+            "last_micro_action": state.last_micro_action,
+            "last_confidence": state.last_confidence,
+            "bc_found": state.bc_found,
+            "spring_detected": state.spring_detected,
+            "freeze_until": state.freeze_until,
+            "watch_status": state.watch_status,
+            "trigger_armed": state.trigger_armed,
+            "trigger_text": state.trigger_text,
+            "invalid_level": state.invalid_level,
+            "target_1": state.target_1,
+            "weekly_context": state.weekly_context,
+            "intraday_context": state.intraday_context,
+            "conflict_summary": state.conflict_summary,
+            "last_decision": state.last_decision,
+            "abandon_reason": state.abandon_reason,
+        }
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        return str(state_path)
+
+    def load_state(self, symbol: str) -> Optional[AnalysisState]:
+        state_path = self._get_state_path(symbol)
+        if not state_path.exists():
+            return None
+        with open(state_path, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        return AnalysisState(**payload)
+
+    def generate_continuity_template(self, analysis_result: AnalysisResult, previous_state: Optional[AnalysisState]) -> dict:
+        return {
+            "phase_changed": bool(previous_state and previous_state.last_phase != analysis_result.phase),
+            "freeze_period_ended": bool(previous_state and previous_state.freeze_until and not analysis_result.spring_detected),
+        }
