@@ -124,13 +124,31 @@ class V3Rules:
         post_spring_df: pd.DataFrame,
         spring_low: float,
     ) -> Dict[str, Any]:
-        """规则6: Spring 结构事件验证（v3.0 核心）"""
+        """规则6: Spring 结构事件验证（v3.0 核心，含Spring作废逻辑）"""
         if not spring_detected:
-            return {"lps_confirmed": False, "quality": "无", "desc": "未检测到Spring"}
+            return {"lps_confirmed": False, "quality": "无", "desc": "未检测到Spring",
+                    "spring_invalidated": False}
         
         if post_spring_df.empty or len(post_spring_df) < 3:
             return {"lps_confirmed": False, "quality": "二级(放量需ST)", 
-                    "desc": "Spring后数据不足，需ST验证"}
+                    "desc": "Spring后数据不足，需ST验证",
+                    "spring_invalidated": False}
+        
+        # Spring作废检查：放量再创新低
+        # 检查Spring后是否有放量跌破Spring极低点的情况
+        spring_invalidated = False
+        for _, row in post_spring_df.iterrows():
+            if row["low"] < spring_low * 0.99:  # 跌破Spring极低点
+                # 检查是否放量
+                avg_vol = post_spring_df["volume"].mean()
+                if row["volume"] > avg_vol * 1.5:  # 放量
+                    spring_invalidated = True
+                    break
+        
+        if spring_invalidated:
+            return {"lps_confirmed": False, "quality": "作废", 
+                    "desc": "Spring后放量再创新低，信号作废，重新进入Step 0评估",
+                    "spring_invalidated": True}
         
         # 检查LPS确认条件
         # 1. 后续地量K线出现（< 天量柱的30%）
@@ -156,10 +174,12 @@ class V3Rules:
         
         if lps_confirmed:
             return {"lps_confirmed": True, "quality": "一级(缩量)", 
-                    "desc": "缩量Spring+LPS确认，供给枯竭"}
+                    "desc": "缩量Spring+LPS确认，供给枯竭",
+                    "spring_invalidated": False}
         else:
             return {"lps_confirmed": False, "quality": "二级(放量需ST)", 
-                    "desc": "Spring后需ST验证"}
+                    "desc": "Spring后需ST验证",
+                    "spring_invalidated": False}
 
     @staticmethod
     def rule7_counterfactual(pro_score: float, con_score: float) -> Dict[str, Any]:
@@ -221,8 +241,13 @@ class V3Rules:
         daily_phase: WyckoffPhase,
         weekly_phase: WyckoffPhase,
         monthly_phase: WyckoffPhase,
+        is_single_timeframe: bool = False,
     ) -> Tuple[str, str]:
-        """规则9: 多周期一致性"""
+        """规则9: 多周期一致性（含单周期降级）"""
+        # 单周期降级：置信度自动降一级
+        if is_single_timeframe:
+            return "single_timeframe_degraded", "单周期分析，置信度自动降一级"
+        
         # 月线/周线 Markdown → 覆盖日线，强制空仓
         if monthly_phase == WyckoffPhase.MARKDOWN:
             return "markdown_override", "月线Markdown，强制空仓"
