@@ -7,6 +7,7 @@ Wyckoff Analysis Module
 from src.wyckoff.analyzer import WyckoffAnalyzer
 from src.wyckoff.config import WyckoffConfig, load_config
 from src.wyckoff.data_engine import DataEngine
+from src.wyckoff.engine import WyckoffEngine
 from src.wyckoff.fusion_engine import FusionEngine, StateManager as MultimodalStateManager
 from src.wyckoff.image_engine import ImageEngine
 from src.wyckoff.models import (
@@ -46,6 +47,7 @@ from src.wyckoff.state import StateManager
 
 __all__ = [
     "WyckoffAnalyzer",
+    "WyckoffEngine",
     "WyckoffPhase",
     "ConfidenceLevel",
     "WyckoffSignal",

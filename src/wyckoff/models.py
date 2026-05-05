@@ -358,6 +358,131 @@ class RiskAssessment:
     freeze_until: Optional[str] = None
 
 
+# ===== v3.0 数据结构 (REFACTOR_PLAN_WYCKOFF_V3_ENGINE.md P1) =====
+
+
+@dataclass
+class Rule0Result:
+    """Step 0: BC/TR 定位扫描输出"""
+    bc_found: bool = False
+    bc_position: Optional[BCPoint] = None
+    bc_in_chart: bool = False
+    tr_upper: Optional[float] = None
+    tr_lower: Optional[float] = None
+    tr_source: str = "none"  # "bc_ar" | "sc_spring" | "rolling_range" | "none"
+    validity: str = "insufficient"  # "full" | "partial" | "tr_fallback" | "insufficient"
+    confidence_base: str = "D"  # 起评等级: A/B/C/D
+
+
+@dataclass
+class Step1Result:
+    """Step 1: 大局观与宏观定调"""
+    phase: WyckoffPhase = WyckoffPhase.UNKNOWN
+    sub_phase: str = ""  # Phase A/B/C/D/E 细分
+    unknown_candidate: str = ""
+    prior_trend_pct: float = 0.0
+    is_in_tr: bool = False
+    short_trend_pct: float = 0.0
+    relative_position: float = 0.0
+    ma5: float = 0.0
+    ma20: float = 0.0
+    boundary_upper: float = 0.0
+    boundary_lower: float = 0.0
+    boundary_source: List[str] = field(default_factory=list)
+
+
+@dataclass
+class Step2Result:
+    """Step 2: 努力与结果"""
+    phenomena: List[str] = field(default_factory=list)
+    accumulation_evidence: float = 0.0
+    distribution_evidence: float = 0.0
+    net_bias: str = "neutral"  # "accumulation" | "distribution" | "neutral"
+
+
+@dataclass
+class Step3Result:
+    """Step 3: Spring/UTAD + T+1 风险"""
+    spring_detected: bool = False
+    spring_quality: str = "无"  # "一级(缩量)" | "二级(放量需ST)" | "无"
+    spring_date: Optional[str] = None
+    spring_low_price: Optional[float] = None
+    utad_detected: bool = False
+    utad_quality: str = "无"
+    utad_date: Optional[str] = None
+    st_detected: bool = False
+    lps_confirmed: bool = False  # v3.0 规则6
+    spring_volume: str = ""
+    t1_max_drawdown_pct: float = 0.0
+    t1_verdict: str = "安全"  # "安全" | "偏薄" | "超限"
+    t1_description: str = ""
+
+
+@dataclass
+class V3CounterfactualResult:
+    """Step 3.5: 反事实压力测试 (v3.0增强版)"""
+    utad_not_breakout: str = "unknown"
+    distribution_not_accumulation: str = "unknown"
+    chaos_not_phase_c: str = "unknown"
+    liquidity_vacuum_risk: str = "unknown"
+    total_pro_score: float = 0.0
+    total_con_score: float = 0.0
+    conclusion_overturned: bool = False
+    counterfactual_scenario: str = ""
+    forward_evidence: List[str] = field(default_factory=list)
+    backward_evidence: List[str] = field(default_factory=list)
+
+
+@dataclass
+class StopLossResult:
+    """规则10: 精确止损"""
+    entry_price: float = 0.0
+    stop_loss_price: float = 0.0
+    stop_pct: float = 0.0
+    precision_warning: bool = False
+    liquidity_risk_warning: str = ""
+    stop_logic: str = ""
+
+
+@dataclass
+class RiskRewardResult:
+    """Step 4: 盈亏比投影"""
+    entry_price: float = 0.0
+    stop_loss: float = 0.0
+    first_target: float = 0.0
+    first_target_source: str = ""  # "tr_upper" | "bearish_candle" | "gap_lower"
+    rr_ratio: float = 0.0
+    rr_verdict: str = "fail"  # "excellent" | "pass" | "marginal" | "fail"
+    gain_pct: float = 0.0
+
+
+@dataclass
+class ConfidenceResult:
+    """规则8: 置信度矩阵"""
+    level: str = "D"  # "A" | "B" | "C" | "D"
+    bc_located: bool = False  # 条件①
+    spring_lps_verified: bool = False  # 条件②
+    counterfactual_passed: bool = False  # 条件③
+    rr_qualified: bool = False  # 条件④
+    multiframe_aligned: bool = False  # 条件⑤
+    position_size: str = ""
+    reason: str = ""
+
+
+@dataclass
+class V3TradingPlan:
+    """Step 5: 机构级实战交易计划"""
+    current_assessment: str = ""
+    multi_timeframe_statement: str = ""
+    execution_preconditions: List[str] = field(default_factory=list)
+    direction: str = "空仓观望"
+    entry_trigger: str = ""
+    observation_window: str = ""
+    stop_loss: Optional[StopLossResult] = None
+    target: Optional[RiskRewardResult] = None
+    confidence: Optional[ConfidenceResult] = None
+
+
 @dataclass
 class AnalysisResult:
     """分析结果 - 融合引擎输出"""
