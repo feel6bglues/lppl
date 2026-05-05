@@ -25,8 +25,8 @@ from src.constants import TDX_DATA_DIR
 from src.data.manager import DataManager
 from src.wyckoff import WyckoffAnalyzer
 
-SH_STOCK_PREFIXES = ("600", "601", "603", "605", "688")
-SZ_STOCK_PREFIXES = ("000", "001", "002", "003", "300", "301")
+SH_STOCK_PREFIXES = ("600", "601", "603", "605", "688", "689")
+SZ_STOCK_PREFIXES = ("000", "001", "002", "003", "300", "301", "302")
 
 
 def discover_stock_symbols(limit: int) -> list[str]:

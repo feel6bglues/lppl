@@ -38,7 +38,9 @@ def load_stock_symbols(csv_path: Path, limit: int = 99999) -> List[Dict[str, str
             name = str(row.get("name", "")).replace("\x00", "").strip()
             if not (code.isdigit() and len(code) == 6 and market in {"SH", "SZ"}):
                 continue
-            if code.startswith(("600", "601", "603", "605", "000", "001", "002", "003")):
+            # 包含所有A股：主板、中小板、创业板、科创板
+            if code.startswith(("600", "601", "603", "605", "688", "689",  # 上海
+                               "000", "001", "002", "003", "300", "301", "302")):  # 深圳
                 symbols.append({
                     "symbol": f"{code}.{market}",
                     "code": code,
@@ -110,9 +112,10 @@ def analyze_stock(
 def run_latest_test(
     symbols: List[Dict[str, str]],
     output_dir: Path,
+    lookback_days: int = 200,
 ) -> List[Dict]:
     """运行最新日线测试"""
-    engine = WyckoffEngine(lookback_days=1200)
+    engine = WyckoffEngine(lookback_days=lookback_days)
     dm = DataManager()
 
     # 获取最新日期
@@ -330,11 +333,11 @@ def analyze_and_output(results: List[Dict], output_dir: Path) -> Dict:
 
 
 def main():
-    output_dir = PROJECT_ROOT / "output" / "wyckoff_latest_test"
+    output_dir = PROJECT_ROOT / "output" / "wyckoff_latest_200d_test"
     csv_path = PROJECT_ROOT / "data" / "stock_list.csv"
 
     print("=" * 60)
-    print("Wyckoff Engine v3.0 - 最新日线测试 (ALL Stocks, 1200 Days)")
+    print("Wyckoff Engine v3.0 - 最新日线测试 (ALL Stocks, 200 Days)")
     print("=" * 60)
 
     print("\n1. 加载股票列表...")
@@ -342,7 +345,7 @@ def main():
     print(f"   加载了 {len(symbols)} 只股票")
 
     print("\n2. 运行测试...")
-    results = run_latest_test(symbols, output_dir)
+    results = run_latest_test(symbols, output_dir, lookback_days=200)
 
     print("\n3. 分析结果...")
     analysis = analyze_and_output(results, output_dir)
