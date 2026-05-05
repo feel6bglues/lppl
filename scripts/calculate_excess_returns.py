@@ -291,17 +291,17 @@ def write_excess_report(output_dir: Path, analysis: Dict) -> None:
 
 def main() -> None:
     """主函数"""
-    input_dir = PROJECT_ROOT / "output" / "wyckoff_6cycle_all_stocks_test"
-    output_dir = PROJECT_ROOT / "output" / "wyckoff_excess_returns"
+    input_dir = PROJECT_ROOT / "output" / "wyckoff_8cycle_all_stocks_test"
+    output_dir = PROJECT_ROOT / "output" / "wyckoff_8cycle_excess_returns"
     
     print("=" * 60)
-    print("超额收益分析（基准：沪深300）")
+    print("超额收益分析（基准：沪深300）- 8 Cycle Test")
     print("=" * 60)
     
     # 加载测试结果
     print("\n1. 加载测试结果...")
     results = []
-    with (input_dir / "cycle6_raw_results.jsonl").open("r", encoding="utf-8") as f:
+    with (input_dir / "cycle8_raw_results.jsonl").open("r", encoding="utf-8") as f:
         for line in f:
             results.append(json.loads(line))
     print(f"   加载了 {len(results)} 条记录")
