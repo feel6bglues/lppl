@@ -682,34 +682,24 @@ class WyckoffEngine:
         self, rule0: Rule0Result, step3: Step3Result, 
         cf: V3CounterfactualResult, rr: RiskRewardResult, multiframe: bool
     ) -> ConfidenceResult:
-        """规则8: 置信度矩阵 - 5项条件（优化版）"""
+        """规则8: 置信度矩阵 - 5项条件"""
         # 条件① BC已定位
         bc_located = rule0.bc_found
         
         # 条件② Spring/LPS结构完整且已验证
-        # 优化：单周期模式下，Spring检测即可（不要求LPS确认）
-        if multiframe:
-            spring_lps_verified = step3.spring_detected and step3.lps_confirmed
-        else:
-            # 单周期模式：Spring检测即可，LPS确认为加分项
-            spring_lps_verified = step3.spring_detected
+        spring_lps_verified = step3.spring_detected and step3.lps_confirmed
         
         # 条件③ 反事实推演无法推翻正向判断
         counterfactual_passed = not cf.conclusion_overturned
         
-        # 条件④ 盈亏比 ≥ 1:2.0（v3.0要求2.5，实际放宽到2.0）
-        rr_qualified = rr.rr_ratio >= 2.0
+        # 条件④ 盈亏比 ≥ 1:2.5
+        rr_qualified = rr.rr_ratio >= 2.5
         
         # 条件⑤ 多周期方向一致
-        # 优化：单周期模式下，如果无明显矛盾则视为一致
-        if multiframe:
-            multiframe_aligned = multiframe
-        else:
-            # 单周期模式：如果没有明显的反向信号，视为"部分一致"
-            multiframe_aligned = not cf.conclusion_overturned
+        multiframe_aligned = multiframe
         
         # 特殊情况：如果处于ACCUMULATION且有Spring信号，即使LPS未验证也可降级处理
-        if step3.spring_detected and not step3.lps_confirmed and multiframe:
+        if step3.spring_detected and not spring_lps_verified:
             # Spring已检测但LPS未验证，降级到C
             return ConfidenceResult(
                 level="C",
@@ -720,6 +710,19 @@ class WyckoffEngine:
                 multiframe_aligned=multiframe_aligned,
                 position_size="试仓",
                 reason="Spring已检测但LPS未验证，降级到C",
+            )
+        
+        # 特殊情况：如果处于MARKUP且盈亏比达标，可给B级
+        if rr_qualified and not bc_located:
+            return ConfidenceResult(
+                level="C",
+                bc_located=False,
+                spring_lps_verified=spring_lps_verified,
+                counterfactual_passed=counterfactual_passed,
+                rr_qualified=True,
+                multiframe_aligned=multiframe_aligned,
+                position_size="试仓",
+                reason="盈亏比达标但BC未定位，降级到C",
             )
         
         return self.rules.rule8_confidence_matrix(
