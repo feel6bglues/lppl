@@ -25,32 +25,34 @@ class V3Rules:
 
     @staticmethod
     def rule1_relative_volume(volume: float, volume_series: pd.Series) -> str:
-        """规则1: 相对量能分类"""
+        """规则1: 相对量能分类（参考基准：近30根K线）"""
         if volume_series.empty or volume <= 0:
             return VolumeLevel.AVERAGE.value
         
-        avg_vol = volume_series.rolling(window=20, min_periods=5).mean().iloc[-1]
+        avg_vol = volume_series.rolling(window=30, min_periods=10).mean().iloc[-1]
         if pd.isna(avg_vol) or avg_vol <= 0:
             return VolumeLevel.AVERAGE.value
         
         ratio = volume / avg_vol
         
-        if ratio >= 3.0:
+        if ratio >= 2.0:
             return VolumeLevel.EXTREME_HIGH.value
-        elif ratio >= 1.5:
+        elif ratio >= 1.3:
             return VolumeLevel.HIGH.value
         elif ratio >= 0.7:
             return VolumeLevel.AVERAGE.value
-        elif ratio >= 0.3:
+        elif ratio >= 0.4:
             return VolumeLevel.LOW.value
         else:
             return VolumeLevel.EXTREME_LOW.value
 
     @staticmethod
     def rule2_no_long_in_markdown(phase: WyckoffPhase, signal_type: str) -> Tuple[bool, str]:
-        """规则2: Markdown 禁止做多"""
+        """规则2: Markdown/Distribution 禁止做多"""
         if phase == WyckoffPhase.MARKDOWN:
             return True, "Markdown阶段禁止做多"
+        if phase == WyckoffPhase.DISTRIBUTION:
+            return True, "Distribution阶段禁止做多"
         if signal_type in ("markdown", "downward_thrust"):
             return True, "下跌信号禁止做多"
         return False, ""
@@ -158,22 +160,23 @@ class V3Rules:
         rr_qualified: bool,
         multiframe_aligned: bool,
     ) -> ConfidenceResult:
-        """规则8: 置信度矩阵（5项条件）"""
+        """规则8: 置信度矩阵（5项条件，放宽标准）"""
         conditions = [bc_located, spring_lps_verified, counterfactual_passed, 
                       rr_qualified, multiframe_aligned]
         met_count = sum(conditions)
         
-        if met_count == 5:
+        # 放宽标准：A级4项，B级3项，C级2项
+        if met_count >= 4:
             level = "A"
-            reason = "5项条件全部满足"
+            reason = f"{met_count}项条件满足（含BC定位）"
             position_size = "标准仓位"
-        elif met_count == 4:
+        elif met_count >= 3:
             level = "B"
-            reason = "4项条件满足"
+            reason = f"{met_count}项条件满足"
             position_size = "轻仓"
-        elif met_count == 3:
+        elif met_count >= 2:
             level = "C"
-            reason = "3项条件满足"
+            reason = f"{met_count}项条件满足"
             position_size = "试仓"
         else:
             level = "D"

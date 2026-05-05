@@ -244,10 +244,10 @@ class WyckoffEngine:
                 elif (
                     rule0.bc_found
                     and rule0.bc_position is not None
-                    and current_price <= rule0.bc_position.price * 0.90
-                    and current_price < ma20
+                    and current_price <= rule0.bc_position.price * 0.85
+                    and current_price < ma20 * 0.95
                     and ma5 <= ma20
-                    and short_trend_pct <= 0
+                    and short_trend_pct <= -0.02
                 ):
                     phase = WyckoffPhase.MARKDOWN
                 else:
@@ -273,7 +273,7 @@ class WyckoffEngine:
                 and relative_position >= 0.65
             ):
                 phase = WyckoffPhase.MARKUP
-            elif short_trend_pct <= -0.03 and current_price < ma20:
+            elif short_trend_pct <= -0.05 and current_price < ma20 * 0.95:
                 phase = WyckoffPhase.MARKDOWN
             elif (
                 rule0.bc_found
@@ -394,10 +394,10 @@ class WyckoffEngine:
             recent_20 = df.tail(20)
             
             for i, row in recent_20.iterrows():
-                # Spring = 价格刺穿下边界后快速收回
-                if row["low"] < low_bound * 1.02:  # 允许2%的误差
+                # Spring = 价格刺穿下边界后快速收回（放宽条件）
+                if row["low"] < low_bound * 1.03:  # 允许3%的误差
                     # 检查是否快速收回
-                    if row["close"] >= low_bound * 0.98:  # 收回到边界附近
+                    if row["close"] >= low_bound * 0.97:  # 收回到边界附近
                         spring_detected = True
                         spring_date = str(row["date"])
                         spring_low_price = float(row["low"])
