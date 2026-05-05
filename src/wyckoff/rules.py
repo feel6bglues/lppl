@@ -58,22 +58,44 @@ class V3Rules:
         return False, ""
 
     @staticmethod
-    def rule3_t1_risk_test(entry_price: float, support_low: float) -> Dict[str, Any]:
-        """规则3: T+1 极限回撤测试"""
+    def rule3_t1_risk_test(
+        entry_price: float, 
+        support_low: float,
+        recent_limit_moves: List[Dict] = None
+    ) -> Dict[str, Any]:
+        """规则3: T+1 极限回撤测试（含涨跌停流动性警告）"""
         if entry_price <= 0 or support_low <= 0:
-            return {"verdict": "超限", "pct": 100.0, "desc": "无效价格"}
+            return {"verdict": "超限", "pct": 100.0, "desc": "无效价格", 
+                    "liquidity_warning": ""}
         
         max_drawdown_pct = (entry_price - support_low) / entry_price * 100
         
+        # 检查止损位附近是否有涨跌停记录
+        liquidity_warning = ""
+        if recent_limit_moves:
+            for move in recent_limit_moves:
+                move_price = move.get("price", 0)
+                if move_price > 0:
+                    # 检查止损位是否在涨跌停价格附近（±3%）
+                    stop_price = support_low * 0.995
+                    if abs(move_price - stop_price) / stop_price < 0.03:
+                        move_type = move.get("type", "")
+                        if move_type in ("涨停", "跌停"):
+                            liquidity_warning = f"流动性风险警告：止损位附近有{move_type}记录，止损单可能无法按预期价格成交"
+                            break
+        
         if max_drawdown_pct < 3.0:
             return {"verdict": "安全", "pct": round(max_drawdown_pct, 2), 
-                    "desc": f"极限回撤{max_drawdown_pct:.1f}%，安全"}
+                    "desc": f"极限回撤{max_drawdown_pct:.1f}%，安全",
+                    "liquidity_warning": liquidity_warning}
         elif max_drawdown_pct < 5.0:
             return {"verdict": "偏薄", "pct": round(max_drawdown_pct, 2),
-                    "desc": f"极限回撤{max_drawdown_pct:.1f}%，偏薄"}
+                    "desc": f"极限回撤{max_drawdown_pct:.1f}%，偏薄",
+                    "liquidity_warning": liquidity_warning}
         else:
             return {"verdict": "超限", "pct": round(max_drawdown_pct, 2),
-                    "desc": f"极限回撤{max_drawdown_pct:.1f}%，超限"}
+                    "desc": f"极限回撤{max_drawdown_pct:.1f}%，超限",
+                    "liquidity_warning": liquidity_warning}
 
     @staticmethod
     def rule4_no_trade_zone(contradictions_count: int, struct_clarity: str) -> bool:
@@ -228,8 +250,11 @@ class V3Rules:
         return "mixed", "多周期信号混合"
 
     @staticmethod
-    def rule10_stop_loss(key_low: float) -> StopLossResult:
-        """规则10: 止损精度（关键低点 × 0.995）"""
+    def rule10_stop_loss(
+        key_low: float,
+        recent_limit_moves: List[Dict] = None
+    ) -> StopLossResult:
+        """规则10: 止损精度（关键低点 × 0.995，含流动性警告）"""
         if key_low <= 0:
             return StopLossResult(
                 entry_price=0.0,
@@ -245,11 +270,27 @@ class V3Rules:
         
         precision_warning = stop_pct < 1.5
         
+        # 检查止损位附近是否有涨跌停记录
+        liquidity_warning = ""
+        if recent_limit_moves:
+            for move in recent_limit_moves:
+                move_price = move.get("price", 0)
+                if move_price > 0:
+                    # 检查止损位是否在涨跌停价格附近（±3%）
+                    if abs(move_price - stop_loss_price) / stop_loss_price < 0.03:
+                        move_type = move.get("type", "")
+                        if move_type in ("涨停", "跌停"):
+                            liquidity_warning = f"流动性风险警告：止损位附近有{move_type}记录，止损单可能无法按预期价格成交"
+                            break
+        
+        if not liquidity_warning and precision_warning:
+            liquidity_warning = "止损区间窄，注意流动性"
+        
         return StopLossResult(
             entry_price=key_low,
             stop_loss_price=round(stop_loss_price, 3),
             stop_pct=stop_pct,
             precision_warning=precision_warning,
-            liquidity_risk_warning="止损区间窄，注意流动性" if precision_warning else "",
+            liquidity_risk_warning=liquidity_warning,
             stop_logic=f"关键低点{key_low:.2f}×0.995={stop_loss_price:.2f}",
         )
