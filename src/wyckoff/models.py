@@ -366,6 +366,8 @@ class Rule0Result:
     """Step 0: BC/TR 定位扫描输出"""
     bc_found: bool = False
     bc_position: Optional[BCPoint] = None
+    sc_found: bool = False
+    sc_position: Optional[SCPoint] = None
     bc_in_chart: bool = False
     tr_upper: Optional[float] = None
     tr_lower: Optional[float] = None

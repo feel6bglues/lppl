@@ -171,6 +171,7 @@ class WyckoffEngine:
         tr_lower = float(recent_60["low"].min())
         
         bc_found = bc_point is not None
+        sc_found = sc_point is not None
         tr_defined = (tr_upper - tr_lower) / tr_lower <= 0.25 if tr_lower > 0 else False
         
         # 使用规则5进行降级策略
@@ -179,10 +180,12 @@ class WyckoffEngine:
         return Rule0Result(
             bc_found=bc_found,
             bc_position=bc_point,
+            sc_found=sc_found,
+            sc_position=sc_point,
             bc_in_chart=bc_found,
             tr_upper=tr_upper if tr_defined else None,
             tr_lower=tr_lower if tr_defined else None,
-            tr_source="bc_ar" if bc_found else ("rolling_range" if tr_defined else "none"),
+            tr_source="bc_ar" if bc_found else ("sc_spring" if sc_found else ("rolling_range" if tr_defined else "none")),
             validity=fallback["validity"],
             confidence_base=fallback["confidence_base"],
         )
@@ -235,7 +238,7 @@ class WyckoffEngine:
             elif prior_trend_pct > 0.08:
                 phase = WyckoffPhase.DISTRIBUTION
             else:
-                if relative_position <= 0.50 and (rule0.bc_found or rule0.sc_point is not None):
+                if relative_position <= 0.50 and (rule0.bc_found or rule0.sc_found):
                     phase = WyckoffPhase.ACCUMULATION
                 elif (
                     relative_position <= 0.40
@@ -314,6 +317,16 @@ class WyckoffEngine:
                 and current_price <= rule0.bc_position.price * 0.75
             ):
                 phase = WyckoffPhase.MARKDOWN
+            # 新增：非TR分支的Accumulation检测
+            # 捕捉从下跌转向积累的早期形态
+            elif (
+                short_trend_pct <= -0.02
+                and relative_position <= 0.40
+                and current_price < ma20
+                and ma5 <= ma20
+                and (rule0.bc_found or rule0.sc_found)
+            ):
+                phase = WyckoffPhase.ACCUMULATION
             else:
                 phase = WyckoffPhase.UNKNOWN
 
