@@ -295,7 +295,7 @@ def main() -> None:
     output_dir = PROJECT_ROOT / "output" / "wyckoff_8cycle_600d_excess_returns"
     
     print("=" * 60)
-    print("超额收益分析（基准：沪深300）- 8 Cycle 600 Days Test")
+    print("超额收益分析（基准：沪深300）- 8 Cycle 600 Days Test (5199 Stocks)")
     print("=" * 60)
     
     # 加载测试结果
