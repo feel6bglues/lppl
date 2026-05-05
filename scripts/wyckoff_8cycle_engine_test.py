@@ -422,11 +422,11 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None
 
 def main() -> None:
     """主函数"""
-    output_dir = PROJECT_ROOT / "output" / "wyckoff_8cycle_all_stocks_test"
+    output_dir = PROJECT_ROOT / "output" / "wyckoff_8cycle_600d_test"
     csv_path = PROJECT_ROOT / "data" / "stock_list.csv"
     
     print("=" * 60)
-    print("Wyckoff Engine v3.0 - 8 Cycle Test (ALL Stocks, 1200 Days)")
+    print("Wyckoff Engine v3.0 - 8 Cycle Test (ALL Stocks, 600 Days)")
     print("=" * 60)
     
     # 加载所有股票列表
@@ -442,7 +442,7 @@ def main() -> None:
     
     # 运行测试
     print("\n3. 运行测试...")
-    results = run_8cycle_test(symbols, cycle_specs, output_dir, lookback_days=1200)
+    results = run_8cycle_test(symbols, cycle_specs, output_dir, lookback_days=600)
     
     # 分析结果
     print("\n4. 分析结果...")
