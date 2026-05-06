@@ -101,13 +101,27 @@ class WyckoffEngine:
     ) -> WyckoffReport:
         """单周期 - Step 0→5"""
         frame = self._normalize_input_frame(df)
-        min_rows = 100 if period == "日线" else self.weekly_min_rows
+        
+        # 根据周期设置正确的最小行数
+        if period == "日线":
+            min_rows = 100
+        elif period == "周线":
+            min_rows = self.weekly_min_rows
+        else:  # 月线
+            min_rows = self.monthly_min_rows
         
         if frame is None or len(frame) < min_rows:
             reason = f"数据不足，需要至少 {min_rows} 根 K 线，当前只有 {len(frame) if frame is not None else 0} 根"
             return self._create_no_signal_report(symbol, period, reason)
 
-        lookback = self.lookback_days if period == "日线" else max(min_rows, min(len(frame), self.lookback_days))
+        # 根据周期设置正确的回看行数
+        if period == "日线":
+            lookback = self.lookback_days
+        elif period == "周线":
+            lookback = min(len(frame), 180)  # 180周 ≈ 3.5年
+        else:  # 月线
+            lookback = min(len(frame), 120)  # 120月 = 10年
+        
         frame = frame.tail(lookback).reset_index(drop=True)
 
         # Step 0: BC/TR 定位扫描
