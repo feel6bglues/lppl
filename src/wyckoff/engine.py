@@ -243,23 +243,15 @@ class WyckoffEngine:
             else:
                 prior_trend_pct = 0.0
 
-            # 优化：放宽Accumulation判定条件
-            # 1. 前趋势下跌>5%（原10%）
-            # 2. 或 relative_position<=0.50 + BC/SC定位（原0.40）
-            # 3. 或 价格在区间下部 + 量能萎缩
-            if prior_trend_pct < -0.05:
+            # 使用最佳版本阈值(a438a32)
+            # 1. 前趋势下跌>10%
+            # 2. 或 relative_position<=0.40 + BC定位
+            if prior_trend_pct < -0.10:
                 phase = WyckoffPhase.ACCUMULATION
-            elif prior_trend_pct > 0.08:
+            elif prior_trend_pct > 0.10:
                 phase = WyckoffPhase.DISTRIBUTION
             else:
-                if relative_position <= 0.50 and (rule0.bc_found or rule0.sc_found):
-                    phase = WyckoffPhase.ACCUMULATION
-                elif (
-                    relative_position <= 0.40
-                    and current_price < ma20
-                    and ma5 <= ma20 * 1.02
-                ):
-                    # 价格在区间下部，可能是Accumulation
+                if relative_position <= 0.40 and rule0.bc_found:
                     phase = WyckoffPhase.ACCUMULATION
                 elif (
                     (relative_position >= 0.55 or short_trend_pct >= 0.03)
@@ -304,29 +296,22 @@ class WyckoffEngine:
                 and relative_position >= 0.65
             ):
                 phase = WyckoffPhase.MARKUP
-            # 优化：使用更严格的Markdown判定条件
-            # 1. 短期趋势下跌>8%（原5%）
-            # 2. 价格低于20日均线10%（原5%）
-            # 3. 60日均线也下行（增加确认）
-            elif (
-                short_trend_pct <= -0.08 
-                and current_price < ma20 * 0.90
-                and (len(df) < 60 or ma5 < ma60)
-            ):
+            # 使用最佳版本阈值(a438a32)
+            elif short_trend_pct <= -0.05 and current_price < ma20 * 0.95:
                 phase = WyckoffPhase.MARKDOWN
             elif (
                 rule0.bc_found
                 and rule0.bc_position is not None
-                and current_price <= rule0.bc_position.price * 0.85
-                and current_price < ma20 * 0.92
+                and current_price <= rule0.bc_position.price * 0.90
+                and current_price < ma20
                 and ma5 <= ma20
-                and short_trend_pct <= -0.03
+                and short_trend_pct <= 0
             ):
                 phase = WyckoffPhase.MARKDOWN
             elif (
                 rule0.bc_found
                 and rule0.bc_position is not None
-                and short_trend_pct <= -0.06
+                and short_trend_pct <= -0.04
                 and relative_position <= 0.25
                 and current_price <= rule0.bc_position.price * 0.75
             ):
@@ -484,12 +469,12 @@ class WyckoffEngine:
             recent_20 = df.tail(20)
             
             for i, row in recent_20.iterrows():
-                # 优化：放宽Spring检测条件
-                # 1. 允许5%的误差（原3%）
-                # 2. 收回到边界附近（原97%，现95%）
-                if row["low"] < low_bound * 1.05:  # 允许5%的误差
+                # 使用最佳版本阈值(a438a32)
+                # 1. 允许3%的误差
+                # 2. 收回到边界附近（97%）
+                if row["low"] < low_bound * 1.03:  # 允许3%的误差
                     # 检查是否快速收回
-                    if row["close"] >= low_bound * 0.95:  # 收回到边界附近
+                    if row["close"] >= low_bound * 0.97:  # 收回到边界附近
                         spring_detected = True
                         spring_date = str(row["date"])
                         spring_low_price = float(row["low"])
