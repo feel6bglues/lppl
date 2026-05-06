@@ -49,11 +49,18 @@ logger = logging.getLogger(__name__)
 class WyckoffEngine:
     """v3.0 威科夫分析引擎 - 唯一入口"""
 
-    def __init__(self, lookback_days: int = 120):
+    def __init__(self, lookback_days: int = 120, weekly_lookback: int = 180, monthly_lookback: int = 120):
         self.lookback_days = lookback_days
         self.weekly_min_rows = 20
         self.monthly_min_rows = 12
-        self.multi_timeframe_lookback_days = max(lookback_days, 800)
+        self.weekly_lookback = weekly_lookback  # 周线回看行数
+        self.monthly_lookback = monthly_lookback  # 月线回看行数
+        # 计算多周期分析所需的日线数据量
+        # 周线: weekly_lookback周 × 7天
+        # 月线: monthly_lookback月 × 30天
+        weekly_days = weekly_lookback * 7
+        monthly_days = monthly_lookback * 30
+        self.multi_timeframe_lookback_days = max(lookback_days, weekly_days, monthly_days)
         self.rules = V3Rules()
 
     def _normalize_input_frame(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -118,9 +125,9 @@ class WyckoffEngine:
         if period == "日线":
             lookback = self.lookback_days
         elif period == "周线":
-            lookback = min(len(frame), 180)  # 180周 ≈ 3.5年
+            lookback = min(len(frame), self.weekly_lookback)
         else:  # 月线
-            lookback = min(len(frame), 120)  # 120月 = 10年
+            lookback = min(len(frame), self.monthly_lookback)
         
         frame = frame.tail(lookback).reset_index(drop=True)
 
