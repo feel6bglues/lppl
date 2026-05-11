@@ -187,7 +187,7 @@
 - 但因为回撤仍偏大，尚未写回生产参数。
 
 ### 4.4 短 warning 首轮验证
-来源：[short_warning_validation_8_summary_20260329.csv](/home/james/Documents/Project/lppl/output/short_warning_validation/summary/short_warning_validation_8_summary_20260329.csv)
+来源：[short_warning_validation_8_summary_20260329.csv](/home/james/Documents/Project/lppl/output/backtest/short_warning/short_warning_validation/summary/short_warning_validation_8_summary_20260329.csv)
 
 实验设定：
 - 大盘：`watch=25`, `warning=12`, `danger=5`
@@ -201,7 +201,7 @@
 - 直接证明：短 `warning/danger` 不能脱离扫描频率单独使用
 
 ### 4.5 短 warning + 固定 step=5
-来源：[short_warning_validation_step5_8_summary_20260329.csv](/home/james/Documents/Project/lppl/output/short_warning_validation_step5/summary/short_warning_validation_step5_8_summary_20260329.csv)
+来源：[short_warning_validation_step5_8_summary_20260329.csv](/home/james/Documents/Project/lppl/output/backtest/short_warning/short_warning_validation_step5/summary/short_warning_validation_step5_8_summary_20260329.csv)
 
 结论：
 - `8/8` 仍全部失败
@@ -210,7 +210,7 @@
 - 但 7/8 的 `bubble_risk_count` 仍为 0，说明 `danger` 仍过严
 
 ### 4.6 step=5 + relaxed danger
-来源：[short_warning_validation_step5_relaxed_danger_8_summary_20260329.csv](/home/james/Documents/Project/lppl/output/short_warning_validation_step5_relaxed_danger/summary/short_warning_validation_step5_relaxed_danger_8_summary_20260329.csv)
+来源：[short_warning_validation_step5_relaxed_danger_8_summary_20260329.csv](/home/james/Documents/Project/lppl/output/backtest/short_warning/short_warning_validation_step5_relaxed_danger/summary/short_warning_validation_step5_relaxed_danger_8_summary_20260329.csv)
 
 实验设定：
 - 固定 `step=5`
@@ -232,7 +232,7 @@
 - 新增的 `bubble_risk` 大多没有改变真实交易路径
 
 ### 4.7 step=5 + relaxed danger + warning observe only
-来源：[short_warning_validation_step5_warning_observe_only_8_summary_20260329.csv](/home/james/Documents/Project/lppl/output/short_warning_validation_step5_warning_observe_only/summary/short_warning_validation_step5_warning_observe_only_8_summary_20260329.csv)
+来源：[short_warning_validation_step5_warning_observe_only_8_summary_20260329.csv](/home/james/Documents/Project/lppl/output/backtest/short_warning/short_warning_validation_step5_warning_observe_only/summary/short_warning_validation_step5_warning_observe_only_8_summary_20260329.csv)
 
 实验设定：
 - 保持上一轮所有参数不变
