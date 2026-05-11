@@ -25,5 +25,10 @@ unused/
 output/
 
 # Local data files
+data/
 data/*.parquet
 *.parquet
+
+# Backup files
+*.tar.gz
+*.zip

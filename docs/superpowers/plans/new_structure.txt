@@ -1,0 +1,60 @@
+总计 60
+drwxr-xr-x 10 james james 12288  5月 11 17:02 .
+drwxr-xr-x 14 james james  4096  5月 11 16:32 ..
+drwxrwxr-x  4 james james  4096  5月 11 16:34 archive
+drwxrwxr-x  5 james james  4096  5月 11 16:34 backtest
+drwxrwxr-x  4 james james  4096  5月 11 16:34 demo
+-rw-rw-r--  1 james james  9860  5月 11 17:02 INDEX.md
+drwxrwxr-x  5 james james  4096  5月 11 16:34 lppl
+drwxrwxr-x 10 james james  4096  5月 11 16:43 ma_atr
+drwxrwxr-x  6 james james  4096  5月 11 16:34 signal_tuning
+drwxrwxr-x  6 james james  4096  5月 11 16:47 strategy
+drwxrwxr-x 14 james james  4096  5月 11 16:40 wyckoff
+---
+/home/james/Documents/Project/lppl/output
+/home/james/Documents/Project/lppl/output/archive
+/home/james/Documents/Project/lppl/output/archive/retest
+/home/james/Documents/Project/lppl/output/archive/test
+/home/james/Documents/Project/lppl/output/backtest
+/home/james/Documents/Project/lppl/output/backtest/integrated
+/home/james/Documents/Project/lppl/output/backtest/short_warning
+/home/james/Documents/Project/lppl/output/backtest/three_layer
+/home/james/Documents/Project/lppl/output/demo
+/home/james/Documents/Project/lppl/output/demo/archive
+/home/james/Documents/Project/lppl/output/demo/investment
+/home/james/Documents/Project/lppl/output/lppl
+/home/james/Documents/Project/lppl/output/lppl/backtest
+/home/james/Documents/Project/lppl/output/lppl/params
+/home/james/Documents/Project/lppl/output/lppl/reports
+/home/james/Documents/Project/lppl/output/ma_atr
+/home/james/Documents/Project/lppl/output/ma_atr/convergence
+/home/james/Documents/Project/lppl/output/ma_atr/multi_factor
+/home/james/Documents/Project/lppl/output/ma_atr/original
+/home/james/Documents/Project/lppl/output/ma_atr/other
+/home/james/Documents/Project/lppl/output/ma_atr/risk
+/home/james/Documents/Project/lppl/output/ma_atr/template
+/home/james/Documents/Project/lppl/output/ma_atr/tuning
+/home/james/Documents/Project/lppl/output/ma_atr/turnover
+/home/james/Documents/Project/lppl/output/signal_tuning
+/home/james/Documents/Project/lppl/output/signal_tuning/round1
+/home/james/Documents/Project/lppl/output/signal_tuning/round2
+/home/james/Documents/Project/lppl/output/signal_tuning/round3
+/home/james/Documents/Project/lppl/output/signal_tuning/round4
+/home/james/Documents/Project/lppl/output/strategy
+/home/james/Documents/Project/lppl/output/strategy/optimized
+/home/james/Documents/Project/lppl/output/strategy/scheme
+/home/james/Documents/Project/lppl/output/strategy/test
+/home/james/Documents/Project/lppl/output/strategy/validation
+/home/james/Documents/Project/lppl/output/wyckoff
+/home/james/Documents/Project/lppl/output/wyckoff/batch_analysis
+/home/james/Documents/Project/lppl/output/wyckoff/effectiveness
+/home/james/Documents/Project/lppl/output/wyckoff/excess_returns
+/home/james/Documents/Project/lppl/output/wyckoff/factor_analysis
+/home/james/Documents/Project/lppl/output/wyckoff/fixed
+/home/james/Documents/Project/lppl/output/wyckoff/fusion
+/home/james/Documents/Project/lppl/output/wyckoff/latest
+/home/james/Documents/Project/lppl/output/wyckoff/mtf_semantics
+/home/james/Documents/Project/lppl/output/wyckoff/optimization
+/home/james/Documents/Project/lppl/output/wyckoff/original
+/home/james/Documents/Project/lppl/output/wyckoff/replay
+/home/james/Documents/Project/lppl/output/wyckoff/test
