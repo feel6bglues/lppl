@@ -85,6 +85,9 @@ def validate_dataframe(df: pd.DataFrame, symbol: str) -> Tuple[bool, str]:
     if (df["volume"] < 0).any():
         return False, "Invalid data: negative volume found"
 
+    if "amount" in df.columns and (df["amount"] < 0).any():
+        return False, "Invalid data: negative amount found"
+
     dates = pd.to_datetime(df["date"], errors="coerce")
     if dates.isnull().any():
         return False, "Invalid date format found"
@@ -194,7 +197,10 @@ class DataManager:
                     return None
 
                 df = df.rename(columns=DATA_COLUMNS)
-                df = df.dropna(subset=["open", "high", "low", "close", "volume"])
+                drop_subset = ["open", "high", "low", "close", "volume"]
+                if "amount" in df.columns:
+                    drop_subset.append("amount")
+                df = df.dropna(subset=drop_subset)
             else:
                 df = ak.index_zh_a_hist(
                     symbol=pure_symbol,
@@ -349,7 +355,10 @@ class DataManager:
                 )
                 if new_df is not None and not new_df.empty:
                     new_df = new_df.rename(columns=DATA_COLUMNS)
-                    new_df = new_df.dropna(subset=["open", "high", "low", "close", "volume"])
+                    drop_subset = ["open", "high", "low", "close", "volume"]
+                    if "amount" in new_df.columns:
+                        drop_subset.append("amount")
+                    new_df = new_df.dropna(subset=drop_subset)
                     if new_df.empty:
                         new_df = None
             else:

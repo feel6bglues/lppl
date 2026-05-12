@@ -209,11 +209,16 @@ class StressTest:
 
 @dataclass
 class ChipAnalysis:
-    """筹码微观分析"""
+    """筹码微观分析（v2: 加入成交额维度的量价背离检测）"""
     absorption_signature: bool = False  # 吸筹痕迹
     distribution_signature: bool = False  # 派发痕迹
-    volume_price_divergence: bool = False  # 量价背离
+    volume_price_divergence: bool = False  # 量价背离（基于volume）
+    amount_price_divergence: bool = False  # 金额背离（基于amount）
     institutional_footprint: bool = False  # 机构痕迹
+    divergence_score: float = 0.0  # 连续量价背离评分 [-1, 1]
+    amount_divergence_score: float = 0.0  # 连续金额背离评分 [-1, 1]
+    avg_price_deviation: float = 0.0  # 收盘价偏离均价的程度
+    money_flow_trend: float = 0.0  # 资金流向趋势 [-1, 1]
     warnings: List[str] = field(default_factory=list)
 
 

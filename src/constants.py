@@ -46,7 +46,7 @@ TDX_DATA_DIR: str = os.environ.get(
     "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc"
 )
 
-REQUIRED_COLUMNS: List[str] = ["date", "open", "close", "high", "low", "volume"]
+REQUIRED_COLUMNS: List[str] = ["date", "open", "close", "high", "low", "volume", "amount"]
 
 MIN_DATA_ROWS: int = 100
 

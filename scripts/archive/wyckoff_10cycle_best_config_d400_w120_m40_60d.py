@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-LPPL泡沫检测 + Wyckoff最佳配置测试
-- 使用LPPL模块分析大盘泡沫阶段
-- 识别空仓时段
-- 使用Wyckoff最佳配置(d400_w120_m40)测试
-- 去除空仓时段
-- 2012-2025年随机10个窗口
+10组周期测试 - 最佳参数组合 (d400_w120_m40)
+- 400天日线回看
+- 周线: 120周, 使用日历周(W-FRI)合成
+- 月线: 40月, 使用日历月(ME)合成
+- 2020-2025年随机日期
 - 拟合后续60日日线
-- 使用日历周和日历月合成周线月线
 """
 
 from __future__ import annotations
@@ -22,13 +20,13 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import pandas as pd
 import numpy as np
 import psutil
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -79,135 +77,22 @@ def load_stock_symbols(csv_path: Path, limit: int = 99999) -> List[Dict[str, str
     return symbols
 
 
-def detect_bubble_periods(index_data: pd.DataFrame) -> List[Tuple[str, str]]:
-    """
-    使用简单方法检测大盘泡沫阶段
-    基于价格涨幅和波动率检测
-    
-    Args:
-        index_data: 大盘指数数据（如上证指数）
-    
-    Returns:
-        List of (start_date, end_date) tuples representing bubble periods
-    """
-    bubble_periods = []
-    
-    # 计算技术指标
-    index_data = index_data.copy()
-    index_data['ma20'] = index_data['close'].rolling(20).mean()
-    index_data['ma60'] = index_data['close'].rolling(60).mean()
-    index_data['ma120'] = index_data['close'].rolling(120).mean()
-    
-    # 计算波动率
-    index_data['returns'] = index_data['close'].pct_change()
-    index_data['volatility'] = index_data['returns'].rolling(20).std()
-    
-    # 计算相对位置
-    index_data['high_120'] = index_data['close'].rolling(120).max()
-    index_data['low_120'] = index_data['close'].rolling(120).min()
-    index_data['relative_position'] = (index_data['close'] - index_data['low_120']) / (index_data['high_120'] - index_data['low_120'])
-    
-    # 检测泡沫条件
-    # 1. 价格远离均线（超过20%）
-    # 2. 波动率异常高
-    # 3. 相对位置过高（>0.9）
-    
-    for i in range(120, len(index_data)):
-        row = index_data.iloc[i]
-        
-        # 检查是否满足泡沫条件
-        is_bubble = False
-        
-        # 条件1: 价格远离均线
-        if row['ma60'] > 0 and (row['close'] - row['ma60']) / row['ma60'] > 0.2:
-            is_bubble = True
-        
-        # 条件2: 波动率异常高
-        if row['volatility'] > 0.03:  # 日波动率超过3%
-            is_bubble = True
-        
-        # 条件3: 相对位置过高
-        if row['relative_position'] > 0.95:
-            is_bubble = True
-        
-        if is_bubble:
-            # 标记泡沫阶段
-            bubble_start = index_data.iloc[max(0, i-30)]['date']
-            bubble_end = index_data.iloc[min(len(index_data)-1, i+30)]['date']
-            bubble_periods.append((str(bubble_start), str(bubble_end)))
-    
-    # 合并重叠的泡沫阶段
-    if not bubble_periods:
-        return []
-    
-    merged_periods = []
-    current_start, current_end = bubble_periods[0]
-    
-    for start, end in bubble_periods[1:]:
-        if start <= current_end:
-            current_end = max(current_end, end)
-        else:
-            merged_periods.append((current_start, current_end))
-            current_start, current_end = start, end
-    
-    merged_periods.append((current_start, current_end))
-    
-    return merged_periods
-
-
-def is_in_bubble_period(date_str: str, bubble_periods: List[Tuple[str, str]]) -> bool:
-    """检查日期是否在泡沫阶段"""
-    date = pd.Timestamp(date_str)
-    for start, end in bubble_periods:
-        if pd.Timestamp(start) <= date <= pd.Timestamp(end):
-            return True
-    return False
-
-
-def generate_cycle_specs(bubble_periods: List[Tuple[str, str]], seed: int = 42) -> List[CycleSpec]:
-    """生成 10 组随机年份和日期的测试规格（2012-2025），避开泡沫阶段"""
+def generate_cycle_specs(seed: int = 42) -> List[CycleSpec]:
+    """生成 10 组随机年份和日期的测试规格（2020-2025）"""
     random.seed(seed)
     specs = []
-    
-    # 尝试生成10个不在泡沫阶段的日期
-    attempts = 0
-    max_attempts = 1000
-    
-    while len(specs) < 10 and attempts < max_attempts:
-        attempts += 1
-        
-        # 随机选择年份（2012-2025）
-        year = random.randint(2012, 2025)
-        
-        # 随机选择日期
+    years = sorted([random.choice(range(2020, 2026)) for _ in range(10)])
+    for idx, yr in enumerate(years):
         month = random.randint(3, 11)
         day = random.randint(10, 25)
-        date_str = f"{year}-{month:02d}-{day:02d}"
-        
-        # 检查是否在泡沫阶段
-        if not is_in_bubble_period(date_str, bubble_periods):
-            specs.append(CycleSpec(
-                cycle_id=len(specs) + 1,
-                year=year,
-                as_of_date=date_str,
-                description=f"Year {year} Cycle {len(specs) + 1}"
-            ))
-    
-    # 如果无法生成足够的非泡沫日期，放宽条件
-    while len(specs) < 10:
-        year = random.randint(2012, 2025)
-        month = random.randint(3, 11)
-        day = random.randint(10, 25)
-        date_str = f"{year}-{month:02d}-{day:02d}"
-        
+        date_str = f"{yr}-{month:02d}-{day:02d}"
         specs.append(CycleSpec(
-            cycle_id=len(specs) + 1,
-            year=year,
+            cycle_id=idx + 1,
+            year=yr,
             as_of_date=date_str,
-            description=f"Year {year} Cycle {len(specs) + 1} (potential bubble)"
+            description=f"Year {yr} Cycle {idx+1}"
         ))
-    
-    return sorted(specs, key=lambda x: x.as_of_date)
+    return specs
 
 
 def calculate_future_return(
@@ -239,7 +124,7 @@ def calculate_future_return(
 
 def process_single_stock(args: tuple) -> List[Dict]:
     """处理单只股票的所有周期（用于多进程）"""
-    symbol_info, cycle_specs, lookback_days, bubble_periods = args
+    symbol_info, cycle_specs, lookback_days = args
     symbol = symbol_info["symbol"]
     name = symbol_info["name"]
     results = []
@@ -269,10 +154,6 @@ def process_single_stock(args: tuple) -> List[Dict]:
             as_of = pd.Timestamp(spec.as_of_date)
             available_data = df[df["date"] <= as_of]
             if len(available_data) < 100:
-                continue
-            
-            # 检查是否在泡沫阶段
-            if is_in_bubble_period(spec.as_of_date, bubble_periods):
                 continue
             
             report = engine.analyze(available_data, symbol=symbol, period="日线", multi_timeframe=True)
@@ -319,7 +200,6 @@ def process_single_stock(args: tuple) -> List[Dict]:
 def run_10cycle_test_multiprocess(
     symbols: List[Dict[str, str]],
     cycle_specs: List[CycleSpec],
-    bubble_periods: List[Tuple[str, str]],
     output_dir: Path,
     lookback_days: int = 400,
     max_workers: int = None,
@@ -335,7 +215,6 @@ def run_10cycle_test_multiprocess(
     print(f"周线回看: 120周 (日历周W-FRI合成)")
     print(f"月线回看: 40月 (日历月ME合成)")
     print(f"验证周期: 60天")
-    print(f"泡沫阶段: {len(bubble_periods)} 个")
     
     memory = psutil.virtual_memory()
     print(f"系统内存: {memory.total / (1024**3):.1f}GB 总计, {memory.available / (1024**3):.1f}GB 可用")
@@ -344,7 +223,7 @@ def run_10cycle_test_multiprocess(
     all_results = []
     completed_stocks = 0
     
-    args_list = [(symbol_info, cycle_specs, lookback_days, bubble_periods) for symbol_info in symbols]
+    args_list = [(symbol_info, cycle_specs, lookback_days) for symbol_info in symbols]
 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {
@@ -538,7 +417,7 @@ def analyze_signal_fit(df: pd.DataFrame) -> Dict:
     }
 
 
-def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict, bubble_periods: List[Tuple[str, str]]) -> None:
+def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None:
     """输出结果到文件"""
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -553,14 +432,10 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict, bubble_
     with (output_dir / "cycle10_analysis.json").open("w", encoding="utf-8") as f:
         json.dump(convert_keys_to_str(analysis), f, ensure_ascii=False, indent=2)
 
-    # 保存泡沫阶段
-    with (output_dir / "bubble_periods.json").open("w", encoding="utf-8") as f:
-        json.dump(bubble_periods, f, ensure_ascii=False, indent=2)
-
     fit = analysis.get('fit_analysis', {})
     
     md_lines = [
-        "# 10-Cycle Wyckoff Engine Test Report (Best Config: d400_w120_m40 + LPPL Bubble Filter)",
+        "# 10-Cycle Wyckoff Engine Test Report (Best Config: d400_w120_m40)",
         "",
         f"- 测试日期: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         f"- 总样本数: {analysis.get('total_samples', 0)}",
@@ -570,20 +445,8 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict, bubble_
         f"- 周线回看: 120周 (日历周W-FRI合成)",
         f"- 月线回看: 40月 (日历月ME合成)",
         f"- 验证周期: 60天",
-        f"- 测试周期: 10周期（2012-2025随机日期）",
-        f"- 泡沫过滤: 已启用 ({len(bubble_periods)} 个泡沫阶段)",
+        f"- 测试周期: 10周期（2020-2025随机日期）",
         f"- 并行方式: ProcessPoolExecutor (多进程)",
-        "",
-        "## 泡沫阶段",
-        "",
-        "| 序号 | 开始日期 | 结束日期 |",
-        "|------|----------|----------|",
-    ]
-    
-    for idx, (start, end) in enumerate(bubble_periods, 1):
-        md_lines.append(f"| {idx} | {start} | {end} |")
-
-    md_lines.extend([
         "",
         "## 拟合度分析",
         "",
@@ -596,7 +459,7 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict, bubble_
         "",
         "| 阶段 | 样本数 | 平均收益 | 中位收益 | 胜率 | 平均最大涨幅 | 平均最大回撤 |",
         "|---|---:|---:|---:|---:|---:|---:|",
-    ])
+    ]
 
     for phase, stats in sorted(analysis.get("phase_stats", {}).items(),
                                 key=lambda x: x[1]["avg_return"], reverse=True):
@@ -677,73 +540,36 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict, bubble_
     print(f"  - {output_dir / 'cycle10_raw_results.jsonl'}")
     print(f"  - {output_dir / 'cycle10_results.csv'}")
     print(f"  - {output_dir / 'cycle10_analysis.json'}")
-    print(f"  - {output_dir / 'bubble_periods.json'}")
     print(f"  - {output_dir / 'cycle10_report.md'}")
-
-
-def load_index_from_tdx(tdx_path: Path) -> pd.DataFrame:
-    """加载TDX指数数据（使用集中加载器）"""
-    from src.data.tdx_loader import load_tdx_data as _load_tdx
-    df = _load_tdx(str(tdx_path))
-    return df if df is not None else pd.DataFrame()
 
 
 def main() -> None:
     """主函数"""
-    output_dir = PROJECT_ROOT / "output" / "wyckoff_10cycle_lppl_filtered"
+    output_dir = PROJECT_ROOT / "output" / "wyckoff_10cycle_best_config_d400_w120_m40_60d"
     csv_path = PROJECT_ROOT / "data" / "stock_list.csv"
-    tdx_index_path = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000001.day")  # 上证指数
 
     print("=" * 60)
     print("Wyckoff Engine v3.0 - 10 Cycle Test (Best Config: d400_w120_m40)")
-    print("LPPL泡沫过滤 + 日历周/月合成")
+    print("验证周期: 60天")
     print("=" * 60)
 
-    # 1. 加载股票列表
     print("\n1. 加载股票列表...")
     symbols = load_stock_symbols(csv_path, limit=99999)
     print(f"   加载了 {len(symbols)} 只股票")
 
-    # 2. 加载大盘指数数据
-    print("\n2. 加载大盘指数数据...")
-    if tdx_index_path.exists():
-        index_data = load_index_from_tdx(tdx_index_path)
-        print(f"   加载了 {len(index_data)} 条指数数据")
-    else:
-        print(f"   警告: 指数文件不存在 {tdx_index_path}")
-        print("   将跳过泡沫过滤")
-        index_data = None
-
-    # 3. 检测泡沫阶段
-    print("\n3. 检测泡沫阶段...")
-    bubble_periods = []
-    if index_data is not None:
-        bubble_periods = detect_bubble_periods(index_data)
-        print(f"   检测到 {len(bubble_periods)} 个泡沫阶段")
-        for idx, (start, end) in enumerate(bubble_periods, 1):
-            print(f"   泡沫 {idx}: {start} ~ {end}")
-    else:
-        print("   跳过泡沫检测")
-
-    # 4. 生成测试周期
-    print("\n4. 生成测试周期（2012-2025随机日期，避开泡沫阶段）...")
-    cycle_specs = generate_cycle_specs(bubble_periods)
+    print("\n2. 生成测试周期（2020-2025随机日期）...")
+    cycle_specs = generate_cycle_specs()
     for spec in cycle_specs:
-        is_bubble = is_in_bubble_period(spec.as_of_date, bubble_periods)
-        bubble_mark = " [泡沫]" if is_bubble else ""
-        print(f"   Cycle {spec.cycle_id}: Year {spec.year}, Date {spec.as_of_date}{bubble_mark}")
+        print(f"   Cycle {spec.cycle_id}: Year {spec.year}, Date {spec.as_of_date}")
 
-    # 5. 运行测试
-    print("\n5. 运行测试（多进程）...")
-    results = run_10cycle_test_multiprocess(symbols, cycle_specs, bubble_periods, output_dir, lookback_days=400)
+    print("\n3. 运行测试（多进程）...")
+    results = run_10cycle_test_multiprocess(symbols, cycle_specs, output_dir, lookback_days=400)
 
-    # 6. 分析结果
-    print("\n6. 分析结果...")
+    print("\n4. 分析结果...")
     analysis = analyze_results(results)
 
-    # 7. 输出结果
-    print("\n7. 输出结果...")
-    write_outputs(output_dir, results, analysis, bubble_periods)
+    print("\n5. 输出结果...")
+    write_outputs(output_dir, results, analysis)
 
     fit = analysis.get('fit_analysis', {})
     print("\n" + "=" * 60)
@@ -752,7 +578,6 @@ def main() -> None:
     print(f"  整体平均收益: {analysis.get('overall_avg_return', 0):.2f}%")
     print(f"  整体胜率: {analysis.get('overall_win_rate', 0):.1f}%")
     print(f"  整体拟合度: {fit.get('overall_fit_score', 0):.1f}/100")
-    print(f"  泡沫阶段: {len(bubble_periods)} 个")
     print("=" * 60)
 
 

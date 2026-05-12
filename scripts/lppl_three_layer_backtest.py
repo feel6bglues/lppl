@@ -225,31 +225,10 @@ def _get_index_df():
     global _INDEX_DF_CACHE
     if _INDEX_DF_CACHE is not None:
         return _INDEX_DF_CACHE
-    tdx_path = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000001.day")
-    if not tdx_path.exists():
-        return None
-    import struct
-    records = []
-    with open(tdx_path, "rb") as f:
-        while True:
-            data = f.read(32)
-            if len(data) < 32:
-                break
-            date_int, o, h, l, c, amount, volume, _ = struct.unpack("<IIIIIfII", data)
-            year = date_int // 10000
-            month = (date_int % 10000) // 100
-            day = date_int % 100
-            records.append({
-                "date": f"{year}-{month:02d}-{day:02d}",
-                "open": o / 100.0, "high": h / 100.0,
-                "low": l / 100.0, "close": c / 100.0,
-                "volume": volume, "amount": amount,
-            })
-    df = pd.DataFrame(records)
-    df["date"] = pd.to_datetime(df["date"])
-    df = df.sort_values("date").reset_index(drop=True)
-    _INDEX_DF_CACHE = df
-    return df
+    from src.data.tdx_loader import load_tdx_data
+    tdx_path = "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000001.day"
+    _INDEX_DF_CACHE = load_tdx_data(tdx_path)
+    return _INDEX_DF_CACHE
 
 
 def process_single_stock(args: tuple) -> List[Dict]:
@@ -703,27 +682,12 @@ def main():
     print("\n2. 加载上证指数...")
     index_data = None
     if tdx_index_path.exists():
-        import struct
-        records = []
-        with open(tdx_index_path, "rb") as f:
-            while True:
-                data = f.read(32)
-                if len(data) < 32:
-                    break
-                date_int, o, h, l, c, amount, volume, _ = struct.unpack("<IIIIIfII", data)
-                year = date_int // 10000
-                month = (date_int % 10000) // 100
-                day = date_int % 100
-                records.append({
-                    "date": f"{year}-{month:02d}-{day:02d}",
-                    "open": o / 100.0, "high": h / 100.0,
-                    "low": l / 100.0, "close": c / 100.0,
-                    "volume": volume, "amount": amount,
-                })
-        index_data = pd.DataFrame(records)
-        index_data["date"] = pd.to_datetime(index_data["date"])
-        index_data = index_data.sort_values("date").reset_index(drop=True)
-        print(f"   {len(index_data)} 条指数数据")
+        from src.data.tdx_loader import load_tdx_data
+        index_data = load_tdx_data(str(tdx_index_path))
+        if index_data is not None:
+            print(f"   {len(index_data)} 条指数数据")
+        else:
+            print("   加载失败")
     else:
         print(f"   指数文件不存在: {tdx_index_path}")
 

@@ -104,6 +104,7 @@ class TDXReader:
                         month = int(date_str[4:6])
                         day = int(date_str[6:8])
 
+                        # TDX格式：所有品种（指数和个股）价格乘数均为100
                         records.append({
                             "date": f"{year}-{month:02d}-{day:02d}",
                             "open": open_price / 100.0,

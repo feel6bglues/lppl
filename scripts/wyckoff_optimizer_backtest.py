@@ -21,7 +21,6 @@ import csv
 import json
 import os
 import random
-import struct
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -662,25 +661,11 @@ def main():
     print(f"   {len(symbols)} 只")
 
     print("\n2. 加载指数...")
-    tdx_path = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000001.day")
     index_data = None
+    tdx_path = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000001.day")
     if tdx_path.exists():
-        records = []
-        with open(tdx_path, "rb") as f:
-            while True:
-                data = f.read(32)
-                if len(data) < 32:
-                    break
-                date_int, o, h, l, c, amount, volume, _ = struct.unpack("<IIIIIfII", data)
-                year = date_int // 10000
-                month = (date_int % 10000) // 100
-                day = date_int % 100
-                records.append({"date": f"{year}-{month:02d}-{day:02d}",
-                               "open": o/100, "high": h/100, "low": l/100, "close": c/100,
-                               "volume": volume, "amount": amount})
-        index_data = pd.DataFrame(records)
-        index_data["date"] = pd.to_datetime(index_data["date"])
-        index_data = index_data.sort_values("date").reset_index(drop=True)
+        from src.data.tdx_loader import load_tdx_data
+        index_data = load_tdx_data(str(tdx_path))
     print(f"   {len(index_data) if index_data is not None else 0} 条")
 
     print("\n3. 泡沫检测...")

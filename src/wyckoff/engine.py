@@ -70,17 +70,18 @@ class WyckoffEngine:
 
     def _resample_ohlcv(self, df: pd.DataFrame, rule: str) -> pd.DataFrame:
         frame = self._normalize_input_frame(df).set_index("date")
+        agg_dict = {
+            "open": "first",
+            "high": "max",
+            "low": "min",
+            "close": "last",
+            "volume": "sum",
+        }
+        if "amount" in frame.columns:
+            agg_dict["amount"] = "sum"
         resampled = (
             frame.resample(rule, label="right", closed="right")
-            .agg(
-                {
-                    "open": "first",
-                    "high": "max",
-                    "low": "min",
-                    "close": "last",
-                    "volume": "sum",
-                }
-            )
+            .agg(agg_dict)
             .dropna(subset=["open", "high", "low", "close"])
             .reset_index()
         )
@@ -389,6 +390,29 @@ class WyckoffEngine:
         avg_vol = recent_20["volume"].mean()
         price_change = (recent_20["close"].iloc[-1] - recent_20["close"].iloc[0]) / recent_20["close"].iloc[0]
         vol_change = (recent_20["volume"].iloc[-1] - avg_vol) / avg_vol if avg_vol > 0 else 0
+        
+        # 成交额维度分析（基于amount）
+        if "amount" in recent_20.columns and recent_20["amount"].notna().all():
+            avg_amt = recent_20["amount"].mean()
+            amt_change = (recent_20["amount"].iloc[-1] - avg_amt) / avg_amt if avg_amt > 0 else 0
+            
+            # 金额与成交量同步放大 → 确认异常
+            if amt_change > 0.3 and vol_change > 0.3 and abs(price_change) < 0.02:
+                distribution_evidence += 0.4
+                phenomena.append("量额双放大滞涨")
+            
+            # 金额放大但量缩 → 大单交易（金额主导的吸筹/派发）
+            if amt_change > 0.2 and vol_change < -0.2:
+                if price_change > 0.02:
+                    accumulation_evidence += 0.3
+                    phenomena.append("大单推升（金额放量但量能萎缩）")
+                elif price_change < -0.02:
+                    distribution_evidence += 0.3
+                    phenomena.append("大单砸盘（金额放量但量能萎缩）")
+            
+            # 金额萎缩但量放大 → 散户化交易
+            if amt_change < -0.2 and vol_change > 0.2:
+                phenomena.append("散户化交易（量增额缩）")
         
         # 放量滞涨 → 派发倾向
         if vol_change > 0.3 and abs(price_change) < 0.02:
@@ -1251,16 +1275,26 @@ class WyckoffEngine:
         return limit_moves
 
     def _analyze_chips(self, df: pd.DataFrame, structure: WyckoffStructure) -> ChipAnalysis:
-        """筹码微观分析"""
+        """
+        筹码微观分析（v2: 加入成交额维度的量价背离检测）
+        
+        核心改进:
+        1. 同时使用volume和amount检测背离
+        2. 计算连续背离评分而非仅bool
+        3. 检测收盘价偏离均价的幅度
+        4. 计算资金流向趋势
+        """
         analysis = ChipAnalysis()
         recent = df.tail(20)
         
         if len(recent) < 10:
             return analysis
         
+        # ---- 1. 价格与成交量变化 ----
         price_change = (recent["close"].iloc[-1] - recent["close"].iloc[0]) / recent["close"].iloc[0]
         volume_change = (recent["volume"].iloc[-1] - recent["volume"].iloc[0]) / recent["volume"].iloc[0]
         
+        # 量价背离 (volume-based)
         if price_change > 0.05 and volume_change < -0.3:
             analysis.volume_price_divergence = True
             analysis.warnings.append("量价背离：价格上涨但量能萎缩")
@@ -1272,7 +1306,82 @@ class WyckoffEngine:
             analysis.absorption_signature = True
             analysis.institutional_footprint = True
         
+        # ---- 2. 成交额维度分析 (amount-based) ----
+        if "amount" in recent.columns and recent["amount"].notna().all():
+            amount_change = (recent["amount"].iloc[-1] - recent["amount"].iloc[0]) / max(recent["amount"].iloc[0], 1)
+            
+            # 金额背离: 价格与成交额方向不一致
+            if price_change > 0.05 and amount_change < -0.3:
+                analysis.amount_price_divergence = True
+                analysis.warnings.append("金额背离：价格上涨但成交额萎缩（买方力量衰竭）")
+            
+            # 机构吸筹痕迹: 价格微跌但成交额放大
+            if -0.05 < price_change < 0 and amount_change > 0.2:
+                analysis.absorption_signature = True
+                analysis.institutional_footprint = True
+                analysis.warnings.append("机构吸筹迹象：价格微跌但成交额放大")
+            
+            # 派发痕迹: 价格微涨但成交额异常放大
+            if 0 < price_change < 0.05 and amount_change > 0.3:
+                analysis.distribution_signature = True
+                analysis.warnings.append("派发迹象：价格微涨但成交额异常放大")
+            
+            # 计算平均成交价偏离度
+            analysis.avg_price_deviation = self._compute_avg_price_deviation(recent)
+            
+            # 计算资金流向趋势
+            analysis.money_flow_trend = self._compute_money_flow_trend(recent)
+        
+        # ---- 3. 连续背离评分（滑动窗口） ----
+        divergence_scores = []
+        amount_div_scores = []
+        window = 5
+        for i in range(window, len(recent)):
+            p = (recent["close"].iloc[i] - recent["close"].iloc[i - window]) / recent["close"].iloc[i - window]
+            v = (recent["volume"].iloc[i] - recent["volume"].iloc[i - window]) / recent["volume"].iloc[i - window]
+            # 背离评分: 正值=正价格负量能(熊背离), 负值=负价格正量能(牛背离)
+            ds = p * (1 - v) if abs(v) > 0.1 else 0
+            divergence_scores.append(ds)
+            
+            if "amount" in recent.columns:
+                a = (recent["amount"].iloc[i] - recent["amount"].iloc[i - window]) / max(recent["amount"].iloc[i - window], 1)
+                ad = p * (1 - a) if abs(a) > 0.1 else 0
+                amount_div_scores.append(ad)
+        
+        analysis.divergence_score = round(np.mean(divergence_scores), 4) if divergence_scores else 0.0
+        analysis.amount_divergence_score = round(np.mean(amount_div_scores), 4) if amount_div_scores else 0.0
+        
         return analysis
+    
+    def _compute_avg_price_deviation(self, df: pd.DataFrame) -> float:
+        """计算收盘价偏离成交均价的程度"""
+        if "amount" not in df.columns:
+            return 0.0
+        recent = df.tail(5)
+        avg_prices = recent["amount"] / recent["volume"].replace(0, 1)
+        current_avg = avg_prices.iloc[-1]
+        if current_avg == 0:
+            return 0.0
+        deviation = (recent["close"].iloc[-1] - current_avg) / current_avg
+        return round(float(deviation), 4)
+    
+    def _compute_money_flow_trend(self, df: pd.DataFrame) -> float:
+        """计算资金流向趋势 [-1, 1]"""
+        if "amount" not in df.columns:
+            return 0.0
+        recent = df.tail(10)
+        if len(recent) < 5:
+            return 0.0
+        # 资金流向: (close - avg_price) * volume，正值表示资金流入
+        avg_prices = recent["amount"] / recent["volume"].replace(0, 1)
+        money_flows = (recent["close"] - avg_prices) * recent["volume"]
+        total_flow = money_flows.sum()
+        total_volume = recent["volume"].sum()
+        if total_volume == 0:
+            return 0.0
+        # 归一化到 [-1, 1]
+        trend = total_flow / (total_volume * recent["close"].mean())
+        return round(float(np.clip(trend, -1, 1)), 4)
 
     def _analyze_multiframe(
         self, df: pd.DataFrame, symbol: str, image_evidence: Optional[ImageEvidenceBundle] = None
