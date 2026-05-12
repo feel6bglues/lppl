@@ -327,7 +327,7 @@ class FactorCombinationEngine:
         result.score = score
 
         # === Lookup empirical data ===
-        expiry_factor = expiry_age_lookup = self.COMBO_LOOKUP.get(
+        expiry_factor = self.COMBO_LOOKUP.get(
             (regime.value, phase.value, alignment.value), None
         )
 

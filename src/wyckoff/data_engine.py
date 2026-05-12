@@ -1,33 +1,29 @@
 # -*- coding: utf-8 -*-
 """
-威科夫规则引擎 - 日线规则链实现
+威科夫规则引擎 - 日线规则链实现（已弃用）
 
-严格遵循 SPEC_WYCKOFF_RULE_ENGINE 定义的 Step 0 ~ Step 5 顺序
+请使用 src.wyckoff.engine.WyckoffEngine（v3.0 唯一入口）替代。
+本文件保留仅用于向后兼容，新代码不应直接引用 DataEngine。
 """
 import logging
-from typing import Dict, List, Optional
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 
 from src.constants import (
     MIN_WYCKOFF_DATA_ROWS,
-    WYCKOFF_PHASES,
-    WYCKOFF_DIRECTIONS,
-    WYCKOFF_CONFIDENCE_LEVELS,
-    VOLUME_LABELS,
 )
-from src.exceptions import InvalidInputDataError, BCNotFoundError
-
-from src.wyckoff.config import WyckoffConfig, RuleEngineConfig
+from src.exceptions import InvalidInputDataError
+from src.wyckoff.config import WyckoffConfig
 from src.wyckoff.models import (
-    DailyRuleResult,
-    PreprocessingResult,
     BCResult,
-    PhaseResult,
+    CounterfactualResult,
+    DailyRuleResult,
     EffortResult,
     PhaseCTestResult,
-    CounterfactualResult,
+    PhaseResult,
+    PreprocessingResult,
     RiskAssessment,
     TradingPlan,
 )

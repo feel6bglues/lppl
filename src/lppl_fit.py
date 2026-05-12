@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-LPPL 回测 - 极速拟合模块
-使用向量化预计算 + 快速优化
+LPPL 极速拟合模块（L-BFGS-B 多初始值快速逼近）
+
+用途：快速扫描场景（已弃用，仅保留向后兼容）
+推荐替代：src.lppl_core（底层数值核心）+ src.lppl_engine（策略级入口）
 """
 
 import numpy as np

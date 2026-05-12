@@ -6,14 +6,12 @@ v3.0 规则执行器 - 10 条规则的独立验证层
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
-import numpy as np
 
 from src.wyckoff.models import (
     ConfidenceResult,
-    RiskRewardResult,
     StopLossResult,
     VolumeLevel,
     WyckoffPhase,

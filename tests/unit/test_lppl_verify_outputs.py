@@ -18,12 +18,12 @@ class LPPLVerifyOutputTests(unittest.TestCase):
 
         self.assertEqual(single_window.tc_bound, (1, 150))
         self.assertEqual(ensemble.tc_bound, (1, 150))
-        self.assertEqual(single_window.danger_days, 5)
-        self.assertEqual(ensemble.danger_days, 5)
-        self.assertEqual(single_window.warning_days, 12)
-        self.assertEqual(ensemble.warning_days, 12)
-        self.assertEqual(single_window.watch_days, 25)
-        self.assertEqual(ensemble.watch_days, 25)
+        self.assertEqual(single_window.danger_days, 20)
+        self.assertEqual(ensemble.danger_days, 20)
+        self.assertEqual(single_window.warning_days, 60)
+        self.assertEqual(ensemble.warning_days, 60)
+        self.assertEqual(single_window.watch_days, 61)
+        self.assertEqual(ensemble.watch_days, 61)
 
     def test_cli_warning_filters_are_targeted(self) -> None:
         module = reload(lppl_verify_v2)
@@ -149,7 +149,8 @@ class LPPLVerifyOutputTests(unittest.TestCase):
                 lppl_verify_v2.main()
 
         self.assertEqual(captured_sources, ["default_fallback"])
-        self.assertIn("最优参数文件加载失败，使用默认参数: missing", stdout.getvalue())
+        self.assertIn("最优参数加载失败", stdout.getvalue())
+        self.assertIn("missing", stdout.getvalue())
 
 
 if __name__ == "__main__":

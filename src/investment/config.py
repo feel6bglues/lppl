@@ -26,6 +26,8 @@ class InvestmentSignalConfig:
     buy_days: int = 40
     strong_sell_days: int = 20
     reduce_days: int = 60
+    # NOTE: danger_days / warning_days / watch_days 与 src.lppl_engine.LPPLConfig 重复。
+    # 实际风险判断已通过 lppl_config 传入，此处字段为历史遗留，仅供向后兼容。
     danger_days: int = 5
     watch_days: int = 25
     warning_days: int = 12

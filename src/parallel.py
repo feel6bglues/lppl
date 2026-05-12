@@ -11,12 +11,10 @@
 4. get_memory_safe_workers() 内存安全阀
 """
 
-import os
 import multiprocessing
-from typing import Optional
+import os
 
 import psutil
-
 
 _worker_dm = None
 _worker_loaded = False
@@ -53,11 +51,8 @@ def worker_init():
     if _worker_loaded:
         return
     # 预加载pandas/numpy（耗时大户）
-    import pandas as pd
-    import numpy as np
     # 预加载DataManager（会顺带加载tdx_reader）
     from src.data.manager import DataManager
-    from src.data.manager import validate_dataframe, validate_symbol
     _worker_dm = DataManager()
     _worker_loaded = True
 

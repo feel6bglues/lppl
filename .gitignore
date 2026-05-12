@@ -24,6 +24,9 @@ unused/
 # Build and runtime artifacts
 output/
 
+# Runtime logs
+wyckoff_analysis.log*
+
 # Local data files
 /data/
 data/*.parquet

@@ -9,8 +9,8 @@ from __future__ import annotations
 import logging
 from typing import List, Optional, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from src.wyckoff.models import (
     BCPoint,
@@ -28,9 +28,7 @@ from src.wyckoff.models import (
     Step1Result,
     Step2Result,
     Step3Result,
-    StopLossResult,
     StressTest,
-    SupportResistance,
     TimeframeSnapshot,
     TradingPlan,
     V3CounterfactualResult,
@@ -173,7 +171,7 @@ class WyckoffEngine:
         confidence = self._calc_confidence(rule0, step3, step35, rr_result, False)
 
         # Step 5: 交易计划
-        v3_plan = self._step5_trading_plan(step1, step3, step35, rr_result, confidence)
+        v3_plan = self._step5_trading_plan(step1, step3, step35, rr_result, confidence, df=frame)
 
         # A 股铁律最终检查
         v3_plan = self._apply_a_stock_rules(step1, v3_plan)
@@ -282,9 +280,6 @@ class WyckoffEngine:
                     phase = WyckoffPhase.UNKNOWN
         else:
             # 非 TR，按短期趋势方向判定
-            # 使用60日均线辅助判断，减少短期波动干扰
-            ma60 = float(df.tail(60)["close"].mean()) if len(df) >= 60 else ma20
-            
             if short_trend_pct >= 0.03 and (
                 (current_price > ma20 and ma5 >= ma20)
                 or (current_price > ma5 and relative_position >= 0.50)
@@ -761,7 +756,8 @@ class WyckoffEngine:
 
     def _step5_trading_plan(
         self, step1: Step1Result, step3: Step3Result, 
-        cf: V3CounterfactualResult, rr: RiskRewardResult, confidence: ConfidenceResult
+        cf: V3CounterfactualResult, rr: RiskRewardResult, confidence: ConfidenceResult,
+        df: Optional[pd.DataFrame] = None,
     ) -> V3TradingPlan:
         """Step 5: 交易计划（完整字段填充）"""
         # 基本方向 - 根据阶段和信号确定
@@ -804,7 +800,7 @@ class WyckoffEngine:
         
         # 止损结果（含涨跌停流动性警告）
         key_low = step3.spring_low_price if step3.spring_low_price else step1.boundary_lower
-        limit_moves = self._detect_limit_moves(pd.DataFrame())  # 需要传入df
+        limit_moves = self._detect_limit_moves(df if df is not None else pd.DataFrame())
         limit_moves_data = [
             {"price": lm.price, "type": lm.move_type.value}
             for lm in limit_moves
@@ -819,15 +815,6 @@ class WyckoffEngine:
             "大盘指数未出现单边系统性暴跌",
             "所属板块未出现重大利空政策消息",
         ]
-        
-        # 5项置信度核对
-        confidence_checks = {
-            "BC定位": "已完成" if confidence.bc_located else "未完成",
-            "Spring/LPS验证": "完整" if confidence.spring_lps_verified else "未验证",
-            "反事实排除": "已排除" if confidence.counterfactual_passed else "反事实占优",
-            "盈亏比达标": "是" if confidence.rr_qualified else "否",
-            "多周期一致": "是" if confidence.multiframe_aligned else "否",
-        }
         
         return V3TradingPlan(
             current_assessment=f"当前处于{step1.phase.value}阶段",
@@ -973,6 +960,8 @@ class WyckoffEngine:
             limit_moves=limit_moves,
             stress_tests=stress_tests,
             chip_analysis=chip_analysis,
+            engine_version="v3.0",
+            ruleset_version="v3.0",
         )
 
     def _classify_unknown_candidate(
@@ -1419,7 +1408,6 @@ class WyckoffEngine:
         monthly_phase = monthly_report.structure.phase
         weekly_phase = weekly_report.structure.phase
         daily_phase = daily_report.structure.phase
-        rr_ratio = final_report.risk_reward.reward_risk_ratio or 0.0
 
         alignment = "mixed"
         if monthly_phase == weekly_phase == daily_phase:
@@ -1524,4 +1512,6 @@ class WyckoffEngine:
             signal=signal,
             risk_reward=risk_reward,
             trading_plan=trading_plan,
+            engine_version="v3.0",
+            ruleset_version="v3.0",
         )

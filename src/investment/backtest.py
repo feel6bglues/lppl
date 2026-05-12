@@ -23,6 +23,9 @@ class InvestmentSignalConfig:
     buy_days: int = 40
     strong_sell_days: int = 20
     reduce_days: int = 60
+    # NOTE: danger_days / warning_days / watch_days 与 src.lppl_engine.LPPLConfig 重复。
+    # 实际风险判断已通过 lppl_config 传入，此处字段为历史遗留，仅供向后兼容。
+    # 如需调整风险阈值，请修改 src.lppl_engine.LPPLConfig 中的对应字段。
     danger_days: int = 5
     watch_days: int = 25
     warning_days: int = 12
@@ -119,6 +122,11 @@ class BacktestConfig:
     end_date: Optional[str] = None
     execution_price: str = "open"
 
+    # 成交约束（默认关闭，保持向后兼容）
+    enable_limit_move_constraint: bool = False
+    max_participation_rate: float = 0.25
+    suspend_if_volume_zero: bool = False
+
 
 def _normalize_price_frame(df: pd.DataFrame) -> pd.DataFrame:
     normalized = df.copy()
@@ -172,13 +180,18 @@ def _map_single_window_signal(
             return "negative_bubble", bottom_strength, bottom_signal, target
         return "negative_bubble_watch", bottom_strength, bottom_signal, current_target
 
-    if b_value <= 0 and days_to_crash < lppl_config.danger_days and r_squared >= lppl_config.r2_threshold:
+    danger_r2 = min(1.0, max(0.0, lppl_config.r2_threshold + lppl_config.danger_r2_offset))
+    if b_value <= 0 and days_to_crash < lppl_config.danger_days and r_squared >= danger_r2:
         return "bubble_risk", r_squared, "高危信号", signal_config.flat_position
 
     warning_threshold = max(0.0, lppl_config.r2_threshold - 0.1)
     if b_value <= 0 and days_to_crash < lppl_config.warning_days and r_squared >= warning_threshold:
         target = min(current_target, signal_config.half_position)
         return "bubble_warning", r_squared, "观察信号", target
+
+    watch_threshold = max(0.0, lppl_config.r2_threshold - 0.2)
+    if b_value <= 0 and days_to_crash < lppl_config.watch_days and r_squared >= watch_threshold:
+        return "bubble_watch", r_squared, "关注信号", current_target
 
     return "none", 0.0, "无信号", current_target
 
@@ -623,6 +636,14 @@ def generate_investment_signals(
                         signal_config,
                         lppl_config,
                     )
+            # warning/watch 不作为交易信号时，保持当前仓位
+            if not signal_config.warning_trade_enabled and lppl_signal in ("bubble_warning", "bubble_watch"):
+                next_target = current_target
+                if lppl_signal == "bubble_warning":
+                    position_reason = "观察信号不交易"
+                elif lppl_signal == "bubble_watch":
+                    position_reason = "关注信号不交易"
+
             if idx >= warmup:
                 scan_counter += 1
 
@@ -748,6 +769,96 @@ def summarize_strategy_performance(equity_df: pd.DataFrame, trades_df: pd.DataFr
     }
 
 
+def _check_trade_constraints(
+    row: Any,
+    backtest_config: BacktestConfig,
+    trade_type: str,
+    current_units: float,
+) -> Tuple[bool, str]:
+    """
+    检查成交约束，返回 (允许交易, 拒绝原因)
+
+    NOTE: 当前未被 run_strategy_backtest 使用（该函数使用 _check_trade_constraints_df）。
+    保留此接口以供外部直接调用。
+    """
+    if not backtest_config.enable_limit_move_constraint and not backtest_config.suspend_if_volume_zero:
+        return True, ""
+
+    volume = float(getattr(row, "volume", 0))
+    high = float(getattr(row, "high", 0))
+    low = float(getattr(row, "low", 0))
+    close = float(getattr(row, "close", 0))
+    prev_close = float(getattr(row, "prev_close", 0))
+    if prev_close <= 0:
+        prev_close = close
+    price_range = high - low if high > low else close * 0.01
+
+    if backtest_config.suspend_if_volume_zero and volume <= 0:
+        return False, "volume_zero"
+
+    if backtest_config.enable_limit_move_constraint:
+        pct_change = (close - prev_close) / prev_close if prev_close > 0 else 0
+        is_limit_up = pct_change > 0.095
+        is_limit_down = pct_change < -0.095
+
+        if trade_type in ("buy", "add") and is_limit_up:
+            return False, "limit_up_cannot_buy"
+        if trade_type in ("sell", "reduce") and is_limit_down:
+            return False, "limit_down_cannot_sell"
+
+        participation = volume * price_range
+        max_allowed = backtest_config.max_participation_rate * participation
+        if max_allowed <= 0:
+            return False, "insufficient_liquidity"
+
+    return True, ""
+
+
+def _check_trade_constraints_df(
+    df: pd.DataFrame,
+    row_idx: int,
+    backtest_config: BacktestConfig,
+    trade_type: str,
+    current_units: float,
+) -> Tuple[bool, str]:
+    """从 DataFrame 检查成交约束"""
+    if not backtest_config.enable_limit_move_constraint and not backtest_config.suspend_if_volume_zero:
+        return True, ""
+    row = df.iloc[row_idx]
+    volume = float(row["volume"]) if "volume" in df.columns else 0
+    high = float(row["high"]) if "high" in df.columns else 0
+    low = float(row["low"]) if "low" in df.columns else 0
+    close = float(row["close"]) if "close" in df.columns else 0
+    if "prev_close" in df.columns:
+        prev_close = float(row["prev_close"])
+    elif row_idx > 0 and "close" in df.columns:
+        prev_close = float(df.iloc[row_idx - 1]["close"])
+    else:
+        prev_close = close
+
+    if backtest_config.suspend_if_volume_zero and volume <= 0:
+        return False, "volume_zero"
+
+    if backtest_config.enable_limit_move_constraint:
+        pct_change = (close - prev_close) / prev_close if prev_close > 0 else 0
+        is_limit_up = pct_change > 0.095
+        is_limit_down = pct_change < -0.095
+
+        if trade_type in ("buy", "add") and is_limit_up:
+            return False, "limit_up_cannot_buy"
+        if trade_type in ("sell", "reduce") and is_limit_down:
+            return False, "limit_down_cannot_sell"
+
+        price_range = high - low if high > low else close * 0.01
+        participation = volume * price_range
+        if participation > 0:
+            max_allowed = backtest_config.max_participation_rate * participation
+            if max_allowed <= 0:
+                return False, "insufficient_liquidity"
+
+    return True, ""
+
+
 def run_strategy_backtest(
     signal_df: pd.DataFrame,
     backtest_config: Optional[BacktestConfig] = None,
@@ -774,7 +885,7 @@ def run_strategy_backtest(
     records = []
 
     row_fields = list(equity_df.columns)
-    for row in equity_df.itertuples(index=False, name="BacktestRow"):
+    for row_idx, row in enumerate(equity_df.itertuples(index=False, name="BacktestRow")):
         execution_base_price = float(row.open if backtest_config.execution_price == "open" else row.close)
         execution_buy_price = execution_base_price * (1.0 + backtest_config.slippage)
         execution_sell_price = execution_base_price * (1.0 - backtest_config.slippage)
@@ -785,52 +896,71 @@ def run_strategy_backtest(
         desired_holdings_value = portfolio_value_before_trade * target_position
 
         trade_type = "hold"
-        if desired_holdings_value > current_holdings_value + 1e-8:
-            trade_value = desired_holdings_value - current_holdings_value
-            affordable_units = cash / (execution_buy_price * (1.0 + backtest_config.buy_fee))
-            desired_units = trade_value / execution_buy_price
-            units_to_buy = min(affordable_units, desired_units)
-            if units_to_buy > 1e-8:
-                gross_cost = units_to_buy * execution_buy_price
-                fee = gross_cost * backtest_config.buy_fee
-                cash -= gross_cost + fee
-                units += units_to_buy
-                trade_type = "buy" if current_holdings_value <= 1e-8 else "add"
-                trades.append(
-                    {
-                        "date": row.date,
-                        "symbol": getattr(row, "symbol", ""),
-                        "trade_type": trade_type,
-                        "price": execution_buy_price,
-                        "target_position": target_position,
-                        "executed_position": 0.0,
-                        "units": units_to_buy,
-                        "cash_after_trade": cash,
-                        "portfolio_value_after_trade": cash + units * execution_base_price,
-                    }
-                )
-        elif desired_holdings_value < current_holdings_value - 1e-8:
-            trade_value = current_holdings_value - desired_holdings_value
-            units_to_sell = min(units, trade_value / execution_sell_price)
-            if units_to_sell > 1e-8:
-                gross_proceeds = units_to_sell * execution_sell_price
-                fee = gross_proceeds * backtest_config.sell_fee
-                cash += gross_proceeds - fee
-                units -= units_to_sell
-                trade_type = "sell" if target_position <= 1e-8 else "reduce"
-                trades.append(
-                    {
-                        "date": row.date,
-                        "symbol": getattr(row, "symbol", ""),
-                        "trade_type": trade_type,
-                        "price": execution_sell_price,
-                        "target_position": target_position,
-                        "executed_position": 0.0,
-                        "units": units_to_sell,
-                        "cash_after_trade": cash,
-                        "portfolio_value_after_trade": cash + units * execution_base_price,
-                    }
-                )
+        trade_rejected_reason = ""
+
+        # 如果 action 列为 "hold" 且目标位差在容忍范围内，不触发再平衡
+        skip_rebalance = getattr(row, "action", None) == "hold"
+
+        if not skip_rebalance and desired_holdings_value > current_holdings_value + 1e-8:
+            buy_allowed, buy_reason = _check_trade_constraints_df(
+                equity_df, row_idx, backtest_config, "buy", units,
+            )
+            if not buy_allowed:
+                trade_type = "hold"
+                trade_rejected_reason = buy_reason
+            else:
+                trade_value = desired_holdings_value - current_holdings_value
+                affordable_units = cash / (execution_buy_price * (1.0 + backtest_config.buy_fee))
+                desired_units = trade_value / execution_buy_price
+                units_to_buy = min(affordable_units, desired_units)
+                if units_to_buy > 1e-8:
+                    gross_cost = units_to_buy * execution_buy_price
+                    fee = gross_cost * backtest_config.buy_fee
+                    cash -= gross_cost + fee
+                    units += units_to_buy
+                    trade_type = "buy" if current_holdings_value <= 1e-8 else "add"
+                    trades.append(
+                        {
+                            "date": row.date,
+                            "symbol": getattr(row, "symbol", ""),
+                            "trade_type": trade_type,
+                            "price": execution_buy_price,
+                            "target_position": target_position,
+                            "executed_position": 0.0,
+                            "units": units_to_buy,
+                            "cash_after_trade": cash,
+                            "portfolio_value_after_trade": cash + units * execution_base_price,
+                        }
+                    )
+        elif not skip_rebalance and desired_holdings_value < current_holdings_value - 1e-8:
+            sell_allowed, sell_reason = _check_trade_constraints_df(
+                equity_df, row_idx, backtest_config, "sell", units,
+            )
+            if not sell_allowed:
+                trade_type = "hold"
+                trade_rejected_reason = sell_reason
+            else:
+                trade_value = current_holdings_value - desired_holdings_value
+                units_to_sell = min(units, trade_value / execution_sell_price)
+                if units_to_sell > 1e-8:
+                    gross_proceeds = units_to_sell * execution_sell_price
+                    fee = gross_proceeds * backtest_config.sell_fee
+                    cash += gross_proceeds - fee
+                    units -= units_to_sell
+                    trade_type = "sell" if target_position <= 1e-8 else "reduce"
+                    trades.append(
+                        {
+                            "date": row.date,
+                            "symbol": getattr(row, "symbol", ""),
+                            "trade_type": trade_type,
+                            "price": execution_sell_price,
+                            "target_position": target_position,
+                            "executed_position": 0.0,
+                            "units": units_to_sell,
+                            "cash_after_trade": cash,
+                            "portfolio_value_after_trade": cash + units * execution_base_price,
+                        }
+                    )
 
         holdings_value = units * float(row.close)
         portfolio_value = cash + holdings_value
@@ -858,6 +988,7 @@ def run_strategy_backtest(
                 "benchmark_return": benchmark_return,
                 "excess_return": daily_return - benchmark_return,
                 "trade_flag": trade_type != "hold",
+                "trade_rejected_reason": trade_rejected_reason if trade_rejected_reason else "",
             }
         )
 

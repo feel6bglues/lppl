@@ -13,11 +13,11 @@ import pandas as pd
 from src.constants import ENABLE_JOBLIB_PARALLEL, OUTPUT_DIR, WINDOW_CONFIG
 from src.lppl_core import (
     calculate_bottom_signal_strength,
-    calculate_risk_level,
     detect_negative_bubble,
     fit_single_window_task,
     validate_input_data,
 )
+from src.lppl_engine import DEFAULT_CONFIG, LPPLConfig, calculate_risk_level, fit_single_window
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +70,28 @@ def shutdown_global_executor() -> None:
             logger.info("Global process pool shutdown")
 
 
+def _fit_single_window_compat(task: tuple) -> Optional[Dict[str, Any]]:
+    window_size, dates_series, prices_array = task
+    res = fit_single_window(close_prices=prices_array, window_size=window_size)
+    if res is None:
+        return None
+    return {
+        "window": res["window_size"],
+        "params": res["params"],
+        "rmse": res["rmse"],
+        "last_date": pd.Timestamp(dates_series.iloc[-1]),
+    }
+
+
 class LPPLComputation:
-    def __init__(self, output_dir: str = None, max_workers: Optional[int] = None):
+    def __init__(self, output_dir: str = None, max_workers: Optional[int] = None,
+                 lppl_config: Optional[LPPLConfig] = None):
         self.output_dir = output_dir or OUTPUT_DIR
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
         self.max_workers = max_workers if max_workers else get_optimal_workers()
+        self.lppl_config = lppl_config if lppl_config is not None else DEFAULT_CONFIG
         logger.info(f"LPPLComputation initialized with max_workers={self.max_workers}")
 
     def _format_output(
@@ -100,7 +115,7 @@ class LPPLComputation:
 
             crash_date = last_date + timedelta(days=int(days_left))
 
-            risk = calculate_risk_level(m, w, days_left)
+            risk_label, _, _ = calculate_risk_level(m, w, days_left, lppl_config=self.lppl_config)
 
             is_negative, bottom_signal = detect_negative_bubble(m, w, b, days_left)
             bottom_strength = calculate_bottom_signal_strength(m, w, b, res['rmse']) if is_negative else 0.0
@@ -108,7 +123,7 @@ class LPPLComputation:
             return [
                 name, symbol, time_span, window,
                 f"{res['rmse']:.5f}", f"{m:.3f}", f"{w:.3f}",
-                f"{days_left:.1f} 天", crash_date.strftime('%Y-%m-%d'), risk,
+                f"{days_left:.1f} 天", crash_date.strftime('%Y-%m-%d'), risk_label,
                 bottom_signal, f"{bottom_strength:.2f}"
             ]
         except (KeyError, ValueError, TypeError) as e:
@@ -153,7 +168,7 @@ class LPPLComputation:
         }
 
         cnt_success = 0
-        print(f"  > Scanning {name} ({symbol})...", end="", flush=True)
+        logger.info(f"  > Scanning {name} ({symbol})...")
         start_time = time.time()
 
         if JOBLIB_AVAILABLE and ENABLE_JOBLIB_PARALLEL:
@@ -170,7 +185,6 @@ class LPPLComputation:
             for i, res in enumerate(parallel_results):
                 window = tasks[i][0]
                 if res is not None:
-                    print(".", end="", flush=True)
                     cnt_success += 1
 
                     category = WINDOW_CONFIG.get_category(window)
@@ -178,7 +192,7 @@ class LPPLComputation:
                         results[category]["rmse"] = res["rmse"]
                         results[category]["res"] = res
                 else:
-                    print("x", end="", flush=True)
+                    pass
         else:
             batch_size = self.max_workers * 2
 
@@ -196,7 +210,6 @@ class LPPLComputation:
                         try:
                             res = future.result(timeout=120)
                             if res:
-                                print(".", end="", flush=True)
                                 cnt_success += 1
 
                                 category = WINDOW_CONFIG.get_category(window)
@@ -204,16 +217,14 @@ class LPPLComputation:
                                     results[category]["rmse"] = res["rmse"]
                                     results[category]["res"] = res
                             else:
-                                print("x", end="", flush=True)
+                                pass
                         except FuturesTimeoutError:
-                            print("T", end="", flush=True)
                             logger.warning(f"Task timeout for window {window}")
                         except Exception as e:
-                            print("E", end="", flush=True)
                             logger.warning(f"Error processing window {window}: {e}")
 
         elapsed_time = time.time() - start_time
-        print(f" Done (Time: {elapsed_time:.2f}s, Success: {cnt_success}/{len(tasks)})")
+        logger.info(f"  Done scanning {name} ({symbol}) (Time: {elapsed_time:.2f}s, Success: {cnt_success}/{len(tasks)})")
 
         output_rows = []
         params_data = []
@@ -257,13 +268,13 @@ class LPPLComputation:
             if is_valid:
                 index_tasks.append((symbol, name, df))
             else:
-                print(f"  Skipping {name} ({symbol}): {msg}")
+                logger.warning(f"Skipping {name} ({symbol}): {msg}")
 
         if not index_tasks:
             logger.warning("No valid indices to process")
             return []
 
-        print(f"Processing {len(index_tasks)} indices (parallel windows)...")
+        logger.info(f"Processing {len(index_tasks)} indices (parallel windows)...")
 
         for symbol, name, df in index_tasks:
             logger.info(f"Processing {name} ({symbol})...")
@@ -325,13 +336,13 @@ class LPPLComputation:
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(markdown_content)
-            print(f"Markdown report saved to: {file_path}")
+            logger.info(f"Markdown report saved to: {file_path}")
             return file_path
         except PermissionError as e:
-            print(f"Permission denied saving MD: {e}")
+            logger.error(f"Permission denied saving MD: {e}")
             return None
         except OSError as e:
-            print(f"OS error saving MD: {e}")
+            logger.error(f"OS error saving MD: {e}")
             return None
 
     def save_params_to_json(self, params_data: List, data_date: str = None) -> Optional[str]:
@@ -356,11 +367,11 @@ class LPPLComputation:
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(json_data, f, ensure_ascii=False, indent=2)
-            print(f"Full LPPL parameters saved to: {file_path}")
+            logger.info(f"Full LPPL parameters saved to: {file_path}")
             return file_path
         except PermissionError as e:
-            print(f"Permission denied saving parameters: {e}")
+            logger.error(f"Permission denied saving parameters: {e}")
             return None
         except OSError as e:
-            print(f"OS error saving parameters: {e}")
+            logger.error(f"OS error saving parameters: {e}")
             return None

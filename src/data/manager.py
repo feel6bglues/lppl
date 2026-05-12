@@ -71,7 +71,8 @@ def validate_dataframe(df: pd.DataFrame, symbol: str) -> Tuple[bool, str]:
     if len(df) < MIN_DATA_ROWS:
         return False, f"Insufficient data rows: {len(df)} < {MIN_DATA_ROWS}"
 
-    null_counts = df[REQUIRED_COLUMNS].isnull().sum()
+    check_cols = [c for c in REQUIRED_COLUMNS if c in df.columns]
+    null_counts = df[check_cols].isnull().sum()
     if null_counts.any():
         return False, f"Null values found in columns: {null_counts[null_counts > 0].to_dict()}"
 
@@ -617,6 +618,16 @@ class DataManager:
                 logger.warning(f"No valid data retrieved for {symbol}")
         return all_data
 
+    @staticmethod
+    def _infer_exchange_from_code(code: str) -> str:
+        SZ_PREFIXES = ("000", "001", "002", "003", "300", "301", "399")
+        SH_PREFIXES = ("600", "601", "603", "605", "688", "689")
+        if code.startswith(SZ_PREFIXES):
+            return "SZ"
+        if code.startswith(SH_PREFIXES):
+            return "SH"
+        raise ValueError(f"Unable to infer exchange for code: {code}")
+
     def normalize_symbol(self, symbol: str) -> str:
         symbol = symbol.strip().upper()
 
@@ -624,7 +635,9 @@ class DataManager:
             return symbol
 
         if re.fullmatch(r"\d{6}", symbol):
-            return f"{symbol}.SH"
+            if symbol in ("000001", "000016", "000300", "000905", "000852", "932000"):
+                return f"{symbol}.SH"
+            return f"{symbol}.{self._infer_exchange_from_code(symbol)}"
 
         match = re.search(r"(\d{6})", symbol)
         if match:

@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Investment strategy module.
+"""
+Investment strategy module.
+
+唯一生产入口: src.investment.backtest
+- backtest_engine.py 已弃用 (deprecated)，所有生产代码和测试均走 backtest.py。
 
 Provides:
 - Configuration dataclasses for signal generation and backtesting

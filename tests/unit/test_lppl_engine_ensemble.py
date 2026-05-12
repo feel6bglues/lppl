@@ -236,12 +236,111 @@ class LPPLEnsembleTests(unittest.TestCase):
             w=8.0,
             days_left=30.0,
             r2=0.58,
-            config=config,
+            lppl_config=config,
         )
 
         self.assertEqual(risk_level, "观察")
         self.assertFalse(is_danger)
         self.assertTrue(is_warning)
+
+
+class LPPLCoreEquivalenceTests(unittest.TestCase):
+    """验证 lppl_core 与 lppl_engine 的数值函数输出一致"""
+
+    def setUp(self):
+        self.t = np.arange(50, dtype=np.float64)
+        self.params = {
+            "tc": 60.0,
+            "m": 0.5,
+            "w": 8.0,
+            "a": 5.0,
+            "b": -2.0,
+            "c": 0.1,
+            "phi": 0.0,
+        }
+
+    def test_lppl_func_equivalence(self):
+        from src.lppl_core import lppl_func as core_lppl
+        from src.lppl_engine import lppl_func as engine_lppl
+
+        core_result = core_lppl(self.t, **self.params)
+        engine_result = engine_lppl(self.t, **self.params)
+
+        np.testing.assert_array_almost_equal(core_result, engine_result, decimal=10,
+            err_msg="lppl_func: lppl_core 与 lppl_engine 输出不一致")
+
+    def test_cost_function_equivalence(self):
+        from src.lppl_core import cost_function as core_cost
+        from src.lppl_engine import cost_function as engine_cost
+
+        log_prices = np.log(np.linspace(100, 150, 50))
+        params_tuple = tuple(self.params.values())
+
+        core_result = core_cost(params_tuple, self.t, log_prices)
+        engine_result = engine_cost(params_tuple, self.t, log_prices)
+
+        self.assertAlmostEqual(core_result, engine_result, places=10,
+            msg="cost_function: lppl_core 与 lppl_engine 输出不一致")
+
+
+class FitFailureTests(unittest.TestCase):
+    """验证拟合失败原因精确定位"""
+
+    def test_non_positive_price(self):
+        from src.lppl_engine import fit_single_window
+
+        prices = np.array([100, 101, 0, 103, 104], dtype=float)
+        result = fit_single_window(prices, window_size=5, config=LPPLConfig(window_range=[40], n_workers=1))
+        self.assertIsNone(result)
+
+    def test_nan_price(self):
+        from src.lppl_engine import fit_single_window
+
+        prices = np.array([100, 101, np.nan, 103, 104], dtype=float)
+        result = fit_single_window(prices, window_size=5, config=LPPLConfig(window_range=[40], n_workers=1))
+        self.assertIsNone(result)
+
+    def test_constant_price(self):
+        from src.lppl_engine import fit_single_window
+
+        prices = np.array([100, 100, 100, 100, 100], dtype=float)
+        result = fit_single_window(prices, window_size=5, config=LPPLConfig(window_range=[40], n_workers=1))
+        self.assertIsNone(result)
+
+    def test_precheck_fit_input_non_positive(self):
+        from src.lppl_core import precheck_fit_input
+
+        prices = np.array([100, 101, 0, 103, 104], dtype=float)
+        reason = precheck_fit_input(prices, window_size=5)
+        self.assertEqual(reason, "non_positive_price")
+
+    def test_precheck_fit_input_nan(self):
+        from src.lppl_core import precheck_fit_input
+
+        prices = np.array([100, 101, np.nan, 103, 104], dtype=float)
+        reason = precheck_fit_input(prices, window_size=5)
+        self.assertEqual(reason, "nan_or_inf")
+
+    def test_precheck_fit_input_constant(self):
+        from src.lppl_core import precheck_fit_input
+
+        prices = np.array([100, 100, 100, 100, 100], dtype=float)
+        reason = precheck_fit_input(prices, window_size=5)
+        self.assertEqual(reason, "constant_price")
+
+    def test_precheck_fit_input_insufficient_data(self):
+        from src.lppl_core import precheck_fit_input
+
+        prices = np.array([100, 101], dtype=float)
+        reason = precheck_fit_input(prices, window_size=50)
+        self.assertEqual(reason, "insufficient_data")
+
+    def test_precheck_fit_input_passes_valid(self):
+        from src.lppl_core import precheck_fit_input
+
+        prices = np.array([100, 101, 102, 103, 104], dtype=float)
+        reason = precheck_fit_input(prices, window_size=5)
+        self.assertIsNone(reason)
 
 
 if __name__ == "__main__":

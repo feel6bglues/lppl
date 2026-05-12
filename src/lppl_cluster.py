@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict
 
 import numpy as np
 import pandas as pd

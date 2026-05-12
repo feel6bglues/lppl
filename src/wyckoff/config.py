@@ -11,11 +11,11 @@ from typing import Dict, List, Optional
 import yaml
 
 from src.constants import (
-    WYCKOFF_OUTPUT_DIR,
-    MIN_WYCKOFF_DATA_ROWS,
     BC_LOOKBACK_WINDOW,
-    SPRING_FREEZE_DAYS,
     MIN_RR_RATIO,
+    MIN_WYCKOFF_DATA_ROWS,
+    SPRING_FREEZE_DAYS,
+    WYCKOFF_OUTPUT_DIR,
 )
 
 

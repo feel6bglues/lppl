@@ -1,6 +1,20 @@
 # -*- coding: utf-8 -*-
-"""Backtesting engine for investment strategies."""
+"""
+DEPRECATED — 请使用 backtest.py 替代。
+
+本文件保留仅为参考。所有生产代码和测试均通过 backtest.py 进入。
+若需新增功能或修复缺陷，请修改 backtest.py 而非本文件。
+"""
+
 from __future__ import annotations
+
+import warnings
+
+warnings.warn(
+    "backtest_engine.py is deprecated. Use backtest.py instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 from typing import Any, Dict, Optional, Tuple
 

@@ -8,7 +8,8 @@ from src.wyckoff.analyzer import WyckoffAnalyzer
 from src.wyckoff.config import WyckoffConfig, load_config
 from src.wyckoff.data_engine import DataEngine
 from src.wyckoff.engine import WyckoffEngine
-from src.wyckoff.fusion_engine import FusionEngine, StateManager as MultimodalStateManager
+from src.wyckoff.fusion_engine import FusionEngine
+from src.wyckoff.fusion_engine import StateManager as MultimodalStateManager
 from src.wyckoff.image_engine import ImageEngine
 from src.wyckoff.models import (
     AnalysisResult,
@@ -29,8 +30,8 @@ from src.wyckoff.models import (
     PhaseCTestResult,
     PhaseResult,
     PreprocessingResult,
-    RiskRewardProjection,
     RiskAssessment,
+    RiskRewardProjection,
     SCPoint,
     StressTest,
     SupportResistance,

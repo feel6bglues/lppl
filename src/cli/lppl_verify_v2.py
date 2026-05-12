@@ -139,7 +139,7 @@ def create_config(use_ensemble: bool = False) -> LPPLConfig:
         tol=0.05,       # 适度容忍
         m_bounds=(0.1, 0.9),
         w_bounds=(6.0, 13.0),
-        tc_bound=(1, 60),
+        tc_bound=(1, 150),
         r2_threshold=0.6 if use_ensemble else 0.5,
         danger_r2_offset=0.0,
         danger_days=20,
@@ -592,7 +592,7 @@ def main():
 
     for symbol, name in symbols_to_verify.items():
         config_override = None
-        param_source = "default_cli"
+        param_source = "default_fallback" if args.use_optimal_config else "default_cli"
         if args.use_optimal_config and optimal_data is not None:
             base_config = create_config(args.ensemble)
             fallback = {

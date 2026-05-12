@@ -12,9 +12,10 @@
 
 from __future__ import annotations
 
-import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 
 @dataclass
@@ -89,7 +90,7 @@ def fit_single_layer(
     对单层窗口进行独立拟合，选择最佳窗口(RMSE最低)
     使用L-BFGS-B优化器(比DE快10-50倍)
     """
-    from src.lppl_engine import fit_single_window_lbfgsb, LPPLConfig
+    from src.lppl_engine import LPPLConfig, fit_single_window_lbfgsb
 
     candidates = []
     for window_size in config.windows:

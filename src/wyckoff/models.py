@@ -616,6 +616,7 @@ class MultiTimeframeContext:
 @dataclass
 class WyckoffReport:
     """威科夫分析报告"""
+
     symbol: str
     period: str  # "daily", "weekly", etc.
     structure: WyckoffStructure
@@ -625,6 +626,8 @@ class WyckoffReport:
     limit_moves: List[LimitMove] = field(default_factory=list)
     stress_tests: List[StressTest] = field(default_factory=list)
     chip_analysis: Optional[ChipAnalysis] = None
+    engine_version: str = "v3.0"
+    ruleset_version: str = "v3.0"
     
     # 多模态扩展字段
     image_evidence: Optional[ImageEvidenceBundle] = None
@@ -637,6 +640,7 @@ class WyckoffReport:
         lines = [
             f"# 威科夫分析报告 - {self.symbol}",
             f"**分析周期**: {self.period}",
+            f"**引擎版本**: {self.engine_version} | **规则版本**: {self.ruleset_version}",
             "",
         ]
 

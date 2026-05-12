@@ -14,8 +14,6 @@ import logging.handlers
 import os
 import sys
 from datetime import datetime
-from typing import Optional
-from pathlib import Path
 
 from src.data.manager import DataManager
 from src.wyckoff.config import load_config
@@ -294,7 +292,17 @@ def run_image_only_mode(args, config, output_dir: str) -> None:
     fusion_engine = FusionEngine(config)
     
     # 创建虚拟 data_result (无数据)
-    from src.wyckoff.models import DailyRuleResult, PreprocessingResult, BCResult, PhaseResult, EffortResult, PhaseCTestResult, CounterfactualResult, RiskAssessment, TradingPlan
+    from src.wyckoff.models import (
+        BCResult,
+        CounterfactualResult,
+        DailyRuleResult,
+        EffortResult,
+        PhaseCTestResult,
+        PhaseResult,
+        PreprocessingResult,
+        RiskAssessment,
+        TradingPlan,
+    )
     
     data_result = DailyRuleResult(
         symbol="image_only",

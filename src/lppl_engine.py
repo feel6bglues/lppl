@@ -17,6 +17,8 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import differential_evolution, minimize
 
+from src.lppl_core import precheck_fit_input, track_fit_failure
+
 try:
     from numba import njit
     NUMBA_AVAILABLE = True
@@ -123,7 +125,12 @@ def _lppl_func_numba(t: np.ndarray, tc: float, m: float, w: float,
 
 def lppl_func(t: np.ndarray, tc: float, m: float, w: float,
               a: float, b: float, c: float, phi: float) -> np.ndarray:
-    """LPPL模型函数 - 自动选择Numba或纯Python"""
+    """
+    LPPL模型函数 - 自动选择Numba或纯Python
+
+    NOTE: 与 src.lppl_core.lppl_func 为重复实现。等价性已通过测试验证。
+          后续收敛时此函数应改为对 lppl_core.lppl_func 的委托调用。
+    """
     if NUMBA_AVAILABLE:
         try:
             return _lppl_func_numba(t, tc, m, w, a, b, c, phi)
@@ -161,7 +168,12 @@ def _cost_function_numba(params: np.ndarray, t: np.ndarray,
 
 
 def cost_function(params: Tuple, t: np.ndarray, log_prices: np.ndarray) -> float:
-    """代价函数 - 自动选择优化"""
+    """
+    代价函数 - 自动选择优化
+
+    NOTE: 与 src.lppl_core.cost_function 为重复实现。等价性已通过测试验证。
+          后续收敛时此函数应改为对 lppl_core.cost_function 的委托调用。
+    """
     if NUMBA_AVAILABLE:
         try:
             return _cost_function_numba(np.array(params), t, log_prices)
@@ -194,7 +206,9 @@ def fit_single_window(close_prices: np.ndarray, window_size: int,
     if config is None:
         config = DEFAULT_CONFIG
 
-    if len(close_prices) < window_size:
+    precheck = precheck_fit_input(close_prices, window_size)
+    if precheck is not None:
+        track_fit_failure(precheck, context=f"window={window_size}")
         return None
 
     t_data = np.arange(window_size, dtype=np.float64)
@@ -281,34 +295,32 @@ def fit_single_window_lbfgsb(close_prices: np.ndarray, window_size: int,
     if config is None:
         config = DEFAULT_CONFIG
 
-    if len(close_prices) < window_size:
+    precheck = precheck_fit_input(close_prices, window_size)
+    if precheck is not None:
+        track_fit_failure(precheck, context=f"window={window_size}")
         return None
 
     t_data = np.arange(window_size, dtype=np.float64)
     price_data = close_prices[-window_size:]
     log_price_data = np.log(price_data)
-
+    
     current_t = float(window_size)
-
     log_mean = np.mean(log_price_data)
-    log_min = np.min(log_price_data)
-    log_max = np.max(log_price_data)
-    log_range = log_max - log_min
-
-    if log_range < 1e-6 or log_range > 50:
-        return None
-
+    log_range = float(np.ptp(log_price_data))
+    
     bounds = [
         (current_t + config.tc_bound[0], current_t + config.tc_bound[1]),
         config.m_bounds,
         config.w_bounds,
-        (log_min - 0.5 * log_range, log_max + 0.5 * log_range),
-        (-log_range * 3, log_range * 3),
-        (-log_range * 3, log_range * 3),
-        (0, 2 * np.pi)
+        (np.min(log_price_data), np.max(log_price_data) * 1.1),
+        (-20, 20),
+        (-20, 20),
+        (0, 2 * np.pi),
     ]
-
-    # 多个初始点
+    
+    best_cost = np.inf
+    best_params = None
+    
     initial_guesses = [
         [current_t + 5, 0.5, 8.5, log_mean, log_range * 0.1, log_range * 0.01, 0.0],
         [current_t + 10, 0.4, 9.5, log_mean, log_range * 0.05, -log_range * 0.02, np.pi/2],
@@ -377,28 +389,37 @@ def fit_single_window_lbfgsb(close_prices: np.ndarray, window_size: int,
 # ============================================================================
 
 def calculate_risk_level(m: float, w: float, days_left: float,
-                        r2: float = 1.0) -> Tuple[str, bool, bool]:
+                        r2: float = 1.0,
+                        lppl_config: Optional[LPPLConfig] = None) -> Tuple[str, bool, bool]:
     """
     计算风险等级
+    
+    Args:
+        m: 模型参数 m
+        w: 模型参数 w
+        days_left: 距离崩盘的天数
+        r2: 拟合 R²
+        lppl_config: LPPL 配置（可选），默认使用 DEFAULT_CONFIG
     
     Returns:
         (risk_level, is_danger, is_warning)
     """
-    valid_model = (config.m_bounds[0] < m < config.m_bounds[1] and
-                   config.w_bounds[0] < w < config.w_bounds[1])
+    cfg = lppl_config if lppl_config is not None else DEFAULT_CONFIG
+    valid_model = (cfg.m_bounds[0] < m < cfg.m_bounds[1] and
+                   cfg.w_bounds[0] < w < cfg.w_bounds[1])
 
     if not valid_model:
         return "无效模型", False, False
 
-    phase = classify_top_phase(days_left, r2, config)
+    phase = classify_top_phase(days_left, r2, cfg)
     is_danger = phase == "danger"
     is_warning = phase in {"warning", "danger"}
 
     if days_left < 5:
         return "极高危", is_danger, is_warning
-    elif days_left < config.danger_days:
+    elif days_left < cfg.danger_days:
         return "高危", is_danger, is_warning
-    elif days_left < config.watch_days:
+    elif days_left < cfg.watch_days:
         return "观察", is_danger, is_warning
     else:
         return "安全", is_danger, is_warning
@@ -852,8 +873,10 @@ def process_single_day_ensemble(close_prices: np.ndarray, idx: int,
     positive_fits = [fit for fit in valid_fits if fit.get("params", (None, None, None, None, 0))[4] <= 0]
     negative_fits = [fit for fit in valid_fits if fit.get("params", (None, None, None, None, 0))[4] > 0]
 
-    positive_consensus_rate = len(positive_fits) / total_windows if total_windows > 0 else 0.0
-    negative_consensus_rate = len(negative_fits) / total_windows if total_windows > 0 else 0.0
+    # consensus_rate = valid_n / total_windows（有效拟合占总窗口比例）
+    # 方向共识以有效拟合为分母，避免被无效窗口稀释
+    positive_consensus_rate = len(positive_fits) / valid_n if valid_n > 0 else 0.0
+    negative_consensus_rate = len(negative_fits) / valid_n if valid_n > 0 else 0.0
     predicted_rebound_days = np.median([fit["days_to_crash"] for fit in negative_fits]) if negative_fits else None
 
     # 5. 信号强度计算

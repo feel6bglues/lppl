@@ -429,10 +429,10 @@ def main():
     )
     
     # 打印结果
-    print(f"扫描完成，找到 {len(manifest['files'])} 张图片")
-    print(f"主要时间周期：{evidence.detected_timeframe}")
-    print(f"整体图像质量：{evidence.image_quality}")
-    print(f"信任级别：{evidence.trust_level}")
+    logger.info(f"扫描完成，找到 {len(manifest['files'])} 张图片")
+    logger.info(f"主要时间周期：{evidence.detected_timeframe}")
+    logger.info(f"整体图像质量：{evidence.image_quality}")
+    logger.info(f"信任级别：{evidence.trust_level}")
 
 
 if __name__ == '__main__':

@@ -1,6 +1,33 @@
 # -*- coding: utf-8 -*-
+"""
+LPPL 底层数值核心
+
+职责：提供 LPPL 模型函数、代价函数、单窗口拟合、输入校验等基础运算。
+被 src.lppl_engine 策略层调用，不包含策略级逻辑（扫描、集成、风险解释）。
+
+关系：
+- src.lppl_engine 是本模块的调用方（策略级入口）
+- src.lppl_fit 是历史遗留的独立极速拟合实现（已弃用）
+"""
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple
+
+FitFailureReason = Literal[
+    "insufficient_data",
+    "non_positive_price",
+    "nan_or_inf",
+    "constant_price",
+    "optimizer_failed",
+    "numeric_error",
+]
+
+FitFailureStats = Dict[FitFailureReason, int]
+
+
+def track_fit_failure(reason: FitFailureReason, stats: Optional[FitFailureStats] = None, context: str = "") -> None:
+    if stats is not None:
+        stats[reason] = stats.get(reason, 0) + 1
+    logger.debug(f"LPPL fit failure [{reason}]{' - ' + context if context else ''}")
 
 import numpy as np
 
@@ -14,6 +41,19 @@ try:
 except ImportError:
     NUMBA_AVAILABLE = False
     logger.warning("Numba not available, using pure Python implementation")
+
+
+def precheck_fit_input(close_prices: np.ndarray, window_size: int) -> Optional[FitFailureReason]:
+    if len(close_prices) < window_size:
+        return "insufficient_data"
+    subset = close_prices[-window_size:]
+    if np.any(subset <= 0):
+        return "non_positive_price"
+    if np.any(~np.isfinite(subset)):
+        return "nan_or_inf"
+    if np.ptp(subset) < 1e-10:
+        return "constant_price"
+    return None
 
 
 def _lppl_func_python(
@@ -199,6 +239,16 @@ def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
 
 
 def calculate_risk_level(m: float, w: float, days_left: float) -> str:
+    """
+    计算风险等级（已弃用，仅保留向后兼容）
+
+    请使用 src.lppl_engine.calculate_risk_level() 替代：
+      - 支持 LPPLConfig 参数
+      - 返回 (risk_label, is_danger, is_warning) 三元组
+      - 阈值通过配置控制，而非硬编码
+
+    此函数使用硬编码阈值（5/20/60 天），不受 LPPLConfig 影响。
+    """
     if 0.1 < m < 0.9 and 6 < w < 13:
         if days_left < 5:
             return "极高危 (DANGER)"

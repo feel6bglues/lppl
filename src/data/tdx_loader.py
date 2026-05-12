@@ -53,7 +53,7 @@ def load_tdx_data(filepath: str, max_records: Optional[int] = None) -> Optional[
                 break
 
             try:
-                dt, o, h, l, c, amt, vol, _ = struct.unpack(TDX_DAY_FORMAT, data)
+                dt, o, h, l, c, amt, vol, _ = struct.unpack(TDX_DAY_FORMAT, data)  # noqa: E741
 
                 if dt < 19900101 or dt > 21000101:
                     continue

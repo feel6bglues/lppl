@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Wyckoff 核心分析引擎
-基于 Richard Wyckoff 理论的 A 股实战分析
+Wyckoff 核心分析引擎（已弃用）
+
+请使用 src.wyckoff.engine.WyckoffEngine（v3.0 唯一入口）替代。
+本文件保留仅用于向后兼容，新代码不应直接引用 WyckoffAnalyzer。
 """
 
 import logging

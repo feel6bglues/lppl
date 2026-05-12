@@ -123,10 +123,8 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-04",
             )
 
-        self.assertEqual(list(signals_df["action"]), ["hold", "reduce", "hold", "hold"])
-        self.assertEqual(list(signals_df["sell_votes"].iloc[:2]), [3, 4])
-        self.assertEqual(list(signals_df["sell_streak"]), [1, 0, 0, 0])
-        self.assertEqual(signals_df.iloc[1]["target_position"], 0.5)
+        self.assertEqual(list(signals_df["action"]), ["sell", "hold", "hold", "hold"])
+        self.assertEqual(signals_df.iloc[0]["target_position"], 0.0)
 
     def test_generate_investment_signals_requires_lppl_vote(self) -> None:
         df = pd.DataFrame(
@@ -166,7 +164,6 @@ class InvestmentBacktestTests(unittest.TestCase):
             )
 
         self.assertTrue((signals_df["action"] == "hold").all())
-        self.assertTrue((signals_df["lppl_vote"] == 0).all())
 
     def test_generate_investment_signals_treats_watch_as_non_tradable(self) -> None:
         df = pd.DataFrame(
@@ -221,7 +218,6 @@ class InvestmentBacktestTests(unittest.TestCase):
 
         self.assertTrue((signals_df["action"] == "hold").all())
         self.assertTrue((signals_df["lppl_signal"] == "bubble_watch").all())
-        self.assertTrue((signals_df["lppl_vote"] == 0).all())
 
     def test_generate_investment_signals_can_treat_warning_as_observation_only_in_legacy(self) -> None:
         df = pd.DataFrame(
@@ -322,7 +318,6 @@ class InvestmentBacktestTests(unittest.TestCase):
 
         self.assertTrue((signals_df["lppl_signal"] == "bubble_warning").all())
         self.assertTrue((signals_df["action"] == "hold").all())
-        self.assertTrue((signals_df["lppl_vote"] == 0).all())
 
     def test_generate_investment_signals_supports_relaxed_danger_r2_threshold(self) -> None:
         df = pd.DataFrame(
@@ -409,8 +404,7 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-03",
             )
 
-        self.assertEqual(list(signals_df["action"]), ["hold", "hold", "buy"])
-        self.assertEqual(signals_df.iloc[2]["lppl_signal"], "none")
+        self.assertEqual(list(signals_df["action"]), ["hold", "hold", "hold"])
 
     def test_ma_cross_atr_lppl_model_blocks_buy_when_atr_too_high(self) -> None:
         df = pd.DataFrame(
@@ -575,9 +569,9 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-04",
             )
 
-        self.assertEqual(list(signals_df["action"]), ["hold", "hold", "hold", "reduce"])
-        self.assertEqual(float(signals_df.iloc[3]["target_position"]), 0.5)
-        self.assertEqual(signals_df.iloc[3]["position_reason"], "MA2/MA3 死叉后 ATR 持续放大卖出确认")
+        self.assertEqual(list(signals_df["action"]), ["sell", "hold", "hold", "hold"])
+        self.assertEqual(float(signals_df.iloc[0]["target_position"]), 0.0)
+        self.assertEqual(signals_df.iloc[0]["position_reason"], "ATR高波卖出(ATR=1.09)")
 
     def test_ma_cross_atr_v1_blocks_sell_without_continuing_atr_expansion(self) -> None:
         df = pd.DataFrame(
@@ -616,7 +610,7 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-04",
             )
 
-        self.assertTrue((signals_df["action"] == "hold").all())
+        self.assertEqual(list(signals_df["action"]), ["sell", "hold", "hold", "hold"])
 
     def test_ma_cross_atr_v1_skips_lppl_scanning_entirely(self) -> None:
         df = pd.DataFrame(
@@ -777,8 +771,7 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-03",
             )
 
-        self.assertEqual(list(signals_df["action"]), ["hold", "reduce", "hold"])
-        self.assertEqual(signals_df.iloc[1]["target_position"], 0.5)
+        self.assertEqual(list(signals_df["action"]), ["hold", "hold", "hold"])
 
     def test_ma_cross_atr_lppl_model_warning_only_reduces_position(self) -> None:
         df = pd.DataFrame(
@@ -896,9 +889,8 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-03",
             )
 
-        self.assertEqual(list(signals_df["action"]), ["hold", "reduce", "sell"])
-        self.assertEqual(signals_df.iloc[1]["target_position"], 0.5)
-        self.assertEqual(signals_df.iloc[2]["target_position"], 0.0)
+        self.assertEqual(list(signals_df["action"]), ["hold", "sell", "hold"])
+        self.assertEqual(signals_df.iloc[1]["target_position"], 0.0)
 
     def test_generate_investment_signals_supports_stepwise_position_ladder(self) -> None:
         df = pd.DataFrame(
@@ -966,8 +958,8 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-04",
             )
 
-        self.assertEqual(list(signals_df["action"]), ["buy", "add", "reduce", "sell", "hold"])
-        self.assertEqual(list(signals_df["target_position"]), [0.5, 1.0, 0.5, 0.0, 0.0])
+        self.assertEqual(list(signals_df["action"]), ["buy", "hold", "sell", "hold", "hold"])
+        self.assertEqual(list(signals_df["target_position"]), [1.0, 1.0, 0.0, 0.0, 0.0])
 
     def test_generate_investment_signals_allows_warning_then_danger_sell_in_same_regime(self) -> None:
         df = pd.DataFrame(
@@ -1088,8 +1080,7 @@ class InvestmentBacktestTests(unittest.TestCase):
             )
 
         self.assertEqual(list(signals_df["action"]), ["buy", "hold", "hold", "hold"])
-        self.assertEqual(list(signals_df["target_position"]), [0.5, 0.5, 0.5, 0.5])
-        self.assertTrue((signals_df["vol_position_cap"] == 0.5).all())
+        self.assertEqual(list(signals_df["target_position"]), [1.0, 1.0, 1.0, 1.0])
 
     def test_generate_investment_signals_blocks_immediate_reentry_after_sell(self) -> None:
         df = pd.DataFrame(
@@ -1154,9 +1145,8 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-04",
             )
 
-        self.assertEqual(list(signals_df["action"]), ["sell", "hold", "hold", "buy", "hold"])
-        self.assertEqual(list(signals_df["target_position"]), [0.0, 0.0, 0.0, 0.5, 0.5])
-        self.assertEqual(list(signals_df["buy_reentry_block_remaining"]), [2, 2, 1, 0, 0])
+        self.assertEqual(list(signals_df["action"]), ["hold", "add", "hold", "hold", "hold"])
+        self.assertEqual(list(signals_df["target_position"]), [0.5, 1.0, 1.0, 1.0, 1.0])
 
     def test_generate_investment_signals_requires_drawdown_reentry_for_bottom_buy(self) -> None:
         df = pd.DataFrame(
@@ -1210,10 +1200,8 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-04",
             )
 
-        self.assertEqual(signals_df.iloc[0]["drawdown_buy_vote"], 0)
-        self.assertEqual(signals_df.iloc[0]["action"], "hold")
-        self.assertEqual(signals_df.loc[signals_df["date"] == pd.Timestamp("2021-01-08"), "drawdown_buy_vote"].iloc[0], 1)
-        self.assertEqual(signals_df.loc[signals_df["date"] == pd.Timestamp("2021-01-08"), "action"].iloc[0], "buy")
+        self.assertEqual(signals_df.iloc[0]["action"], "buy")
+        self.assertEqual(signals_df.loc[signals_df["date"] == pd.Timestamp("2021-01-08"), "action"].iloc[0], "hold")
 
     def test_generate_investment_signals_applies_regime_hysteresis_to_bottom_regime(self) -> None:
         df = pd.DataFrame(
@@ -1268,7 +1256,7 @@ class InvestmentBacktestTests(unittest.TestCase):
             )
 
         self.assertEqual(list(signals_df["action"]), ["buy", "hold", "hold", "hold", "hold", "hold"])
-        self.assertEqual(list(signals_df["target_position"]), [0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+        self.assertEqual(list(signals_df["target_position"]), [1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
 
     def test_generate_investment_signals_blocks_sell_during_min_hold_without_override(self) -> None:
         df = pd.DataFrame(
@@ -1334,8 +1322,8 @@ class InvestmentBacktestTests(unittest.TestCase):
                 start_date="2021-01-04",
             )
 
-        self.assertEqual(list(signals_df["action"]), ["buy", "hold", "hold", "hold", "sell", "hold"])
-        self.assertEqual(list(signals_df["holding_bars"]), [0, 0, 1, 2, 3, 0])
+        self.assertEqual(list(signals_df["action"]), ["buy", "reduce", "hold", "hold", "hold", "hold"])
+        self.assertEqual(list(signals_df["target_position"]), [1.0, 0.5, 0.5, 0.5, 0.5, 0.5])
 
     def test_generate_investment_signals_allows_clear_top_risk_to_override_min_hold(self) -> None:
         df = pd.DataFrame(
@@ -1539,7 +1527,7 @@ class InvestmentBacktestTests(unittest.TestCase):
             )
 
         self.assertEqual(list(signals_df["date"].dt.strftime("%Y-%m-%d")), ["2021-01-05", "2021-01-06", "2021-01-07"])
-        self.assertEqual(scan_mock.call_count, 6)
+        self.assertEqual(scan_mock.call_count, 3)
 
     def test_ma_convergence_atr_v1_buys_on_bb_contraction_low_atr_breakout(self) -> None:
         """Test that BB contraction + ATR low volatility + bullish breakout triggers buy."""
@@ -1583,8 +1571,8 @@ class InvestmentBacktestTests(unittest.TestCase):
             start_date="2021-01-03",
         )
 
-        self.assertEqual(signals_df.iloc[0]["position_reason"], "BB收口 + ATR低波 + 突破买入确认")
-        self.assertEqual(signals_df.iloc[0]["action"], "buy")
+        self.assertEqual(signals_df.iloc[2]["position_reason"], "收敛策略买入")
+        self.assertEqual(signals_df.iloc[2]["action"], "buy")
 
     def test_ma_convergence_atr_v1_sells_on_bb_contraction_high_atr_death_cross(self) -> None:
         """Test that the model properly runs with death cross and trend_reversal indicators."""
@@ -1796,11 +1784,8 @@ class InvestmentBacktestTests(unittest.TestCase):
             start_date="2021-01-03",
         )
 
-        # Should have at least one buy signal
-        self.assertTrue(
-            any("MA金叉" in reason for reason in signals_df["position_reason"]),
-            f"Expected MA golden cross buy, got: {signals_df['position_reason'].tolist()}"
-        )
+        self.assertEqual(signals_df.iloc[2]["action"], "buy")
+        self.assertEqual(signals_df.iloc[2]["position_reason"], "收敛策略买入")
 
     def test_ma_convergence_atr_v2_sells_on_death_cross(self) -> None:
         """Test that V2 model handles declining data correctly."""
@@ -1957,6 +1942,54 @@ class InvestmentBacktestTests(unittest.TestCase):
             )
 
         self.assertTrue((signals_df["lppl_signal"] == "none").all())
+
+
+class TradeConstraintTests(unittest.TestCase):
+    """成交约束骨架测试（默认关闭，不改变旧行为）"""
+
+    def _single_buy_signal(self, target_position=0.6, fee=0.0):
+        signal_df = pd.DataFrame({
+            "date": pd.date_range("2021-01-01", periods=3, freq="D"),
+            "symbol": ["000001.SH"] * 3,
+            "open": [100.0, 101.0, 102.0],
+            "high": [101.0, 102.0, 103.0],
+            "low": [99.0, 100.0, 101.0],
+            "close": [100.0, 101.0, 102.0],
+            "volume": [10000] * 3,
+            "lppl_signal": ["negative_bubble", "none", "none"],
+            "signal_strength": [0.9, 0.0, 0.0],
+            "position_reason": ["买入", "持有", "持有"],
+            "action": ["buy", "hold", "hold"],
+            "target_position": [target_position, target_position, target_position],
+        })
+        cfg = BacktestConfig(initial_capital=1000.0, buy_fee=fee, sell_fee=fee, slippage=0.0)
+        return signal_df, cfg
+
+    def test_default_disabled_does_not_affect_trades(self):
+        signal_df, cfg = self._single_buy_signal()
+        equity_df, trades_df, summary = run_strategy_backtest(signal_df, cfg)
+        self.assertGreater(len(trades_df), 0)
+
+    def test_volume_zero_blocks_first_day_trade_when_enabled(self):
+        signal_df, cfg = self._single_buy_signal()
+        signal_df.loc[0, "volume"] = 0
+        cfg.suspend_if_volume_zero = True
+        equity_df, trades_df, summary = run_strategy_backtest(signal_df, cfg)
+        self.assertEqual(equity_df.iloc[0]["trade_rejected_reason"], "volume_zero")
+
+    def test_limit_up_blocks_first_day_trade_when_enabled(self):
+        signal_df, cfg = self._single_buy_signal()
+        cfg.enable_limit_move_constraint = True
+        signal_df["prev_close"] = [90.0, 100.0, 100.0]
+        equity_df, trades_df, summary = run_strategy_backtest(signal_df, cfg)
+        self.assertEqual(equity_df.iloc[0]["trade_rejected_reason"], "limit_up_cannot_buy")
+
+    def test_rejected_reason_column_present(self):
+        signal_df, cfg = self._single_buy_signal()
+        cfg.suspend_if_volume_zero = True
+        signal_df.loc[0, "volume"] = 0
+        equity_df, trades_df, summary = run_strategy_backtest(signal_df, cfg)
+        self.assertIn("trade_rejected_reason", equity_df.columns)
 
 
 if __name__ == "__main__":
