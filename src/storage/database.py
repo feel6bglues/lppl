@@ -117,7 +117,7 @@ class Database:
         self, symbol: str, code: str = "", market: str = "", name: str = "",
         last_date: Optional[str] = None, file_mtime: Optional[str] = None,
         row_count: int = 0, data_quality: str = "ok",
-    ):
+    ) -> None:
         with self._connect() as conn:
             conn.execute("""
                 INSERT INTO data_status(symbol, code, market, name, last_date, file_mtime, row_count, data_quality, last_checked)
@@ -248,7 +248,7 @@ class Database:
     def get_trades(self, limit: int = 100) -> pd.DataFrame:
         with self._connect() as conn:
             return pd.read_sql(
-                f"SELECT * FROM trades ORDER BY entry_date DESC LIMIT {limit}", conn)
+                "SELECT * FROM trades ORDER BY entry_date DESC LIMIT ?", conn, params=(limit,))
 
     def snapshot_portfolio(self, date: str, cash: float, market_value: float,
                            total_value: float, daily_pnl: float = 0,
@@ -279,7 +279,7 @@ class Database:
     def get_portfolio(self, limit: int = 30) -> pd.DataFrame:
         with self._connect() as conn:
             return pd.read_sql(
-                f"SELECT * FROM portfolio_snapshots ORDER BY date DESC LIMIT {limit}", conn)
+                "SELECT * FROM portfolio_snapshots ORDER BY date DESC LIMIT ?", conn, params=(limit,))
 
     def get_stats(self) -> Dict[str, Any]:
         with self._connect() as conn:

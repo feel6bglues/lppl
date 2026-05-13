@@ -21,6 +21,8 @@ from src.data.incremental_loader import IncrementalLoader
 from src.storage.database import Database
 from src.engine.daily_signal_engine import DailySignalEngine
 from src.execution.simulator import SimulatedBroker
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,7 +32,7 @@ logging.basicConfig(
 logger = logging.getLogger("daily_run")
 
 DEFAULT_CONFIG = PROJECT_ROOT / "config" / "trading.yaml"
-CSI300_PATH = "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000300.day"
+CSI300_PATH = str(CSI300_PATH)
 
 
 def load_config(path: str) -> Dict:
@@ -48,8 +50,8 @@ def load_csi300() -> Optional[pd.DataFrame]:
 
 
 def load_stock_list() -> Dict[str, str]:
-    sh_dir = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/")
-    sz_dir = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sz/lday/")
+    sh_dir = Path(str(TDX_SH_DIR))
+    sz_dir = Path(str(TDX_SZ_DIR))
     symbols: Dict[str, str] = {}
     for dpath in [sh_dir, sz_dir]:
         if not dpath.exists():

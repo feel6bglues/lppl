@@ -21,10 +21,12 @@ from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
 from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
+
 
 N_STOCKS = 99999; N_WINDOWS = 30; SEED = 42
 MC_SIMS = 10000
-CSI300_PATH = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000300.day")
+CSI300_PATH = CSI300_PATH
 OUTPUT_DIR = PROJECT_ROOT / "output" / "dual_strat_wyckoff_ma"
 
 REGIME_PARAMS = {
@@ -83,7 +85,7 @@ def trade_wyckoff(df, as_of_date, csi):
     try:
         eng = WyckoffEngine(lookback_days=400, weekly_lookback=120, monthly_lookback=40)
         rpt = eng.analyze(av, symbol="", period="日线", multi_timeframe=True)
-    except:
+    except Exception:
         return None
     rr = rpt.risk_reward
     we = rr.entry_price if (rr and rr.entry_price and rr.entry_price > 0) else None
@@ -182,7 +184,7 @@ def process_stock(args):
             w2 = trade_ma(df, w)
             if w2:
                 trades.append({"strategy": "ma_cross", "symbol": sym, "window": w, **w2})
-    except:
+    except Exception:
         pass
     return trades
 
@@ -229,7 +231,7 @@ def run():
             for f in as_completed(futures):
                 try:
                     all_trades.extend(f.result(timeout=300))
-                except:
+                except Exception:
                     pass
             print(f"  {min(b + bs, len(args_list))}/{len(stocks)} 股票, {len(all_trades)}交易")
 

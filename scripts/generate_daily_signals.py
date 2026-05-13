@@ -25,8 +25,10 @@ from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
 from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
 
-CSI300_PATH = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000300.day")
+
+CSI300_PATH = CSI300_PATH
 OUTPUT_DIR = PROJECT_ROOT / "output" / "daily_signals"
 
 # A股交易成本模型
@@ -294,7 +296,7 @@ def run():
             for f in as_completed(futures):
                 try:
                     all_signals.extend(f.result(timeout=120))
-                except:
+                except Exception:
                     pass
             n = min(b + bs, len(args_list))
             elapsed = time.time() - t0

@@ -19,6 +19,8 @@ from collections import defaultdict
 
 import numpy as np
 import pandas as pd
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
+
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 warnings.filterwarnings("ignore")

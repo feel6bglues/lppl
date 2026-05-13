@@ -28,6 +28,8 @@ from src.data.tdx_loader import load_tdx_data
 from src.wyckoff.engine import WyckoffEngine
 from src.wyckoff.trading import calculate_wyckoff_return
 from src.parallel import get_optimal_workers, worker_init
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
+
 
 OUTPUT_DIR = PROJECT_ROOT / "output" / "wyckoff_full_validation_90d"
 N_STOCKS = 99999  # 全量A股

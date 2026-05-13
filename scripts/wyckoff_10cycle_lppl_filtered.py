@@ -27,6 +27,8 @@ from typing import Dict, List, Optional, Tuple
 import pandas as pd
 import numpy as np
 import psutil
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:

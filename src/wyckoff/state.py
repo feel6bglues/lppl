@@ -251,7 +251,13 @@ class StateManager:
         Returns:
             连续性报告字典
         """
-        state_file = Path(state_dir) / f"{symbol.replace('.', '_')}_wyckoff_state.json"
+        import re as _re
+        if not _re.match(r'^[A-Za-z0-9._]+$', symbol):
+            return {"error": "Invalid symbol format"}
+        base_dir = Path(state_dir).resolve()
+        state_file = base_dir / f"{symbol.replace('.', '_')}_wyckoff_state.json"
+        if not state_file.resolve().is_relative_to(base_dir):
+            return {"error": "Invalid symbol - path traversal detected"}
         state = self.load_state(str(state_file))
 
         if not state:

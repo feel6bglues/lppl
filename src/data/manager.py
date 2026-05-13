@@ -127,6 +127,27 @@ class DataManager:
             raise ValueError(f"Invalid symbol: {symbol}")
         return os.path.join(self.data_dir, f"{symbol}.parquet")
 
+    def _read_parquet_df(self, file_path: str, validate: bool = True, symbol: str = "") -> Optional[pd.DataFrame]:
+        """读取parquet文件并标准化日期索引"""
+        if not os.path.exists(file_path):
+            logger.debug(f"Parquet file not found: {file_path}")
+            return None
+        try:
+            df = pd.read_parquet(file_path)
+            if df.empty:
+                return None
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.sort_values("date").reset_index(drop=True)
+            if validate and symbol:
+                is_valid, msg = validate_dataframe(df, symbol)
+                if not is_valid:
+                    logger.error(f"Parquet validation failed for {symbol}: {msg}")
+                    return None
+            return df
+        except Exception as e:
+            logger.error(f"Error reading parquet {file_path}: {e}")
+            return None
+
     def _is_akshare_index(self, symbol: str) -> bool:
         return symbol in AKSHARE_INDICES
 
@@ -158,9 +179,9 @@ class DataManager:
             return DataAvailabilityStatus.MISSING
 
         try:
-            parquet_df = pd.read_parquet(file_path)
-            parquet_df["date"] = pd.to_datetime(parquet_df["date"])
-            parquet_df = parquet_df.sort_values("date").reset_index(drop=True)
+            parquet_df = self._read_parquet_df(file_path, validate=False)
+            if parquet_df is None:
+                return DataAvailabilityStatus.MISSING
             return self._classify_cached_dataframe(parquet_df, symbol)
         except Exception as e:
             logger.error(f"Error checking cached parquet for {symbol}: {e}")
@@ -276,10 +297,9 @@ class DataManager:
             return None
 
         try:
-            df = pd.read_parquet(file_path)
-            if df.empty:
+            df = self._read_parquet_df(file_path, validate=False)
+            if df is None or df.empty:
                 return None
-            df["date"] = pd.to_datetime(df["date"])
             return df["date"].max()
         except Exception as e:
             logger.error(f"Error reading last date for {symbol}: {e}")

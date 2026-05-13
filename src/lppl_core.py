@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 """
 LPPL 底层数值核心
 
@@ -135,7 +136,7 @@ if NUMBA_AVAILABLE:
         return np.sum(residuals**2)
 
 
-def validate_input_data(df, symbol: str) -> None:
+def validate_input_data(df: pd.DataFrame, symbol: str) -> None:
     if df is None or df.empty:
         raise DataValidationError(f"{symbol}: DataFrame is None or empty")
 
@@ -155,7 +156,7 @@ def validate_input_data(df, symbol: str) -> None:
         raise DataValidationError(f"{symbol}: Non-positive prices found in close column")
 
 
-def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
+def fit_single_window_task(args: Tuple[int, pd.Series, np.ndarray]) -> Optional[Dict[str, Any]]:
     window_size, dates_series, prices_array = args
 
     try:
@@ -238,12 +239,15 @@ def calculate_risk_level(m: float, w: float, days_left: float) -> str:
 
     此函数使用硬编码阈值（5/20/60 天），不受 LPPLConfig 影响。
     """
+    DANGER_DAYS = 5
+    WARNING_DAYS = 20
+    WATCH_DAYS = 60
     if 0.1 < m < 0.9 and 6 < w < 13:
-        if days_left < 5:
+        if days_left < DANGER_DAYS:
             return "极高危 (DANGER)"
-        elif days_left < 20:
+        elif days_left < WARNING_DAYS:
             return "高危 (Warning)"
-        elif days_left < 60:
+        elif days_left < WATCH_DAYS:
             return "观察 (Watch)"
         else:
             return "安全 (Safe)"

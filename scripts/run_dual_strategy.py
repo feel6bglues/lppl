@@ -28,12 +28,14 @@ from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
 from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
+
 
 N_STOCKS = 1000
 N_WINDOWS = 20
 SEED = 42
 N_BOOT = 2000
-CSI300_PATH = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000300.day")
+CSI300_PATH = CSI300_PATH
 OUTPUT_DIR = PROJECT_ROOT / "output" / "dual_strategy_portfolio"
 
 REGIME_PARAMS = {
@@ -222,7 +224,7 @@ def run():
             futures = {ex.submit(process_stock, a): a[0]["symbol"] for a in batch}
             for f in as_completed(futures):
                 try: all_trades.extend(f.result(timeout=300))
-                except: pass
+                except Exception: pass
             print(f"  {min(b+bs, len(args_list))}/{len(stocks)} 股票, 交易={len(all_trades)}")
 
     if not all_trades: print("无交易"); return

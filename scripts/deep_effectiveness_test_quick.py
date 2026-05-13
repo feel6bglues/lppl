@@ -31,6 +31,8 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import psutil
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
+
 
 
 def load_stock_symbols(csv_path: Path, limit: int = 100) -> List[Dict[str, str]]:

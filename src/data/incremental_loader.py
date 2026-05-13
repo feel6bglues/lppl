@@ -13,8 +13,9 @@ from src.storage.database import Database
 
 logger = logging.getLogger(__name__)
 
-SH_DIR = "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/"
-SZ_DIR = "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sz/lday/"
+TDX_BASE = os.environ.get("TDX_DATA_PATH", "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc")
+SH_DIR = f"{TDX_BASE}/sh/lday/"
+SZ_DIR = f"{TDX_BASE}/sz/lday/"
 
 
 def _code_from_filename(fname: str) -> Tuple[Optional[str], Optional[str]]:
@@ -136,7 +137,7 @@ class IncrementalLoader:
         else:
             code = row.iloc[0].get("code", "")
             market = row.iloc[0].get("market", "")
-            fpath = f"/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/{market.lower()}/lday/{market.lower()}{code}.day"
+            fpath = f"{TDX_BASE}/{market.lower()}/lday/{market.lower()}{code}.day"
             if not os.path.exists(fpath):
                 return None
             df = self.load_file(fpath)

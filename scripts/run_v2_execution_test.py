@@ -32,6 +32,8 @@ from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
 from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
+from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
+
 
 # ============================================================================
 # 配置
