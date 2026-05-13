@@ -752,7 +752,7 @@ def generate_tuning_report(grid_search: Dict, dimension_analysis: Dict,
     
     # 自动生成最优组合推荐
     if grid_search["top_20"]:
-        best = grid_search["top_0"]
+        best = grid_search["top_20"][0]
         md.extend([
             "### 最优组合",
             "",
