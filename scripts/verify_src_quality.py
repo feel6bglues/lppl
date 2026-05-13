@@ -24,16 +24,22 @@ STEPS = [
     ("pytest tests/unit -q", [VENV_PYTHON, "-m", "pytest", "tests/unit", "-q"]),
 ]
 
-failed = []
-for label, cmd in STEPS:
-    print(f"\n>>> {label}")
-    result = subprocess.run(cmd, capture_output=False)
-    if result.returncode != 0:
-        failed.append(label)
 
-if failed:
-    print(f"\n❌ 以下步骤失败: {', '.join(failed)}")
-    sys.exit(1)
-else:
-    print("\n✅ 全部验证通过")
-    sys.exit(0)
+def main() -> None:
+    failed = []
+    for label, cmd in STEPS:
+        print(f"\n>>> {label}")
+        result = subprocess.run(cmd, capture_output=False)
+        if result.returncode != 0:
+            failed.append(label)
+
+    if failed:
+        print(f"\n❌ 以下步骤失败: {', '.join(failed)}")
+        sys.exit(1)
+    else:
+        print("\n✅ 全部验证通过")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()

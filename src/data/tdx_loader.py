@@ -17,7 +17,7 @@ from typing import List, Optional, Tuple
 import pandas as pd
 
 TDX_DAY_RECORD_SIZE = 32
-TDX_DAY_FORMAT = '<IIIIIfII'
+TDX_DAY_FORMAT = "<IIIIIfII"
 TDX_DIR = Path("/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc")
 
 
@@ -46,7 +46,7 @@ def load_tdx_data(filepath: str, max_records: Optional[int] = None) -> Optional[
     divisor = _get_divisor()
     records = []
 
-    with open(fp, 'rb') as f:
+    with open(fp, "rb") as f:
         while True:
             data = f.read(TDX_DAY_RECORD_SIZE)
             if not data or len(data) < TDX_DAY_RECORD_SIZE:
@@ -62,15 +62,17 @@ def load_tdx_data(filepath: str, max_records: Optional[int] = None) -> Optional[
                 month = (dt % 10000) // 100
                 day = dt % 100
 
-                records.append({
-                    "date": f"{year}-{month:02d}-{day:02d}",
-                    "open": o / divisor,
-                    "high": h / divisor,
-                    "low": l / divisor,
-                    "close": c / divisor,
-                    "volume": vol,
-                    "amount": amt,
-                })
+                records.append(
+                    {
+                        "date": f"{year}-{month:02d}-{day:02d}",
+                        "open": o / divisor,
+                        "high": h / divisor,
+                        "low": l / divisor,
+                        "close": c / divisor,
+                        "volume": vol,
+                        "amount": amt,
+                    }
+                )
             except (struct.error, ValueError):
                 continue
 
@@ -87,9 +89,9 @@ def load_tdx_data(filepath: str, max_records: Optional[int] = None) -> Optional[
 
 
 def load_index_from_tdx(tdx_path: str) -> pd.DataFrame:
-    """
-    加载指数数据（兼容旧函数签名）
-    这是所有策略验证脚本使用的接口
+    """加载指数数据（兼容旧函数签名）。
+
+    这是所有策略验证脚本使用的接口。
 
     Args:
         tdx_path: 指数.day文件路径
@@ -104,32 +106,41 @@ def load_index_from_tdx(tdx_path: str) -> pd.DataFrame:
 
 
 def load_bubble_periods(index_df: pd.DataFrame) -> List[Tuple[str, str]]:
-    """
-    检测大盘泡沫阶段（集中化，避免各脚本重复实现）
-    基于价格涨幅和波动率检测
+    """检测大盘泡沫阶段（集中化，避免各脚本重复实现）。
+
+    基于价格涨幅和波动率检测。通过价格相对120日均线位置、
+    波动率和相对位置综合判断是否为泡沫期。
+
+    Args:
+        index_df: 包含 close 列的指数行情数据
+
+    Returns:
+        合并后的泡沫期 (start, end) 元组列表
     """
     bubble_periods = []
     df = index_df.copy()
-    df['ma60'] = df['close'].rolling(60).mean()
-    df['returns'] = df['close'].pct_change()
-    df['volatility'] = df['returns'].rolling(20).std()
-    df['high_120'] = df['close'].rolling(120).max()
-    df['low_120'] = df['close'].rolling(120).min()
-    df['relative_position'] = (df['close'] - df['low_120']) / (df['high_120'] - df['low_120']).replace(0, 1)
+    df["ma60"] = df["close"].rolling(60).mean()
+    df["returns"] = df["close"].pct_change()
+    df["volatility"] = df["returns"].rolling(20).std()
+    df["high_120"] = df["close"].rolling(120).max()
+    df["low_120"] = df["close"].rolling(120).min()
+    df["relative_position"] = (df["close"] - df["low_120"]) / (
+        df["high_120"] - df["low_120"]
+    ).replace(0, 1)
 
     for i in range(120, len(df)):
         row = df.iloc[i]
         is_bubble = False
-        if row['ma60'] > 0 and (row['close'] - row['ma60']) / row['ma60'] > 0.2:
+        if row["ma60"] > 0 and (row["close"] - row["ma60"]) / row["ma60"] > 0.2:
             is_bubble = True
-        if row['volatility'] > 0.03:
+        if row["volatility"] > 0.03:
             is_bubble = True
-        if row['relative_position'] > 0.95:
+        if row["relative_position"] > 0.95:
             is_bubble = True
 
         if is_bubble:
-            bubble_start = df.iloc[max(0, i-30)]['date']
-            bubble_end = df.iloc[min(len(df)-1, i+30)]['date']
+            bubble_start = df.iloc[max(0, i - 30)]["date"]
+            bubble_end = df.iloc[min(len(df) - 1, i + 30)]["date"]
             bubble_periods.append((str(bubble_start), str(bubble_end)))
 
     if not bubble_periods:
@@ -148,7 +159,15 @@ def load_bubble_periods(index_df: pd.DataFrame) -> List[Tuple[str, str]]:
 
 
 def is_in_bubble_period(date_str: str, bubble_periods: List[Tuple[str, str]]) -> bool:
-    """检查日期是否在泡沫期"""
+    """检查日期是否在泡沫期。
+
+    Args:
+        date_str: 要检查的日期字符串
+        bubble_periods: 泡沫期列表
+
+    Returns:
+        若日期在任一泡沫期内返回 True
+    """
     date = pd.Timestamp(date_str)
     for start, end in bubble_periods:
         if pd.Timestamp(start) <= date <= pd.Timestamp(end):
@@ -157,15 +176,23 @@ def is_in_bubble_period(date_str: str, bubble_periods: List[Tuple[str, str]]) ->
 
 
 def classify_market_regime(index_df: pd.DataFrame, date_str: str) -> str:
-    """
-    分类市场状态：bull/bear/range
-    基于252天年化收益
+    """分类市场状态：bull/bear/range。
+
+    基于252天年化收益划分。年化收益 >15% 为 bull，
+    < -10% 为 bear，其余为 range。数据不足 60 天返回 unknown。
+
+    Args:
+        index_df: 包含 close 列的指数行情数据
+        date_str: 分析基准日期
+
+    Returns:
+        "bull" | "bear" | "range" | "unknown"
     """
     date = pd.Timestamp(date_str)
-    hist = index_df[index_df['date'] <= date].tail(252)
+    hist = index_df[index_df["date"] <= date].tail(252)
     if len(hist) < 60:
         return "unknown"
-    annual_return = (hist['close'].iloc[-1] / hist['close'].iloc[0]) ** (252 / len(hist)) - 1
+    annual_return = (hist["close"].iloc[-1] / hist["close"].iloc[0]) ** (252 / len(hist)) - 1
     if annual_return > 0.15:
         return "bull"
     elif annual_return < -0.10:

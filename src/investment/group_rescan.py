@@ -131,7 +131,9 @@ def _candidate_row_to_params(row: pd.Series) -> Dict[str, Any]:
 def select_balanced_yaml_candidate(summary_df: pd.DataFrame) -> pd.Series | None:
     if summary_df.empty:
         return None
-    eligible_mask = (summary_df["eligible_count"] >= 1) & (summary_df["annualized_excess_return"] > 0.0)
+    eligible_mask = (summary_df["eligible_count"] >= 1) & (
+        summary_df["annualized_excess_return"] > 0.0
+    )
     if "eligible" in summary_df.columns:
         eligible_mask = eligible_mask & summary_df["eligible"].fillna(False).astype(bool)
     eligible_df = summary_df[eligible_mask].copy()
@@ -164,7 +166,9 @@ def build_merged_candidate_yaml_lines(
     if high_beta_summary_df is not None and not high_beta_summary_df.empty:
         eligible_mask = high_beta_summary_df["eligible_count"] >= 1
         if "eligible" in high_beta_summary_df.columns:
-            eligible_mask = eligible_mask & high_beta_summary_df["eligible"].fillna(False).astype(bool)
+            eligible_mask = eligible_mask & high_beta_summary_df["eligible"].fillna(False).astype(
+                bool
+            )
         eligible_df = high_beta_summary_df[eligible_mask].copy()
         if not eligible_df.empty:
             if "objective_score" not in eligible_df.columns:
@@ -196,7 +200,8 @@ def write_merged_candidate_yaml(
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        "\n".join(build_merged_candidate_yaml_lines(balanced_summary_df, high_beta_summary_df)) + "\n",
+        "\n".join(build_merged_candidate_yaml_lines(balanced_summary_df, high_beta_summary_df))
+        + "\n",
         encoding="utf-8",
     )
     return output_path
@@ -361,7 +366,13 @@ def summarize_rescan_results(raw_df: pd.DataFrame, plan: GroupRescanPlan) -> pd.
     ].clip(upper=-0.01)
 
     return scored.sort_values(
-        ["group_pass", "eligible_count", "objective_score", "annualized_excess_return", "max_drawdown"],
+        [
+            "group_pass",
+            "eligible_count",
+            "objective_score",
+            "annualized_excess_return",
+            "max_drawdown",
+        ],
         ascending=[False, False, False, False, False],
     ).reset_index(drop=True)
 

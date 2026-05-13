@@ -206,7 +206,9 @@ def _map_ensemble_signal(
         return "none", 0.0, "无信号", current_target
 
     signal_strength = float(result.get("signal_strength", 0.0))
-    positive_consensus = float(result.get("positive_consensus_rate", result.get("consensus_rate", 0.0)))
+    positive_consensus = float(
+        result.get("positive_consensus_rate", result.get("consensus_rate", 0.0))
+    )
     negative_consensus = float(result.get("negative_consensus_rate", 0.0))
     positive_days = result.get("predicted_crash_days")
     negative_days = result.get("predicted_rebound_days")
@@ -214,7 +216,12 @@ def _map_ensemble_signal(
     if negative_days is not None and negative_consensus > positive_consensus:
         negative_days = float(negative_days)
         if negative_days < signal_config.strong_buy_days:
-            return "negative_bubble", signal_strength, "Ensemble 抄底共识", signal_config.full_position
+            return (
+                "negative_bubble",
+                signal_strength,
+                "Ensemble 抄底共识",
+                signal_config.full_position,
+            )
         if negative_days < signal_config.buy_days:
             target = max(current_target, signal_config.half_position)
             return "negative_bubble", signal_strength, "Ensemble 抄底共识", target
@@ -248,14 +255,13 @@ def generate_investment_signals(
 
     start_ts = pd.to_datetime(start_date) if start_date else price_df["date"].min()
     end_ts = pd.to_datetime(end_date) if end_date else price_df["date"].max()
-    output_mask = (price_df["date"] >= start_ts) & (price_df["date"] <= end_ts)
 
     current_target = signal_config.initial_position
     records = []
     close_prices = price_df["close"].values
     warmup = max(lppl_config.window_range)
     scan_counter = 0
-    
+
     # Check signal model
     is_ma_cross_atr = signal_config.signal_model == "ma_cross_atr_v1"
     is_ma_cross_atr_long_hold = signal_config.signal_model == "ma_cross_atr_long_hold_v1"
@@ -264,16 +270,34 @@ def generate_investment_signals(
     is_multi_factor = signal_config.signal_model == "multi_factor_adaptive_v1"
 
     # For MA cross ATR model, compute indicators
-    if is_ma_cross_atr or is_ma_cross_atr_long_hold or is_ma_convergence_v1 or is_ma_convergence_v2 or is_multi_factor:
+    if (
+        is_ma_cross_atr
+        or is_ma_cross_atr_long_hold
+        or is_ma_convergence_v1
+        or is_ma_convergence_v2
+        or is_multi_factor
+    ):
         # Compute MA indicators
-        fast_ma_col = signal_config.trend_fast_ma if (is_ma_cross_atr or is_ma_cross_atr_long_hold) else signal_config.ma_short
-        slow_ma_col = signal_config.trend_slow_ma if (is_ma_cross_atr or is_ma_cross_atr_long_hold) else signal_config.ma_mid
-        
+        fast_ma_col = (
+            signal_config.trend_fast_ma
+            if (is_ma_cross_atr or is_ma_cross_atr_long_hold)
+            else signal_config.ma_short
+        )
+        slow_ma_col = (
+            signal_config.trend_slow_ma
+            if (is_ma_cross_atr or is_ma_cross_atr_long_hold)
+            else signal_config.ma_mid
+        )
+
         price_df["ma_fast"] = price_df["close"].rolling(fast_ma_col, min_periods=1).mean()
         price_df["ma_slow"] = price_df["close"].rolling(slow_ma_col, min_periods=1).mean()
-        price_df["ma_regime"] = price_df["close"].rolling(signal_config.regime_filter_ma, min_periods=1).mean()
-        price_df["ma_long_model"] = price_df["close"].rolling(signal_config.ma_long, min_periods=1).mean()
-        
+        price_df["ma_regime"] = (
+            price_df["close"].rolling(signal_config.regime_filter_ma, min_periods=1).mean()
+        )
+        price_df["ma_long_model"] = (
+            price_df["close"].rolling(signal_config.ma_long, min_periods=1).mean()
+        )
+
         # Compute ATR
         prev_close = price_df["close"].shift(1).fillna(price_df["close"])
         true_range = pd.concat(
@@ -285,49 +309,68 @@ def generate_investment_signals(
             axis=1,
         ).max(axis=1)
         price_df["atr"] = true_range.rolling(signal_config.atr_period, min_periods=1).mean()
-        price_df["atr_ma"] = price_df["atr"].rolling(signal_config.atr_ma_window, min_periods=1).mean()
-        price_df["atr_ratio"] = (price_df["atr"] / price_df["atr_ma"].replace(0.0, pd.NA)).fillna(1.0)
+        price_df["atr_ma"] = (
+            price_df["atr"].rolling(signal_config.atr_ma_window, min_periods=1).mean()
+        )
+        price_df["atr_ratio"] = (price_df["atr"] / price_df["atr_ma"].replace(0.0, pd.NA)).fillna(
+            1.0
+        )
         if is_ma_convergence_v1:
             min_periods = max(1, min(signal_config.atr_percentile_window, 20))
-            price_df["atr_low_quantile"] = price_df["atr_ratio"].rolling(
-                signal_config.atr_percentile_window, min_periods=min_periods
-            ).quantile(signal_config.atr_low_percentile).fillna(price_df["atr_ratio"])
-            price_df["atr_high_quantile"] = price_df["atr_ratio"].rolling(
-                signal_config.atr_percentile_window, min_periods=min_periods
-            ).quantile(signal_config.atr_high_percentile).fillna(price_df["atr_ratio"])
-        
+            price_df["atr_low_quantile"] = (
+                price_df["atr_ratio"]
+                .rolling(signal_config.atr_percentile_window, min_periods=min_periods)
+                .quantile(signal_config.atr_low_percentile)
+                .fillna(price_df["atr_ratio"])
+            )
+            price_df["atr_high_quantile"] = (
+                price_df["atr_ratio"]
+                .rolling(signal_config.atr_percentile_window, min_periods=min_periods)
+                .quantile(signal_config.atr_high_percentile)
+                .fillna(price_df["atr_ratio"])
+            )
+
         # Compute MA crosses
         price_df["ma_fast_prev"] = price_df["ma_fast"].shift(1)
         price_df["ma_slow_prev"] = price_df["ma_slow"].shift(1)
-        price_df["bullish_cross"] = (
-            (price_df["ma_fast"] > price_df["ma_slow"])
-            & (price_df["ma_fast_prev"].fillna(price_df["ma_fast"]) <= price_df["ma_slow_prev"].fillna(price_df["ma_slow"]))
+        price_df["bullish_cross"] = (price_df["ma_fast"] > price_df["ma_slow"]) & (
+            price_df["ma_fast_prev"].fillna(price_df["ma_fast"])
+            <= price_df["ma_slow_prev"].fillna(price_df["ma_slow"])
         )
-        price_df["bearish_cross"] = (
-            (price_df["ma_fast"] < price_df["ma_slow"])
-            & (price_df["ma_fast_prev"].fillna(price_df["ma_fast"]) >= price_df["ma_slow_prev"].fillna(price_df["ma_slow"]))
+        price_df["bearish_cross"] = (price_df["ma_fast"] < price_df["ma_slow"]) & (
+            price_df["ma_fast_prev"].fillna(price_df["ma_fast"])
+            >= price_df["ma_slow_prev"].fillna(price_df["ma_slow"])
         )
-        
+
         # Risk drawdown
-        price_df["risk_rolling_peak"] = price_df["close"].rolling(signal_config.risk_drawdown_lookback, min_periods=1).max()
+        price_df["risk_rolling_peak"] = (
+            price_df["close"].rolling(signal_config.risk_drawdown_lookback, min_periods=1).max()
+        )
         price_df["risk_price_drawdown"] = (price_df["close"] / price_df["risk_rolling_peak"]) - 1.0
-        
+
         # For multi-factor, also compute BB
         if is_multi_factor or is_ma_convergence_v1 or is_ma_convergence_v2:
-            price_df["bb_middle"] = price_df["close"].rolling(signal_config.bb_period, min_periods=1).mean()
-            price_df["bb_std"] = price_df["close"].rolling(signal_config.bb_period, min_periods=1).std().fillna(0.0)
+            price_df["bb_middle"] = (
+                price_df["close"].rolling(signal_config.bb_period, min_periods=1).mean()
+            )
+            price_df["bb_std"] = (
+                price_df["close"].rolling(signal_config.bb_period, min_periods=1).std().fillna(0.0)
+            )
             price_df["bb_upper"] = price_df["bb_middle"] + signal_config.bb_std * price_df["bb_std"]
             price_df["bb_lower"] = price_df["bb_middle"] - signal_config.bb_std * price_df["bb_std"]
-            price_df["bb_width"] = ((price_df["bb_upper"] - price_df["bb_lower"]) / price_df["bb_middle"].replace(0.0, pd.NA)).fillna(0.0)
+            price_df["bb_width"] = (
+                (price_df["bb_upper"] - price_df["bb_lower"])
+                / price_df["bb_middle"].replace(0.0, pd.NA)
+            ).fillna(0.0)
 
     buy_confirm_count = 0
     sell_confirm_count = 0
     cooldown_remaining = 0
     holding_bars = 0
 
-    output_mask_values = output_mask.to_numpy(dtype=bool, copy=False)
     for idx, row in enumerate(price_df.itertuples(index=False)):
-        if not output_mask_values[idx]:
+        ts = row.date
+        if ts < start_ts or ts > end_ts:
             continue
 
         lppl_signal = "none"
@@ -368,7 +411,9 @@ def generate_investment_signals(
             )
 
             confirm_buy_signal = long_hold_buy_setup if is_ma_cross_atr_long_hold else buy_candidate
-            confirm_sell_signal = long_hold_sell_setup if is_ma_cross_atr_long_hold else sell_candidate
+            confirm_sell_signal = (
+                long_hold_sell_setup if is_ma_cross_atr_long_hold else sell_candidate
+            )
 
             if confirm_buy_signal:
                 buy_confirm_count += 1
@@ -414,9 +459,7 @@ def generate_investment_signals(
                     and holding_bars < int(signal_config.min_hold_bars)
                 ):
                     next_target = current_target
-                    position_reason = (
-                        f"持仓不足{int(signal_config.min_hold_bars)}天,暂缓卖出"
-                    )
+                    position_reason = f"持仓不足{int(signal_config.min_hold_bars)}天,暂缓卖出"
                 elif can_sell:
                     next_target = signal_config.flat_position
                     if bearish_cross:
@@ -425,7 +468,10 @@ def generate_investment_signals(
                         position_reason = f"长持仓ATR高波卖出(ATR={atr_ratio:.2f})"
                 else:
                     next_target = current_target
-                    if current_target <= signal_config.flat_position + 1e-8 and cooldown_remaining > 0:
+                    if (
+                        current_target <= signal_config.flat_position + 1e-8
+                        and cooldown_remaining > 0
+                    ):
                         position_reason = f"冷却中({cooldown_remaining}天)"
                     else:
                         position_reason = f"长持仓持有(ATR={atr_ratio:.2f},持仓={holding_bars}天)"
@@ -443,10 +489,16 @@ def generate_investment_signals(
             current_target = next_target
 
             if is_ma_cross_atr_long_hold:
-                if previous_target <= signal_config.flat_position + 1e-8 and current_target > signal_config.flat_position + 1e-8:
+                if (
+                    previous_target <= signal_config.flat_position + 1e-8
+                    and current_target > signal_config.flat_position + 1e-8
+                ):
                     holding_bars = 0
                     buy_confirm_count = 0
-                elif previous_target > signal_config.flat_position + 1e-8 and current_target <= signal_config.flat_position + 1e-8:
+                elif (
+                    previous_target > signal_config.flat_position + 1e-8
+                    and current_target <= signal_config.flat_position + 1e-8
+                ):
                     holding_bars = 0
                     sell_confirm_count = 0
                     cooldown_remaining = int(signal_config.cooldown_days)
@@ -474,7 +526,10 @@ def generate_investment_signals(
                 buy_setup = (
                     bb_width <= signal_config.bb_width_cap
                     and atr_ratio <= atr_low_q
-                    and (close_price > float(getattr(row, "bb_upper", close_price)) or (ma_fast > ma_slow > ma_long_model))
+                    and (
+                        close_price > float(getattr(row, "bb_upper", close_price))
+                        or (ma_fast > ma_slow > ma_long_model)
+                    )
                 )
                 sell_setup = (
                     bb_width <= signal_config.bb_width_cap
@@ -485,11 +540,17 @@ def generate_investment_signals(
                 buy_setup = (
                     bullish_cross
                     and regime_ratio >= signal_config.regime_filter_buffer
-                    and (atr_ratio < signal_config.atr_low_threshold or bb_width < signal_config.bb_width_threshold)
+                    and (
+                        atr_ratio < signal_config.atr_low_threshold
+                        or bb_width < signal_config.bb_width_threshold
+                    )
                 )
                 sell_setup = (
                     bearish_cross
-                    or (regime_ratio < signal_config.regime_filter_buffer and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold)
+                    or (
+                        regime_ratio < signal_config.regime_filter_buffer
+                        and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
+                    )
                     or atr_ratio > signal_config.atr_high_threshold
                 )
 
@@ -527,14 +588,20 @@ def generate_investment_signals(
 
             action = _resolve_action(current_target, next_target)
             current_target = next_target
-            if previous_target <= signal_config.flat_position + 1e-8 and current_target > signal_config.flat_position + 1e-8:
+            if (
+                previous_target <= signal_config.flat_position + 1e-8
+                and current_target > signal_config.flat_position + 1e-8
+            ):
                 holding_bars = 0
                 buy_confirm_count = 0
-            elif previous_target > signal_config.flat_position + 1e-8 and current_target <= signal_config.flat_position + 1e-8:
+            elif (
+                previous_target > signal_config.flat_position + 1e-8
+                and current_target <= signal_config.flat_position + 1e-8
+            ):
                 holding_bars = 0
                 sell_confirm_count = 0
                 cooldown_remaining = int(signal_config.cooldown_days)
-            
+
         elif is_multi_factor:
             # Multi-factor adaptive model logic
             bullish_cross = bool(row.bullish_cross)
@@ -543,7 +610,7 @@ def generate_investment_signals(
             regime_ma = float(getattr(row, "ma_regime", close_price))
             regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
             bb_width = float(getattr(row, "bb_width", 0.10))
-            
+
             # Compute scores
             trend_score = 0.0
             if bullish_cross:
@@ -554,39 +621,39 @@ def generate_investment_signals(
                 trend_score += 0.5
             elif regime_ratio <= 0.98:
                 trend_score -= 0.5
-            
+
             vol_score = 0.0
             if atr_ratio < signal_config.atr_low_threshold:
                 vol_score = 1.0
             elif atr_ratio > signal_config.atr_high_threshold:
                 vol_score = -1.0
-            
+
             state_score = 0.0
             if bb_width < signal_config.bb_narrow_threshold:
                 state_score = 0.5
             elif bb_width > signal_config.bb_wide_threshold:
                 state_score = -0.5
-            
+
             ma_fast = float(row.ma_fast)
             ma_slow = float(row.ma_slow)
             momentum_score = 0.5 if ma_fast > ma_slow else -0.5
-            
+
             total_score = (
                 trend_score * signal_config.trend_weight
                 + vol_score * signal_config.volatility_weight
                 + state_score * signal_config.market_state_weight
                 + momentum_score * signal_config.momentum_weight
             )
-            
+
             risk_drawdown = float(row.risk_price_drawdown)
-            
+
             # Position sizing based on volatility
             vol_position_cap = float(signal_config.full_position)
             if atr_ratio > signal_config.atr_high_threshold:
                 vol_position_cap = 0.5
             elif atr_ratio > 1.05:
                 vol_position_cap = 0.7
-            
+
             # Decision logic
             if (
                 current_target > signal_config.flat_position + 1e-8
@@ -601,15 +668,19 @@ def generate_investment_signals(
             elif total_score <= signal_config.sell_score_threshold and trend_score < 0:
                 next_target = signal_config.flat_position
                 position_reason = f"多因子卖出(评分={total_score:.2f})"
-            elif total_score < 0 and total_score > signal_config.sell_score_threshold and current_target > signal_config.flat_position + 1e-8:
+            elif (
+                total_score < 0
+                and total_score > signal_config.sell_score_threshold
+                and current_target > signal_config.flat_position + 1e-8
+            ):
                 next_target = signal_config.half_position
                 position_reason = f"多因子减仓(评分={total_score:.2f})"
             else:
                 position_reason = f"多因子持有(评分={total_score:.2f})"
-            
+
             action = _resolve_action(current_target, next_target)
             current_target = next_target
-            
+
         else:
             # Legacy LPPL model
             if idx >= warmup and scan_counter % scan_step == 0:
@@ -622,22 +693,31 @@ def generate_investment_signals(
                         consensus_threshold=lppl_config.consensus_threshold,
                         config=lppl_config,
                     )
-                    lppl_signal, signal_strength, position_reason, next_target = _map_ensemble_signal(
-                        result,
-                        current_target,
-                        signal_config,
-                        lppl_config,
+                    lppl_signal, signal_strength, position_reason, next_target = (
+                        _map_ensemble_signal(
+                            result,
+                            current_target,
+                            signal_config,
+                            lppl_config,
+                        )
                     )
                 else:
-                    result = scan_single_date(close_prices, idx, lppl_config.window_range, lppl_config)
-                    lppl_signal, signal_strength, position_reason, next_target = _map_single_window_signal(
-                        result,
-                        current_target,
-                        signal_config,
-                        lppl_config,
+                    result = scan_single_date(
+                        close_prices, idx, lppl_config.window_range, lppl_config
+                    )
+                    lppl_signal, signal_strength, position_reason, next_target = (
+                        _map_single_window_signal(
+                            result,
+                            current_target,
+                            signal_config,
+                            lppl_config,
+                        )
                     )
             # warning/watch 不作为交易信号时，保持当前仓位
-            if not signal_config.warning_trade_enabled and lppl_signal in ("bubble_warning", "bubble_watch"):
+            if not signal_config.warning_trade_enabled and lppl_signal in (
+                "bubble_warning",
+                "bubble_watch",
+            ):
                 next_target = current_target
                 if lppl_signal == "bubble_warning":
                     position_reason = "观察信号不交易"
@@ -712,7 +792,9 @@ def _whipsaw_rate(trades_df: pd.DataFrame) -> float:
     return float((hold_days <= 20).mean())
 
 
-def summarize_strategy_performance(equity_df: pd.DataFrame, trades_df: pd.DataFrame) -> Dict[str, Any]:
+def summarize_strategy_performance(
+    equity_df: pd.DataFrame, trades_df: pd.DataFrame
+) -> Dict[str, Any]:
     if equity_df.empty:
         return {
             "final_nav": 1.0,
@@ -740,13 +822,17 @@ def summarize_strategy_performance(equity_df: pd.DataFrame, trades_df: pd.DataFr
     annualized_return = (final_nav ** (252.0 / periods) - 1.0) if final_nav > 0 else -1.0
     max_drawdown = float(equity_df["drawdown"].min())
     signal_count = int((equity_df["action"] != "hold").sum())
-    annualized_benchmark = ((1.0 + benchmark_return) ** (252.0 / periods) - 1.0) if benchmark_return > -1.0 else -1.0
+    annualized_benchmark = (
+        ((1.0 + benchmark_return) ** (252.0 / periods) - 1.0) if benchmark_return > -1.0 else -1.0
+    )
     annualized_excess_return = annualized_return - annualized_benchmark
     calmar_ratio = annualized_return / abs(max_drawdown) if max_drawdown < 0 else annualized_return
     start_ts = pd.to_datetime(equity_df["date"].iloc[0])
     end_ts = pd.to_datetime(equity_df["date"].iloc[-1])
     initial_capital = float(equity_df["portfolio_value"].iloc[0])
-    turnover_rate, annualized_turnover_rate = _annualized_turnover_rate(trades_df, initial_capital, start_ts, end_ts)
+    turnover_rate, annualized_turnover_rate = _annualized_turnover_rate(
+        trades_df, initial_capital, start_ts, end_ts
+    )
     whipsaw_rate = _whipsaw_rate(trades_df)
 
     return {
@@ -781,7 +867,10 @@ def _check_trade_constraints(
     NOTE: 当前未被 run_strategy_backtest 使用（该函数使用 _check_trade_constraints_df）。
     保留此接口以供外部直接调用。
     """
-    if not backtest_config.enable_limit_move_constraint and not backtest_config.suspend_if_volume_zero:
+    if (
+        not backtest_config.enable_limit_move_constraint
+        and not backtest_config.suspend_if_volume_zero
+    ):
         return True, ""
 
     volume = float(getattr(row, "volume", 0))
@@ -822,7 +911,10 @@ def _check_trade_constraints_df(
     current_units: float,
 ) -> Tuple[bool, str]:
     """从 DataFrame 检查成交约束"""
-    if not backtest_config.enable_limit_move_constraint and not backtest_config.suspend_if_volume_zero:
+    if (
+        not backtest_config.enable_limit_move_constraint
+        and not backtest_config.suspend_if_volume_zero
+    ):
         return True, ""
     row = df.iloc[row_idx]
     volume = float(row["volume"]) if "volume" in df.columns else 0
@@ -886,7 +978,9 @@ def run_strategy_backtest(
 
     row_fields = list(equity_df.columns)
     for row_idx, row in enumerate(equity_df.itertuples(index=False, name="BacktestRow")):
-        execution_base_price = float(row.open if backtest_config.execution_price == "open" else row.close)
+        execution_base_price = float(
+            row.open if backtest_config.execution_price == "open" else row.close
+        )
         execution_buy_price = execution_base_price * (1.0 + backtest_config.slippage)
         execution_sell_price = execution_base_price * (1.0 - backtest_config.slippage)
         target_position = float(getattr(row, "target_position", 0.0))
@@ -903,7 +997,11 @@ def run_strategy_backtest(
 
         if not skip_rebalance and desired_holdings_value > current_holdings_value + 1e-8:
             buy_allowed, buy_reason = _check_trade_constraints_df(
-                equity_df, row_idx, backtest_config, "buy", units,
+                equity_df,
+                row_idx,
+                backtest_config,
+                "buy",
+                units,
             )
             if not buy_allowed:
                 trade_type = "hold"
@@ -934,7 +1032,11 @@ def run_strategy_backtest(
                     )
         elif not skip_rebalance and desired_holdings_value < current_holdings_value - 1e-8:
             sell_allowed, sell_reason = _check_trade_constraints_df(
-                equity_df, row_idx, backtest_config, "sell", units,
+                equity_df,
+                row_idx,
+                backtest_config,
+                "sell",
+                units,
             )
             if not sell_allowed:
                 trade_type = "hold"

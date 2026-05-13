@@ -62,17 +62,23 @@ class PlotGenerator:
         timeline_df["date"] = pd.to_datetime(timeline_df["date"])
 
         fig, ax = plt.subplots(figsize=(12, 6))
-        ax.plot(timeline_df["date"], timeline_df["price"], color="#111827", linewidth=1.5, label="Price")
+        ax.plot(
+            timeline_df["date"], timeline_df["price"], color="#111827", linewidth=1.5, label="Price"
+        )
 
         if "is_warning" in timeline_df.columns:
             warning_df = timeline_df[timeline_df["is_warning"]]
             if not warning_df.empty:
-                ax.scatter(warning_df["date"], warning_df["price"], color="#f59e0b", s=25, label="Warning")
+                ax.scatter(
+                    warning_df["date"], warning_df["price"], color="#f59e0b", s=25, label="Warning"
+                )
 
         if "is_danger" in timeline_df.columns:
             danger_df = timeline_df[timeline_df["is_danger"]]
             if not danger_df.empty:
-                ax.scatter(danger_df["date"], danger_df["price"], color="#dc2626", s=35, label="Danger")
+                ax.scatter(
+                    danger_df["date"], danger_df["price"], color="#dc2626", s=35, label="Danger"
+                )
 
         peak_date = pd.to_datetime(metadata["peak_date"])
         ax.axvline(peak_date, color="#2563eb", linestyle="--", linewidth=1.2, label="Peak Date")
@@ -97,7 +103,10 @@ class PlotGenerator:
         ax.grid(True, alpha=0.25)
         ax.legend()
 
-        filename = filename or f"{metadata['symbol'].replace('.', '_')}_{metadata['mode']}_{metadata['peak_date']}_timeline.png"
+        filename = (
+            filename
+            or f"{metadata['symbol'].replace('.', '_')}_{metadata['mode']}_{metadata['peak_date']}_timeline.png"
+        )
         return self._save_figure(fig, filename)
 
     def generate_consensus_plot(
@@ -111,12 +120,30 @@ class PlotGenerator:
         timeline_df["date"] = pd.to_datetime(timeline_df["date"])
 
         fig, ax = plt.subplots(figsize=(12, 5))
-        ax.plot(timeline_df["date"], timeline_df["consensus_rate"], color="#059669", linewidth=2, label="Consensus Rate")
-        ax.axhline(consensus_threshold, color="#dc2626", linestyle="--", linewidth=1.2, label="Consensus Threshold")
+        ax.plot(
+            timeline_df["date"],
+            timeline_df["consensus_rate"],
+            color="#059669",
+            linewidth=2,
+            label="Consensus Rate",
+        )
+        ax.axhline(
+            consensus_threshold,
+            color="#dc2626",
+            linestyle="--",
+            linewidth=1.2,
+            label="Consensus Threshold",
+        )
 
         if "valid_windows" in timeline_df.columns:
             ax2 = ax.twinx()
-            ax2.bar(timeline_df["date"], timeline_df["valid_windows"], alpha=0.15, color="#2563eb", label="Valid Windows")
+            ax2.bar(
+                timeline_df["date"],
+                timeline_df["valid_windows"],
+                alpha=0.15,
+                color="#2563eb",
+                label="Valid Windows",
+            )
             ax2.set_ylabel("Valid Windows")
 
         ax.set_title(f"{metadata['name']} {metadata['peak_date']} Ensemble Consensus")
@@ -125,7 +152,10 @@ class PlotGenerator:
         ax.grid(True, alpha=0.25)
         ax.legend(loc="upper left")
 
-        filename = filename or f"{metadata['symbol'].replace('.', '_')}_{metadata['mode']}_{metadata['peak_date']}_consensus.png"
+        filename = (
+            filename
+            or f"{metadata['symbol'].replace('.', '_')}_{metadata['mode']}_{metadata['peak_date']}_consensus.png"
+        )
         return self._save_figure(fig, filename)
 
     def generate_crash_dispersion_plot(
@@ -164,7 +194,10 @@ class PlotGenerator:
 
         fig.suptitle(f"{metadata['name']} {metadata['peak_date']} Crash Dispersion")
 
-        filename = filename or f"{metadata['symbol'].replace('.', '_')}_{metadata['mode']}_{metadata['peak_date']}_dispersion.png"
+        filename = (
+            filename
+            or f"{metadata['symbol'].replace('.', '_')}_{metadata['mode']}_{metadata['peak_date']}_dispersion.png"
+        )
         return self._save_figure(fig, filename)
 
     def generate_summary_statistics_plot(
@@ -173,7 +206,9 @@ class PlotGenerator:
         filename: str = "verification_summary.png",
     ) -> str:
         summary_df = summary_df.copy()
-        detect_rate = summary_df.groupby("name")["detected"].mean().sort_values(ascending=False) * 100
+        detect_rate = (
+            summary_df.groupby("name")["detected"].mean().sort_values(ascending=False) * 100
+        )
         lead_days = (
             summary_df[summary_df["detected"]]
             .groupby("name")["first_danger_days"]
@@ -243,7 +278,9 @@ class PlotGenerator:
         if not trades_df.empty and "date" in trades_df.columns:
             trades_df["date"] = pd.to_datetime(trades_df["date"])
 
-        fig, axes = plt.subplots(2, 1, figsize=(14, 10), sharex=True, gridspec_kw={"height_ratios": [1, 1.2]})
+        fig, axes = plt.subplots(
+            2, 1, figsize=(14, 10), sharex=True, gridspec_kw={"height_ratios": [1, 1.2]}
+        )
 
         axes[0].plot(
             equity_df["date"],

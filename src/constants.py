@@ -42,8 +42,7 @@ AKSHARE_INDICES: List[str] = [
 ]
 
 TDX_DATA_DIR: str = os.environ.get(
-    "LPPL_TDX_DATA_DIR",
-    "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc"
+    "LPPL_TDX_DATA_DIR", "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc"
 )
 
 REQUIRED_COLUMNS: List[str] = ["date", "open", "close", "high", "low", "volume"]
@@ -79,31 +78,19 @@ WINDOW_CONFIG = WindowConfig(
 )
 
 DEFAULT_DATA_DIR: str = os.environ.get(
-    "LPPL_DATA_DIR",
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+    "LPPL_DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 )
 
 OUTPUT_DIR: str = "output"
-VERIFY_OUTPUT_DIR: str = os.environ.get(
-    "LPPL_VERIFY_OUTPUT_DIR",
-    os.path.join(OUTPUT_DIR, "MA")
-)
-PLOTS_OUTPUT_DIR: str = os.environ.get(
-    "LPPL_PLOTS_DIR",
-    os.path.join(VERIFY_OUTPUT_DIR, "plots")
-)
+VERIFY_OUTPUT_DIR: str = os.environ.get("LPPL_VERIFY_OUTPUT_DIR", os.path.join(OUTPUT_DIR, "MA"))
+PLOTS_OUTPUT_DIR: str = os.environ.get("LPPL_PLOTS_DIR", os.path.join(VERIFY_OUTPUT_DIR, "plots"))
 REPORTS_OUTPUT_DIR: str = os.environ.get(
-    "LPPL_REPORTS_DIR",
-    os.path.join(VERIFY_OUTPUT_DIR, "reports")
+    "LPPL_REPORTS_DIR", os.path.join(VERIFY_OUTPUT_DIR, "reports")
 )
 SUMMARY_OUTPUT_DIR: str = os.environ.get(
-    "LPPL_SUMMARY_DIR",
-    os.path.join(VERIFY_OUTPUT_DIR, "summary")
+    "LPPL_SUMMARY_DIR", os.path.join(VERIFY_OUTPUT_DIR, "summary")
 )
-RAW_OUTPUT_DIR: str = os.environ.get(
-    "LPPL_RAW_DIR",
-    os.path.join(VERIFY_OUTPUT_DIR, "raw")
-)
+RAW_OUTPUT_DIR: str = os.environ.get("LPPL_RAW_DIR", os.path.join(VERIFY_OUTPUT_DIR, "raw"))
 
 DATA_COLUMNS: Dict[str, str] = {
     "日期": "date",

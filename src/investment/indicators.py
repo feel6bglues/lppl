@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Technical indicator computation for investment strategies."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -52,19 +53,13 @@ def compute_indicators(
     # MA crossover signals
     enriched["ma_short_prev"] = enriched["ma_short"].shift(1)
     enriched["ma_mid_prev"] = enriched["ma_mid"].shift(1)
-    enriched["bullish_cross"] = (
-        (enriched["ma_short"] > enriched["ma_mid"])
-        & (
-            enriched["ma_short_prev"].fillna(enriched["ma_short"])
-            <= enriched["ma_mid_prev"].fillna(enriched["ma_mid"])
-        )
+    enriched["bullish_cross"] = (enriched["ma_short"] > enriched["ma_mid"]) & (
+        enriched["ma_short_prev"].fillna(enriched["ma_short"])
+        <= enriched["ma_mid_prev"].fillna(enriched["ma_mid"])
     )
-    enriched["bearish_cross"] = (
-        (enriched["ma_short"] < enriched["ma_mid"])
-        & (
-            enriched["ma_short_prev"].fillna(enriched["ma_short"])
-            >= enriched["ma_mid_prev"].fillna(enriched["ma_mid"])
-        )
+    enriched["bearish_cross"] = (enriched["ma_short"] < enriched["ma_mid"]) & (
+        enriched["ma_short_prev"].fillna(enriched["ma_short"])
+        >= enriched["ma_mid_prev"].fillna(enriched["ma_mid"])
     )
 
     # ATR (Average True Range)
@@ -83,7 +78,9 @@ def compute_indicators(
 
     # Bollinger Bands
     enriched["bb_middle"] = enriched["close"].rolling(config.bb_period, min_periods=1).mean()
-    enriched["bb_std_dev"] = enriched["close"].rolling(config.bb_period, min_periods=1).std().fillna(0.0)
+    enriched["bb_std_dev"] = (
+        enriched["close"].rolling(config.bb_period, min_periods=1).std().fillna(0.0)
+    )
     enriched["bb_upper"] = enriched["bb_middle"] + config.bb_std * enriched["bb_std_dev"]
     enriched["bb_lower"] = enriched["bb_middle"] - config.bb_std * enriched["bb_std_dev"]
     enriched["bb_width"] = (
@@ -91,9 +88,9 @@ def compute_indicators(
     ).fillna(0.0)
 
     # Risk drawdown
-    enriched["risk_rolling_peak"] = enriched["close"].rolling(
-        config.risk_drawdown_lookback, min_periods=1
-    ).max()
+    enriched["risk_rolling_peak"] = (
+        enriched["close"].rolling(config.risk_drawdown_lookback, min_periods=1).max()
+    )
     enriched["risk_price_drawdown"] = (enriched["close"] / enriched["risk_rolling_peak"]) - 1.0
 
     return enriched

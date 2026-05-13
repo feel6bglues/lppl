@@ -13,7 +13,9 @@ def _resolve_summary_csv(requested_path: str) -> Path:
 
     summary_dir = summary_path.parent
     pattern = "walk_forward_optimal_8index_summary_*.csv"
-    candidates = sorted(summary_dir.glob(pattern), key=lambda item: item.stat().st_mtime, reverse=True)
+    candidates = sorted(
+        summary_dir.glob(pattern), key=lambda item: item.stat().st_mtime, reverse=True
+    )
     if candidates:
         return candidates[0]
 

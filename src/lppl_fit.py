@@ -20,7 +20,7 @@ def lppl_vectorized(t, tc, m, w, a, b, c, phi):
         tau = tc - t[i]
         if tau < 1e-8:
             tau = 1e-8
-        power = tau ** m
+        power = tau**m
         result[i] = a + b * power + c * power * np.cos(w * np.log(tau) + phi)
     return result
 
@@ -36,10 +36,10 @@ def compute_cost(params, t, log_prices):
 def fit_single_point(data):
     """
     极速拟合 - 仅使用 L-BFGS-B 快速优化
-    
+
     Args:
         data: tuple (idx, close_prices, window_size)
-    
+
     Returns:
         dict 或 None
     """
@@ -48,7 +48,7 @@ def fit_single_point(data):
     if idx < window_size:
         return None
 
-    close_subset = close_prices[max(0, idx - window_size):idx]
+    close_subset = close_prices[max(0, idx - window_size) : idx]
 
     if len(close_subset) < window_size:
         return None
@@ -72,14 +72,46 @@ def fit_single_point(data):
         (log_price_min - 0.5 * log_price_range, log_price_max + 0.5 * log_price_range),
         (-log_price_range * 3, log_price_range * 3),
         (-log_price_range * 3, log_price_range * 3),
-        (0, 2 * np.pi)
+        (0, 2 * np.pi),
     ]
 
     initial_guesses = [
-        [current_t + 5, 0.5, 8.5, log_price_mean, log_price_range * 0.1, log_price_range * 0.01, 0.0],
-        [current_t + 10, 0.4, 9.5, log_price_mean, log_price_range * 0.05, -log_price_range * 0.02, np.pi/2],
-        [current_t + 15, 0.6, 7.5, log_price_mean, log_price_range * 0.08, log_price_range * 0.005, np.pi],
-        [current_t + 8, 0.7, 8.0, log_price_mean, log_price_range * 0.06, -log_price_range * 0.01, np.pi/4],
+        [
+            current_t + 5,
+            0.5,
+            8.5,
+            log_price_mean,
+            log_price_range * 0.1,
+            log_price_range * 0.01,
+            0.0,
+        ],
+        [
+            current_t + 10,
+            0.4,
+            9.5,
+            log_price_mean,
+            log_price_range * 0.05,
+            -log_price_range * 0.02,
+            np.pi / 2,
+        ],
+        [
+            current_t + 15,
+            0.6,
+            7.5,
+            log_price_mean,
+            log_price_range * 0.08,
+            log_price_range * 0.005,
+            np.pi,
+        ],
+        [
+            current_t + 8,
+            0.7,
+            8.0,
+            log_price_mean,
+            log_price_range * 0.06,
+            -log_price_range * 0.01,
+            np.pi / 4,
+        ],
     ]
 
     best_cost = np.inf
@@ -91,9 +123,9 @@ def fit_single_point(data):
                 compute_cost,
                 x0,
                 args=(t_data, log_prices),
-                method='L-BFGS-B',
+                method="L-BFGS-B",
                 bounds=bounds,
-                options={'maxiter': 50, 'ftol': 0.1}
+                options={"maxiter": 50, "ftol": 0.1},
             )
 
             if res.fun < best_cost:
@@ -123,7 +155,7 @@ def fit_single_point(data):
             "m": float(m),
             "w": float(w),
             "rmse": float(np.sqrt(best_cost / len(log_prices))),
-            "r_squared": float(r_squared)
+            "r_squared": float(r_squared),
         }
     except Exception:
         return None

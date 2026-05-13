@@ -29,7 +29,6 @@ DEFAULT_CLUSTER_CONFIG = ClusterConfig()
 
 
 class SignalClusterDetector:
-
     def __init__(self, config: ClusterConfig | None = None):
         self.config = config or DEFAULT_CLUSTER_CONFIG
         self.signal_history: deque = deque(maxlen=365)
@@ -37,24 +36,26 @@ class SignalClusterDetector:
     def add_signal(self, date_str: str, signal_result: Dict):
         layers = signal_result.get("layers", {})
         medium_m = layers.get("medium", {}).get("m", 0)
-        self.signal_history.append({
-            "date": date_str,
-            "score": signal_result.get("final_score", 0),
-            "level": signal_result.get("level", "none"),
-            "is_danger": signal_result.get("level") == "danger",
-            "is_warning": signal_result.get("level") in ("danger", "warning"),
-            "medium_m": medium_m,
-            "n_danger": signal_result.get("n_danger", 0),
-        })
+        self.signal_history.append(
+            {
+                "date": date_str,
+                "score": signal_result.get("final_score", 0),
+                "level": signal_result.get("level", "none"),
+                "is_danger": signal_result.get("level") == "danger",
+                "is_warning": signal_result.get("level") in ("danger", "warning"),
+                "medium_m": medium_m,
+                "n_danger": signal_result.get("n_danger", 0),
+            }
+        )
 
     def detect_cluster(self, current_date_str: str) -> Dict:
         current_date = pd.Timestamp(current_date_str)
         window_start = current_date - pd.Timedelta(days=self.config.window_days)
 
         window_signals = [
-            s for s in self.signal_history
-            if pd.Timestamp(s["date"]) >= window_start
-            and pd.Timestamp(s["date"]) <= current_date
+            s
+            for s in self.signal_history
+            if pd.Timestamp(s["date"]) >= window_start and pd.Timestamp(s["date"]) <= current_date
         ]
 
         danger_signals = [s for s in window_signals if s["is_danger"]]
@@ -98,9 +99,7 @@ class SignalClusterDetector:
             cluster_score = 0.0
 
         final_cluster_score = (
-            cluster_score
-            * min(1.0, weighted_danger / 3.0)
-            * (0.5 + 0.5 * m_stability)
+            cluster_score * min(1.0, weighted_danger / 3.0) * (0.5 + 0.5 * m_stability)
         )
 
         return {

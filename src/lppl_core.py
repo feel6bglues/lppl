@@ -7,8 +7,8 @@ LPPL 底层数值核心
 
 关系：
 - src.lppl_engine 是本模块的调用方（策略级入口）
-- src.lppl_fit 是历史遗留的独立极速拟合实现（已弃用）
 """
+
 import logging
 from typing import Any, Dict, Literal, Optional, Tuple
 
@@ -24,10 +24,13 @@ FitFailureReason = Literal[
 FitFailureStats = Dict[FitFailureReason, int]
 
 
-def track_fit_failure(reason: FitFailureReason, stats: Optional[FitFailureStats] = None, context: str = "") -> None:
+def track_fit_failure(
+    reason: FitFailureReason, stats: Optional[FitFailureStats] = None, context: str = ""
+) -> None:
     if stats is not None:
         stats[reason] = stats.get(reason, 0) + 1
     logger.debug(f"LPPL fit failure [{reason}]{' - ' + context if context else ''}")
+
 
 import numpy as np
 
@@ -36,6 +39,7 @@ logger = logging.getLogger(__name__)
 NUMBA_AVAILABLE = False
 try:
     from numba import njit
+
     NUMBA_AVAILABLE = True
     logger.info("Numba JIT compilation available")
 except ImportError:
@@ -57,31 +61,18 @@ def precheck_fit_input(close_prices: np.ndarray, window_size: int) -> Optional[F
 
 
 def _lppl_func_python(
-    t: np.ndarray,
-    tc: float,
-    m: float,
-    w: float,
-    a: float,
-    b: float,
-    c: float,
-    phi: float
+    t: np.ndarray, tc: float, m: float, w: float, a: float, b: float, c: float, phi: float
 ) -> np.ndarray:
     tau = tc - t
     tau = np.maximum(tau, 1e-8)
-    return a + b * (tau ** m) + c * (tau ** m) * np.cos(w * np.log(tau) + phi)
+    return a + b * (tau**m) + c * (tau**m) * np.cos(w * np.log(tau) + phi)
 
 
 if NUMBA_AVAILABLE:
+
     @njit(cache=True, fastmath=True)
     def _lppl_func_numba(
-        t: np.ndarray,
-        tc: float,
-        m: float,
-        w: float,
-        a: float,
-        b: float,
-        c: float,
-        phi: float
+        t: np.ndarray, tc: float, m: float, w: float, a: float, b: float, c: float, phi: float
     ) -> np.ndarray:
         tau = tc - t
         n = len(tau)
@@ -91,21 +82,15 @@ if NUMBA_AVAILABLE:
                 tau_i = 1e-8
             else:
                 tau_i = tau[i]
-            result[i] = a + b * (tau_i ** m) + c * (tau_i ** m) * np.cos(w * np.log(tau_i) + phi)
+            result[i] = a + b * (tau_i**m) + c * (tau_i**m) * np.cos(w * np.log(tau_i) + phi)
         return result
 
 
 def lppl_func(
-    t: np.ndarray,
-    tc: float,
-    m: float,
-    w: float,
-    a: float,
-    b: float,
-    c: float,
-    phi: float
+    t: np.ndarray, tc: float, m: float, w: float, a: float, b: float, c: float, phi: float
 ) -> np.ndarray:
     from src.constants import ENABLE_NUMBA_JIT
+
     if NUMBA_AVAILABLE and ENABLE_NUMBA_JIT:
         return _lppl_func_numba(t, tc, m, w, a, b, c, phi)
     return _lppl_func_python(t, tc, m, w, a, b, c, phi)
@@ -113,6 +98,7 @@ def lppl_func(
 
 def cost_function(params: Tuple, t: np.ndarray, log_prices: np.ndarray) -> float:
     from src.constants import ENABLE_NUMBA_JIT
+
     if NUMBA_AVAILABLE and ENABLE_NUMBA_JIT:
         return _cost_function_numba(params, t, log_prices)
     return _cost_function_python(params, t, log_prices)
@@ -123,12 +109,13 @@ def _cost_function_python(params: Tuple, t: np.ndarray, log_prices: np.ndarray) 
     try:
         prediction = _lppl_func_python(t, tc, m, w, a, b, c, phi)
         residuals = prediction - log_prices
-        return np.sum(residuals ** 2)
+        return np.sum(residuals**2)
     except (FloatingPointError, OverflowError, ValueError):
         return 1e10
 
 
 if NUMBA_AVAILABLE:
+
     @njit(cache=True, fastmath=True)
     def _cost_function_numba(params: np.ndarray, t: np.ndarray, log_prices: np.ndarray) -> float:
         tc = params[0]
@@ -141,17 +128,15 @@ if NUMBA_AVAILABLE:
 
         prediction = _lppl_func_numba(t, tc, m, w, a, b, c, phi)
         residuals = prediction - log_prices
-        return np.sum(residuals ** 2)
+        return np.sum(residuals**2)
 
 
-def validate_input_data(
-    df,
-    symbol: str
-) -> Tuple[bool, str]:
+def validate_input_data(df, symbol: str) -> Tuple[bool, str]:
     if df is None or df.empty:
         return False, "DataFrame is None or empty"
 
     from src.constants import REQUIRED_COLUMNS
+
     missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
     if missing_cols:
         return False, f"Missing required columns: {missing_cols}"
@@ -182,11 +167,12 @@ def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
             return None
 
         current_t = len(prices_array)
-        last_date_raw = dates_series.iloc[-1] if hasattr(dates_series, 'iloc') else dates_series[-1]
-        if hasattr(last_date_raw, 'to_pydatetime'):
+        last_date_raw = dates_series.iloc[-1] if hasattr(dates_series, "iloc") else dates_series[-1]
+        if hasattr(last_date_raw, "to_pydatetime"):
             last_date = last_date_raw
         else:
             import pandas as pd
+
             last_date = pd.Timestamp(last_date_raw)
 
         price_min = np.min(log_price_data)
@@ -202,14 +188,21 @@ def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
             (price_min, price_max * 1.1),
             (-20, 20),
             (-20, 20),
-            (0, 2 * np.pi)
+            (0, 2 * np.pi),
         ]
 
         from scipy.optimize import differential_evolution
+
         result = differential_evolution(
-            cost_function, bounds, args=(t_data, log_price_data),
-            strategy='best1bin', maxiter=100, popsize=15, tol=0.05,
-            seed=42, workers=1
+            cost_function,
+            bounds,
+            args=(t_data, log_price_data),
+            strategy="best1bin",
+            maxiter=100,
+            popsize=15,
+            tol=0.05,
+            seed=42,
+            workers=1,
         )
 
         if not result.success or not np.isfinite(result.fun):
@@ -226,15 +219,9 @@ def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
         if not np.isfinite(rmse) or rmse > 10:
             return None
 
-        return {
-            "window": window_size,
-            "params": result.x,
-            "rmse": rmse,
-            "last_date": last_date
-        }
+        return {"window": window_size, "params": result.x, "rmse": rmse, "last_date": last_date}
     except (ValueError, TypeError, FloatingPointError):
-        return None
-    except Exception:
+        logger.debug("fit_single_window_task failed")
         return None
 
 
@@ -296,6 +283,6 @@ def calculate_bottom_signal_strength(m: float, w: float, b: float, rmse: float) 
 
     rmse_score = max(0.0, 1.0 - rmse / 0.1)
 
-    strength = (m_score * 0.3 + w_score * 0.3 + b_score * 0.2 + rmse_score * 0.2)
+    strength = m_score * 0.3 + w_score * 0.3 + b_score * 0.2 + rmse_score * 0.2
 
     return min(max(strength, 0.0), 1.0)

@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import akshare as ak
+
     AKSHARE_AVAILABLE = True
     logger.info(f"akshare version: {ak.__version__}")
 except ImportError:
@@ -78,7 +79,10 @@ def validate_dataframe(df: pd.DataFrame, symbol: str) -> Tuple[bool, str]:
 
     bad_high_low = (df["high"] < df["low"]).sum()
     if bad_high_low > len(df) * 0.01:
-        return False, f"Too many high < low: {bad_high_low} rows ({bad_high_low/len(df)*100:.1f}%)"
+        return (
+            False,
+            f"Too many high < low: {bad_high_low} rows ({bad_high_low / len(df) * 100:.1f}%)",
+        )
 
     if (df["close"] <= 0).any() or (df["open"] <= 0).any():
         return False, "Invalid data: non-positive prices found"
@@ -113,6 +117,7 @@ class DataManager:
         logger.info(f"DataManager initialized with data_dir: {self.data_dir}")
 
         from src.data.tdx_reader import TDXReader
+
         self.tdx_reader = TDXReader(TDX_DATA_DIR)
         logger.info(f"TDX Reader initialized with tdxdir: {TDX_DATA_DIR}")
 
@@ -188,9 +193,7 @@ class DataManager:
 
                 logger.info(f"Using stock_zh_index_hist_csindex for {symbol}")
                 df = ak.stock_zh_index_hist_csindex(
-                    symbol=pure_symbol,
-                    start_date=start_date,
-                    end_date=end_date
+                    symbol=pure_symbol, start_date=start_date, end_date=end_date
                 )
 
                 if df is None or df.empty:
@@ -207,7 +210,7 @@ class DataManager:
                     symbol=pure_symbol,
                     period="daily",
                     start_date="20100101",
-                    end_date=datetime.now().strftime("%Y%m%d")
+                    end_date=datetime.now().strftime("%Y%m%d"),
                 )
 
                 if df is None or df.empty:
@@ -226,7 +229,9 @@ class DataManager:
 
             self._save_data(symbol, df)
 
-            logger.info(f"Successfully fetched data for {symbol} (rows: {len(df)}, last date: {df['date'].iloc[-1].date()})")
+            logger.info(
+                f"Successfully fetched data for {symbol} (rows: {len(df)}, last date: {df['date'].iloc[-1].date()})"
+            )
             return df
         except ValueError as e:
             logger.error(f"Value error fetching akshare data for {symbol}: {e}")
@@ -337,7 +342,9 @@ class DataManager:
             logger.info(f"Data for {symbol} is already up-to-date (last date: {last_date.date()})")
             return ("up_to_date", 0)
 
-        logger.info(f"Incremental update for {symbol}: {days_diff} days to fetch (from {last_date.date()} to {today})")
+        logger.info(
+            f"Incremental update for {symbol}: {days_diff} days to fetch (from {last_date.date()} to {today})"
+        )
 
         if not self._is_akshare_index(symbol):
             logger.warning(f"Incremental update not supported for local data index {symbol}")
@@ -350,9 +357,7 @@ class DataManager:
 
             if symbol == "932000.SH":
                 new_df = ak.stock_zh_index_hist_csindex(
-                    symbol=pure_symbol,
-                    start_date=start_date,
-                    end_date=end_date
+                    symbol=pure_symbol, start_date=start_date, end_date=end_date
                 )
                 if new_df is not None and not new_df.empty:
                     new_df = new_df.rename(columns=DATA_COLUMNS)
@@ -364,10 +369,7 @@ class DataManager:
                         new_df = None
             else:
                 new_df = ak.index_zh_a_hist(
-                    symbol=pure_symbol,
-                    period="daily",
-                    start_date=start_date,
-                    end_date=end_date
+                    symbol=pure_symbol, period="daily", start_date=start_date, end_date=end_date
                 )
                 new_df = new_df.rename(columns=DATA_COLUMNS)
 
@@ -462,7 +464,9 @@ class DataManager:
                     if is_valid:
                         return df
                     else:
-                        logger.warning(f"Cached data validation failed for {symbol}: {msg}, will refetch")
+                        logger.warning(
+                            f"Cached data validation failed for {symbol}: {msg}, will refetch"
+                        )
                 except ValueError as e:
                     logger.error(f"Data format error reading local data for {symbol}: {e}")
                 except KeyError as e:
@@ -555,7 +559,9 @@ class DataManager:
                         normalized_status = self._normalize_akshare_update_status(status, rows)
                         results[symbol] = normalized_status
                         if normalized_status == DataAvailabilityStatus.UPDATED_REMOTE:
-                            logger.info(f"Data for {symbol} incrementally updated ({rows} rows added)")
+                            logger.info(
+                                f"Data for {symbol} incrementally updated ({rows} rows added)"
+                            )
                         elif normalized_status == DataAvailabilityStatus.AVAILABLE_CACHE:
                             logger.info(f"Data for {symbol} is already up-to-date")
                         elif status == "full_fetch" and rows > 0:
@@ -572,7 +578,9 @@ class DataManager:
                         df = self._fetch_akshare_data(symbol)
                         if df is not None and not df.empty:
                             last_date = df["date"].max()
-                            logger.info(f"Data for {symbol} fetched from akshare (last date: {last_date.date()})")
+                            logger.info(
+                                f"Data for {symbol} fetched from akshare (last date: {last_date.date()})"
+                            )
                             results[symbol] = DataAvailabilityStatus.UPDATED_REMOTE
                         else:
                             logger.warning(f"Failed to fetch data from akshare for {symbol}")
@@ -608,10 +616,7 @@ class DataManager:
             if df is not None and not df.empty:
                 is_valid, msg = validate_dataframe(df, symbol)
                 if is_valid:
-                    all_data[symbol] = {
-                        "name": name,
-                        "data": df
-                    }
+                    all_data[symbol] = {"name": name, "data": df}
                 else:
                     logger.warning(f"Skipping {symbol} due to validation failure: {msg}")
             else:

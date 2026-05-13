@@ -22,6 +22,7 @@ from typing import List
 @dataclass
 class MarketBreadth:
     """市场宽度指标"""
+
     date: str
     total_stocks: int
     markdown_pct: float
@@ -36,6 +37,7 @@ class MarketBreadth:
 @dataclass
 class EnhancedSignal:
     """增强信号"""
+
     raw_phase: str
     raw_direction: str
     raw_confidence: str
@@ -148,7 +150,10 @@ def enhance_phase_detection(
 
     elif market_dir == "bull":
         if phase == "markdown":
-            if mtf_alignment in ("fully_aligned", "higher_timeframe_aligned") and confidence in ("D", "B"):
+            if mtf_alignment in ("fully_aligned", "higher_timeframe_aligned") and confidence in (
+                "D",
+                "B",
+            ):
                 enhanced_action = "轻仓试探"
                 phase_in_context = "牛市markdown: 超跌反弹机会"
                 score = 0.8

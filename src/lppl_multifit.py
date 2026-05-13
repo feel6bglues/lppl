@@ -21,6 +21,7 @@ import numpy as np
 @dataclass
 class WindowConfig:
     """单层窗口配置"""
+
     name: str
     windows: List[int]
     m_bounds: Tuple[float, float]
@@ -97,7 +98,7 @@ def fit_single_layer(
         if idx < window_size:
             continue
 
-        subset = close_prices[idx - window_size:idx]
+        subset = close_prices[idx - window_size : idx]
 
         lppl_config = LPPLConfig(
             window_range=[window_size],

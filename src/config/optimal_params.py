@@ -240,7 +240,9 @@ def resolve_symbol_params(
         float(fallback["drop_threshold"]),
     )
     resolved["optimizer"] = str(resolved.get("optimizer", fallback["optimizer"]))
-    resolved["signal_model"] = str(resolved.get("signal_model", fallback.get("signal_model", "multi_factor_v1")))
+    resolved["signal_model"] = str(
+        resolved.get("signal_model", fallback.get("signal_model", "multi_factor_v1"))
+    )
     resolved["initial_position"] = _as_unit_float(
         resolved.get("initial_position", fallback.get("initial_position", 0.0)),
         "initial_position",
@@ -248,16 +250,26 @@ def resolve_symbol_params(
         float(fallback.get("initial_position", 0.0)),
     )
     resolved["positive_consensus_threshold"] = _as_unit_float(
-        resolved.get("positive_consensus_threshold", resolved.get("consensus_threshold", fallback.get("consensus_threshold", 0.25))),
+        resolved.get(
+            "positive_consensus_threshold",
+            resolved.get("consensus_threshold", fallback.get("consensus_threshold", 0.25)),
+        ),
         "positive_consensus_threshold",
         warnings,
-        float(fallback.get("positive_consensus_threshold", fallback.get("consensus_threshold", 0.25))),
+        float(
+            fallback.get("positive_consensus_threshold", fallback.get("consensus_threshold", 0.25))
+        ),
     )
     resolved["negative_consensus_threshold"] = _as_unit_float(
-        resolved.get("negative_consensus_threshold", resolved.get("consensus_threshold", fallback.get("consensus_threshold", 0.20))),
+        resolved.get(
+            "negative_consensus_threshold",
+            resolved.get("consensus_threshold", fallback.get("consensus_threshold", 0.20)),
+        ),
         "negative_consensus_threshold",
         warnings,
-        float(fallback.get("negative_consensus_threshold", fallback.get("consensus_threshold", 0.20))),
+        float(
+            fallback.get("negative_consensus_threshold", fallback.get("consensus_threshold", 0.20))
+        ),
     )
     resolved["rebound_days"] = _as_positive_int(
         resolved.get("rebound_days", fallback.get("rebound_days", fallback["danger_days"])),
@@ -314,19 +326,25 @@ def resolve_symbol_params(
         float(fallback.get("high_volatility_mult", 1.15)),
     )
     resolved["high_volatility_position_cap"] = _as_unit_float(
-        resolved.get("high_volatility_position_cap", fallback.get("high_volatility_position_cap", 0.5)),
+        resolved.get(
+            "high_volatility_position_cap", fallback.get("high_volatility_position_cap", 0.5)
+        ),
         "high_volatility_position_cap",
         warnings,
         float(fallback.get("high_volatility_position_cap", 0.5)),
     )
     resolved["drawdown_confirm_threshold"] = _as_unit_float(
-        resolved.get("drawdown_confirm_threshold", fallback.get("drawdown_confirm_threshold", 0.05)),
+        resolved.get(
+            "drawdown_confirm_threshold", fallback.get("drawdown_confirm_threshold", 0.05)
+        ),
         "drawdown_confirm_threshold",
         warnings,
         float(fallback.get("drawdown_confirm_threshold", 0.05)),
     )
     resolved["buy_reentry_drawdown_threshold"] = _as_unit_float(
-        resolved.get("buy_reentry_drawdown_threshold", fallback.get("buy_reentry_drawdown_threshold", 0.08)),
+        resolved.get(
+            "buy_reentry_drawdown_threshold", fallback.get("buy_reentry_drawdown_threshold", 0.08)
+        ),
         "buy_reentry_drawdown_threshold",
         warnings,
         float(fallback.get("buy_reentry_drawdown_threshold", 0.08)),
@@ -344,7 +362,9 @@ def resolve_symbol_params(
         float(fallback.get("buy_trend_slow_buffer", 0.98)),
     )
     resolved["regime_filter_ma"] = _as_positive_int(
-        resolved.get("regime_filter_ma", fallback.get("regime_filter_ma", resolved["trend_slow_ma"])),
+        resolved.get(
+            "regime_filter_ma", fallback.get("regime_filter_ma", resolved["trend_slow_ma"])
+        ),
         "regime_filter_ma",
         warnings,
         int(fallback.get("regime_filter_ma", resolved["trend_slow_ma"])),

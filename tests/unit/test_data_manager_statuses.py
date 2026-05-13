@@ -36,6 +36,7 @@ class DataManagerStatusTests(unittest.TestCase):
                 "high": [v + 1 for v in values],
                 "low": [v - 1 for v in values],
                 "volume": [1000 for _ in range(rows)],
+                "amount": [v * 1000 for v in values],
             }
         )
 

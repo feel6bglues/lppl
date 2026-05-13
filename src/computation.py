@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 JOBLIB_AVAILABLE = False
 try:
     from joblib import Parallel, delayed
+
     JOBLIB_AVAILABLE = True
     logger.info("joblib parallel processing available")
 except ImportError:
@@ -39,35 +40,14 @@ def performance_monitor(func):
         elapsed = end_time - start_time
         logger.info(f"{func.__name__} executed in {elapsed:.2f} seconds")
         return result
+
     return wrapper
-
-
-GLOBAL_EXECUTOR = None
-_executor_lock = multiprocessing.Lock()
 
 
 def get_optimal_workers() -> int:
     cpu_count = multiprocessing.cpu_count()
     optimal_workers = max(1, min(4, cpu_count - 2))
     return optimal_workers
-
-
-def init_global_executor() -> None:
-    global GLOBAL_EXECUTOR
-    with _executor_lock:
-        if GLOBAL_EXECUTOR is None:
-            workers = get_optimal_workers()
-            GLOBAL_EXECUTOR = ProcessPoolExecutor(max_workers=workers)
-            logger.info(f"Global process pool initialized with {workers} workers")
-
-
-def shutdown_global_executor() -> None:
-    global GLOBAL_EXECUTOR
-    with _executor_lock:
-        if GLOBAL_EXECUTOR is not None:
-            GLOBAL_EXECUTOR.shutdown(wait=True)
-            GLOBAL_EXECUTOR = None
-            logger.info("Global process pool shutdown")
 
 
 def _fit_single_window_compat(task: tuple) -> Optional[Dict[str, Any]]:
@@ -84,8 +64,12 @@ def _fit_single_window_compat(task: tuple) -> Optional[Dict[str, Any]]:
 
 
 class LPPLComputation:
-    def __init__(self, output_dir: str = None, max_workers: Optional[int] = None,
-                 lppl_config: Optional[LPPLConfig] = None):
+    def __init__(
+        self,
+        output_dir: str = None,
+        max_workers: Optional[int] = None,
+        lppl_config: Optional[LPPLConfig] = None,
+    ):
         self.output_dir = output_dir or OUTPUT_DIR
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
@@ -95,12 +79,7 @@ class LPPLComputation:
         logger.info(f"LPPLComputation initialized with max_workers={self.max_workers}")
 
     def _format_output(
-        self,
-        symbol: str,
-        name: str,
-        window: int,
-        res: Dict[str, Any],
-        time_span: str = ""
+        self, symbol: str, name: str, window: int, res: Dict[str, Any], time_span: str = ""
     ) -> List:
         try:
             tc, m, w, a, b, c, phi = res["params"]
@@ -110,7 +89,7 @@ class LPPLComputation:
                 days_left = 0
 
             last_date = res["last_date"]
-            if not hasattr(last_date, 'strftime'):
+            if not hasattr(last_date, "strftime"):
                 last_date = pd.Timestamp(last_date)
 
             crash_date = last_date + timedelta(days=int(days_left))
@@ -118,23 +97,30 @@ class LPPLComputation:
             risk_label, _, _ = calculate_risk_level(m, w, days_left, lppl_config=self.lppl_config)
 
             is_negative, bottom_signal = detect_negative_bubble(m, w, b, days_left)
-            bottom_strength = calculate_bottom_signal_strength(m, w, b, res['rmse']) if is_negative else 0.0
+            bottom_strength = (
+                calculate_bottom_signal_strength(m, w, b, res["rmse"]) if is_negative else 0.0
+            )
 
             return [
-                name, symbol, time_span, window,
-                f"{res['rmse']:.5f}", f"{m:.3f}", f"{w:.3f}",
-                f"{days_left:.1f} 天", crash_date.strftime('%Y-%m-%d'), risk_label,
-                bottom_signal, f"{bottom_strength:.2f}"
+                name,
+                symbol,
+                time_span,
+                window,
+                f"{res['rmse']:.5f}",
+                f"{m:.3f}",
+                f"{w:.3f}",
+                f"{days_left:.1f} 天",
+                crash_date.strftime("%Y-%m-%d"),
+                risk_label,
+                bottom_signal,
+                f"{bottom_strength:.2f}",
             ]
         except (KeyError, ValueError, TypeError) as e:
             logger.error(f"Error formatting output: {e}")
             return []
 
     def process_index_multiprocess(
-        self,
-        symbol: str,
-        name: str,
-        df: pd.DataFrame
+        self, symbol: str, name: str, df: pd.DataFrame
     ) -> Tuple[List, List]:
         logger.info(f"  > Scanning {name} ({symbol}) with Batch Parallel Processing...")
 
@@ -146,25 +132,21 @@ class LPPLComputation:
         tasks = []
         windows = WINDOW_CONFIG.all_windows
 
-        dates_array = df['date'].values
-        prices_array = df['close'].values
+        dates_array = df["date"].values
+        prices_array = df["close"].values
 
         for window in windows:
             if len(df) >= window:
-                tasks.append((
-                    window,
-                    dates_array[-window:],
-                    prices_array[-window:]
-                ))
+                tasks.append((window, dates_array[-window:], prices_array[-window:]))
 
         if not tasks:
             logger.warning(f"  No valid windows for {symbol}")
             return [], []
 
         results = {
-            "short": {"rmse": float('inf'), "res": None},
-            "medium": {"rmse": float('inf'), "res": None},
-            "long": {"rmse": float('inf'), "res": None}
+            "short": {"rmse": float("inf"), "res": None},
+            "medium": {"rmse": float("inf"), "res": None},
+            "long": {"rmse": float("inf"), "res": None},
         }
 
         cnt_success = 0
@@ -173,14 +155,8 @@ class LPPLComputation:
 
         if JOBLIB_AVAILABLE and ENABLE_JOBLIB_PARALLEL:
             parallel_results = Parallel(
-                n_jobs=self.max_workers,
-                backend='loky',
-                timeout=300,
-                verbose=0
-            )(
-                delayed(fit_single_window_task)(task)
-                for task in tasks
-            )
+                n_jobs=self.max_workers, backend="loky", timeout=300, verbose=0
+            )(delayed(fit_single_window_task)(task) for task in tasks)
 
             for i, res in enumerate(parallel_results):
                 window = tasks[i][0]
@@ -198,11 +174,10 @@ class LPPLComputation:
 
             with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
                 for i in range(0, len(tasks), batch_size):
-                    batch = tasks[i:i + batch_size]
+                    batch = tasks[i : i + batch_size]
 
                     future_to_window = {
-                        executor.submit(fit_single_window_task, task): task[0]
-                        for task in batch
+                        executor.submit(fit_single_window_task, task): task[0] for task in batch
                     }
 
                     for future in as_completed(future_to_window):
@@ -224,7 +199,9 @@ class LPPLComputation:
                             logger.warning(f"Error processing window {window}: {e}")
 
         elapsed_time = time.time() - start_time
-        logger.info(f"  Done scanning {name} ({symbol}) (Time: {elapsed_time:.2f}s, Success: {cnt_success}/{len(tasks)})")
+        logger.info(
+            f"  Done scanning {name} ({symbol}) (Time: {elapsed_time:.2f}s, Success: {cnt_success}/{len(tasks)})"
+        )
 
         output_rows = []
         params_data = []
@@ -238,19 +215,23 @@ class LPPLComputation:
                 if formatted:
                     output_rows.append(formatted)
 
-                    params_data.append({
-                        "symbol": symbol, "name": name, "time_span": span_map[key],
-                        "window": res["window"], "params": res["params"].tolist(),
-                        "rmse": res["rmse"], "last_date": res["last_date"].strftime('%Y-%m-%d')
-                    })
+                    params_data.append(
+                        {
+                            "symbol": symbol,
+                            "name": name,
+                            "time_span": span_map[key],
+                            "window": res["window"],
+                            "params": res["params"].tolist(),
+                            "rmse": res["rmse"],
+                            "last_date": res["last_date"].strftime("%Y-%m-%d"),
+                        }
+                    )
 
         return output_rows, params_data
 
     @performance_monitor
     def run_computation(
-        self,
-        data_dict: Dict[str, Dict[str, Any]],
-        close_executor: bool = False
+        self, data_dict: Dict[str, Dict[str, Any]], close_executor: bool = False
     ) -> List:
         if not data_dict:
             logger.warning("Empty data_dict provided")
@@ -289,7 +270,7 @@ class LPPLComputation:
 
         if all_report_data:
             try:
-                all_report_data.sort(key=lambda x: float(x[4]) if x[4] else float('inf'))
+                all_report_data.sort(key=lambda x: float(x[4]) if x[4] else float("inf"))
             except (ValueError, IndexError) as e:
                 logger.warning(f"Error sorting results: {e}")
 
@@ -301,12 +282,14 @@ class LPPLComputation:
             return None
 
         if data_date is None:
-            data_date = datetime.now().strftime('%Y%m%d')
+            data_date = datetime.now().strftime("%Y%m%d")
 
         filename = f"lppl_report_{data_date}.md"
         file_path = os.path.join(self.output_dir, filename)
 
-        markdown_content = f"# LPPL模型扫描报告\n\n**生成时间**: {datetime.now()}\n\n**数据日期**: {data_date}\n\n"
+        markdown_content = (
+            f"# LPPL模型扫描报告\n\n**生成时间**: {datetime.now()}\n\n**数据日期**: {data_date}\n\n"
+        )
         markdown_content += "| 指数名称 | 指数代码 | 时间跨度 | 窗口(天) | RMSE | m | w | 距离崩盘 | 崩盘日期 | 风险等级 | 抄底信号 | 信号强度 |\n"
         markdown_content += "|---|---|---|---|---|---|---|---|---|---|---|---|\n"
 
@@ -318,14 +301,22 @@ class LPPLComputation:
         markdown_content += "\n\n---\n\n### AI Agent Context Block\n\n"
         markdown_content += "```markdown\n"
         markdown_content += f"# LPPL Scan Data - {data_date}\n"
-        markdown_content += "| Index | Code | Window | Crash_Date | Days_Left | Risk | m | RMSE | Bottom_Signal |\n"
+        markdown_content += (
+            "| Index | Code | Window | Crash_Date | Days_Left | Risk | m | RMSE | Bottom_Signal |\n"
+        )
         markdown_content += "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
 
         for row in report_data:
             if row and len(row) >= 12:
                 risk_level = row[9]
                 bottom_signal = row[10] if len(row) > 10 else "无"
-                if "极高" in risk_level or "高" in risk_level or "抄底" in bottom_signal or "上证" in row[0] or "创业" in row[0]:
+                if (
+                    "极高" in risk_level
+                    or "高" in risk_level
+                    or "抄底" in bottom_signal
+                    or "上证" in row[0]
+                    or "创业" in row[0]
+                ):
                     days = str(row[7]).replace(" 天", "")
                     m_val = row[5]
                     rmse_val = row[4]
@@ -334,7 +325,7 @@ class LPPLComputation:
         markdown_content += "```\n"
 
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(markdown_content)
             logger.info(f"Markdown report saved to: {file_path}")
             return file_path
@@ -353,19 +344,19 @@ class LPPLComputation:
         import json
 
         if data_date is None:
-            data_date = datetime.now().strftime('%Y%m%d')
+            data_date = datetime.now().strftime("%Y%m%d")
 
         filename = f"lppl_params_{data_date}.json"
         file_path = os.path.join(self.output_dir, filename)
 
         json_data = {
             "data_date": data_date,
-            "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            "parameters": params_data
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "parameters": params_data,
         }
 
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(json_data, f, ensure_ascii=False, indent=2)
             logger.info(f"Full LPPL parameters saved to: {file_path}")
             return file_path

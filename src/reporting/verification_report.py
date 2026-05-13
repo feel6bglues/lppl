@@ -20,7 +20,9 @@ class VerificationReportGenerator:
     ) -> str:
         mode_label = "Ensemble 多窗口共识" if use_ensemble else "单窗口独立"
         filename = filename or (
-            "verification_report_ensemble.md" if use_ensemble else "verification_report_single_window.md"
+            "verification_report_ensemble.md"
+            if use_ensemble
+            else "verification_report_single_window.md"
         )
         file_path = os.path.join(self.output_dir, filename)
         plot_paths = plot_paths or {}
@@ -76,7 +78,9 @@ class VerificationReportGenerator:
     ) -> str:
         mode_label = "Ensemble 多窗口共识" if use_ensemble else "单窗口独立"
         filename = filename or (
-            "verification_report_ensemble.html" if use_ensemble else "verification_report_single_window.html"
+            "verification_report_ensemble.html"
+            if use_ensemble
+            else "verification_report_single_window.html"
         )
         file_path = os.path.join(self.output_dir, filename)
         plot_paths = plot_paths or {}
@@ -90,11 +94,11 @@ class VerificationReportGenerator:
             cards_html.append(
                 f"""
                 <div class="card">
-                    <div class="card-title">{row.get('name', '')} ({row.get('symbol', '')})</div>
+                    <div class="card-title">{row.get("name", "")} ({row.get("symbol", "")})</div>
                     <div class="card-grid">
-                        <div><span>Detected</span><strong>{row.get('detected', '')}</strong></div>
-                        <div><span>Lead Days</span><strong>{row.get('first_danger_days', '')}</strong></div>
-                        <div><span>R²</span><strong>{row.get('first_danger_r2', '')}</strong></div>
+                        <div><span>Detected</span><strong>{row.get("detected", "")}</strong></div>
+                        <div><span>Lead Days</span><strong>{row.get("first_danger_days", "")}</strong></div>
+                        <div><span>R²</span><strong>{row.get("first_danger_r2", "")}</strong></div>
                     </div>
                 </div>
                 """
@@ -120,7 +124,7 @@ class VerificationReportGenerator:
                 <section class="plot-section">
                     <h2>{section}</h2>
                     <div class="plot-grid">
-                        {''.join(images)}
+                        {"".join(images)}
                     </div>
                 </section>
                 """
@@ -204,7 +208,7 @@ class VerificationReportGenerator:
   <div class="header">
     <h1>LPPL 验证报告</h1>
     <p>模式: {mode_label}</p>
-    <p>生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    <p>生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
   </div>
 
   <div class="stats">
@@ -215,10 +219,10 @@ class VerificationReportGenerator:
 
   <section>
     <h2>案例卡片</h2>
-    {''.join(cards_html)}
+    {"".join(cards_html)}
   </section>
 
-  {''.join(plots_html) if plots_html else '<p>暂无图片输出</p>'}
+  {"".join(plots_html) if plots_html else "<p>暂无图片输出</p>"}
 </body>
 </html>
         """

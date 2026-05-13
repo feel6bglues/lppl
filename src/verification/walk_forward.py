@@ -12,7 +12,7 @@ def evaluate_future_drawdown(
     lookahead_days: int = 60,
     drop_threshold: float = 0.10,
 ) -> Tuple[bool, float]:
-    future_prices = close_prices[idx + 1: idx + 1 + lookahead_days]
+    future_prices = close_prices[idx + 1 : idx + 1 + lookahead_days]
     if len(future_prices) == 0:
         return False, 0.0
 
@@ -27,9 +27,21 @@ def summarize_walk_forward(records_df: pd.DataFrame) -> Dict[str, float]:
     signal_count = int(records_df["signal_detected"].sum()) if total_points > 0 else 0
     event_count = int(records_df["event_hit"].sum()) if total_points > 0 else 0
 
-    true_positive = int(((records_df["signal_detected"]) & (records_df["event_hit"])).sum()) if total_points > 0 else 0
-    false_positive = int(((records_df["signal_detected"]) & (~records_df["event_hit"])).sum()) if total_points > 0 else 0
-    false_negative = int(((~records_df["signal_detected"]) & (records_df["event_hit"])).sum()) if total_points > 0 else 0
+    true_positive = (
+        int(((records_df["signal_detected"]) & (records_df["event_hit"])).sum())
+        if total_points > 0
+        else 0
+    )
+    false_positive = (
+        int(((records_df["signal_detected"]) & (~records_df["event_hit"])).sum())
+        if total_points > 0
+        else 0
+    )
+    false_negative = (
+        int(((~records_df["signal_detected"]) & (records_df["event_hit"])).sum())
+        if total_points > 0
+        else 0
+    )
 
     precision = true_positive / signal_count if signal_count > 0 else 0.0
     recall = true_positive / event_count if event_count > 0 else 0.0
@@ -69,7 +81,9 @@ def run_walk_forward(
     records: List[Dict] = []
 
     for idx in range(start_idx, end_idx + 1, scan_step):
-        event_hit, realized_drop = evaluate_future_drawdown(close_prices, idx, lookahead_days, drop_threshold)
+        event_hit, realized_drop = evaluate_future_drawdown(
+            close_prices, idx, lookahead_days, drop_threshold
+        )
 
         if use_ensemble:
             signal_result = process_single_day_ensemble(
@@ -80,7 +94,9 @@ def run_walk_forward(
                 consensus_threshold=config.consensus_threshold,
                 config=config,
             )
-            signal_detected = bool(signal_result and signal_result["predicted_crash_days"] < config.danger_days)
+            signal_detected = bool(
+                signal_result and signal_result["predicted_crash_days"] < config.danger_days
+            )
             signal_type = "danger" if signal_detected else "none"
         else:
             signal_result = scan_single_date(close_prices, idx, window_range, config)

@@ -94,7 +94,10 @@ def optimize_signal(
         optimized_direction = "空仓观望"
         is_actionable = False
     elif phase == "markdown":
-        if mtf_alignment in ("fully_aligned", "higher_timeframe_aligned") and confidence in ("D", "B"):
+        if mtf_alignment in ("fully_aligned", "higher_timeframe_aligned") and confidence in (
+            "D",
+            "B",
+        ):
             if confidence == "B" and mtf_alignment == "fully_aligned":
                 optimized_direction = "做多"
             else:

@@ -114,7 +114,26 @@ def _resolve_configs(
 
 def _candidate_grid(
     args: argparse.Namespace,
-) -> Iterable[Tuple[float, float, int, int, int, int, float, float, int, float, bool, int, float, float, float, bool]]:
+) -> Iterable[
+    Tuple[
+        float,
+        float,
+        int,
+        int,
+        int,
+        int,
+        float,
+        float,
+        int,
+        float,
+        bool,
+        int,
+        float,
+        float,
+        float,
+        bool,
+    ]
+]:
     first_cross_only = getattr(args, "first_cross_only", "false")
     cross_persistence = getattr(args, "cross_persistence", "1")
     atr_deadband = getattr(args, "atr_deadband", "0.0")
@@ -157,7 +176,9 @@ def _run_single_symbol(
     args: argparse.Namespace,
     output_dir: str,
 ) -> Dict[str, object]:
-    resolved, lppl_config = _resolve_configs(symbol, args.optimal_config_path, args.step, args.ensemble)
+    resolved, lppl_config = _resolve_configs(
+        symbol, args.optimal_config_path, args.step, args.ensemble
+    )
 
     dm = DataManager()
     df = dm.get_data(symbol)
@@ -190,8 +211,12 @@ def _run_single_symbol(
         candidate_mapping = dict(resolved)
         candidate_mapping.update(
             {
-                "positive_consensus_threshold": min(max(base_positive + positive_offset, 0.05), 0.95),
-                "negative_consensus_threshold": min(max(base_negative + negative_offset, 0.05), 0.95),
+                "positive_consensus_threshold": min(
+                    max(base_positive + positive_offset, 0.05), 0.95
+                ),
+                "negative_consensus_threshold": min(
+                    max(base_negative + negative_offset, 0.05), 0.95
+                ),
                 "sell_vote_threshold": sell_votes,
                 "buy_vote_threshold": buy_votes,
                 "sell_confirm_days": sell_confirm_days,
@@ -373,7 +398,11 @@ def main() -> None:
         best_rows.append(_run_single_symbol(symbol, args, args.output))
 
     if len(best_rows) > 1:
-        combined_df = pd.DataFrame(best_rows).sort_values("objective_score", ascending=False).reset_index(drop=True)
+        combined_df = (
+            pd.DataFrame(best_rows)
+            .sort_values("objective_score", ascending=False)
+            .reset_index(drop=True)
+        )
         summary_dir = os.path.join(args.output, "summary")
         report_dir = os.path.join(args.output, "reports")
         plot_dir = os.path.join(args.output, "plots")
@@ -382,7 +411,9 @@ def main() -> None:
         combined_csv = os.path.join(summary_dir, f"optimal8_signal_tuning_summary_{stamp}.csv")
         combined_df.to_csv(combined_csv, index=False)
         report_generator = Optimal8ReadableReportGenerator(report_dir=report_dir, plot_dir=plot_dir)
-        report_outputs = report_generator.generate(combined_csv, output_stem="optimal8_signal_tuning_report")
+        report_outputs = report_generator.generate(
+            combined_csv, output_stem="optimal8_signal_tuning_report"
+        )
         print(f"8指数汇总已保存: {combined_csv}")
         print(f"8指数报告已保存: {report_outputs['report_path']}")
 

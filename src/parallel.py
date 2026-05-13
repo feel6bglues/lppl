@@ -13,11 +13,13 @@
 
 import multiprocessing
 import os
+import threading
 
 import psutil
 
 _worker_dm = None
 _worker_loaded = False
+_worker_init_lock = threading.Lock()
 
 
 def get_optimal_workers(reserve: int = 2) -> int:
@@ -42,19 +44,21 @@ def worker_init():
     """
     进程池初始化函数 (在fork/spawn后执行一次)
     预加载DataManager和pandas/numpy，避免每个任务重复import
-    
+
     用法:
         with ProcessPoolExecutor(max_workers=N, initializer=worker_init) as executor:
             ...
     """
     global _worker_dm, _worker_loaded
-    if _worker_loaded:
-        return
-    # 预加载pandas/numpy（耗时大户）
-    # 预加载DataManager（会顺带加载tdx_reader）
-    from src.data.manager import DataManager
-    _worker_dm = DataManager()
-    _worker_loaded = True
+    with _worker_init_lock:
+        if _worker_loaded:
+            return
+        # 预加载pandas/numpy（耗时大户）
+        # 预加载DataManager（会顺带加载tdx_reader）
+        from src.data.manager import DataManager
+
+        _worker_dm = DataManager()
+        _worker_loaded = True
 
 
 def get_worker_dm():

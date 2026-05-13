@@ -28,8 +28,10 @@ class Phase(Enum):
     @classmethod
     def from_str(cls, s: str) -> "Phase":
         mapping = {
-            "markdown": cls.MARKDOWN, "markup": cls.MARKUP,
-            "accumulation": cls.ACCUMULATION, "distribution": cls.DISTRIBUTION,
+            "markdown": cls.MARKDOWN,
+            "markup": cls.MARKUP,
+            "accumulation": cls.ACCUMULATION,
+            "distribution": cls.DISTRIBUTION,
             "unknown": cls.UNKNOWN,
         }
         return mapping.get(s.lower(), cls.UNKNOWN)
@@ -44,8 +46,10 @@ class MTFAlignment(Enum):
     @classmethod
     def from_str(cls, s: str) -> "MTFAlignment":
         mapping = {
-            "mixed": cls.MIXED, "fully_aligned": cls.FULLY_ALIGNED,
-            "weekly_daily": cls.WEEKLY_DAILY, "higher_tf": cls.HIGHER_TF,
+            "mixed": cls.MIXED,
+            "fully_aligned": cls.FULLY_ALIGNED,
+            "weekly_daily": cls.WEEKLY_DAILY,
+            "higher_tf": cls.HIGHER_TF,
             "weekly_daily_aligned": cls.WEEKLY_DAILY,
             "higher_timeframe_aligned": cls.HIGHER_TF,
         }
@@ -132,7 +136,6 @@ class FactorCombinationEngine:
         ("bear", "markup", "fully_aligned"): (-2.73, 36.3, 375),
         ("bear", "markup", "weekly_daily"): (2.69, 50.5, 392),
         ("bear", "markup", "higher_tf"): (2.41, 46.3, 421),
-
         ("bull", "markdown", "mixed"): (6.91, 51.4, 953),
         ("bull", "markdown", "fully_aligned"): (2.03, 50.3, 183),
         ("bull", "markdown", "weekly_daily"): (6.64, 51.3, 427),
@@ -151,9 +154,9 @@ class FactorCombinationEngine:
 
     # 衰减曲线乘数 (基于decay_analysis)
     DECAY_MULTIPLIER = {
-        30: 0.0,    # 30d负收益, 不交易
-        60: 1.0,    # 基准
-        90: 2.23,   # 4.33/1.94
+        30: 0.0,  # 30d负收益, 不交易
+        60: 1.0,  # 基准
+        90: 2.23,  # 4.33/1.94
         120: 2.97,  # 5.77/1.94
         150: 3.52,  # 6.82/1.94
         180: 4.55,  # 8.82/1.94
@@ -192,8 +195,11 @@ class FactorCombinationEngine:
         - 简单规则取代复杂权重评分
         """
         result = FactorComboResult(
-            regime=regime, phase=phase, alignment=alignment,
-            confidence=confidence, holding_days=90,
+            regime=regime,
+            phase=phase,
+            alignment=alignment,
+            confidence=confidence,
+            holding_days=90,
         )
 
         # ── 硬排除条件 ──
@@ -270,8 +276,11 @@ class FactorCombinationEngine:
         holding_days: int = 120,
     ) -> FactorComboResult:
         result = FactorComboResult(
-            regime=regime, phase=phase, alignment=alignment,
-            confidence=confidence, holding_days=holding_days,
+            regime=regime,
+            phase=phase,
+            alignment=alignment,
+            confidence=confidence,
+            holding_days=holding_days,
         )
 
         # === Layer 1: Hard Exclusion ===
@@ -294,12 +303,18 @@ class FactorCombinationEngine:
 
         # Phase scoring (权重30/100)
         phase_scores_bull = {
-            Phase.MARKDOWN: 20, Phase.MARKUP: 25, Phase.UNKNOWN: 28,
-            Phase.ACCUMULATION: 10, Phase.DISTRIBUTION: 20,
+            Phase.MARKDOWN: 20,
+            Phase.MARKUP: 25,
+            Phase.UNKNOWN: 28,
+            Phase.ACCUMULATION: 10,
+            Phase.DISTRIBUTION: 20,
         }
         phase_scores_bear = {
-            Phase.MARKDOWN: 30, Phase.MARKUP: 5, Phase.UNKNOWN: 15,
-            Phase.ACCUMULATION: 25, Phase.DISTRIBUTION: 10,
+            Phase.MARKDOWN: 30,
+            Phase.MARKUP: 5,
+            Phase.UNKNOWN: 15,
+            Phase.ACCUMULATION: 25,
+            Phase.DISTRIBUTION: 10,
         }
         phase_scores = {
             Regime.BULL: phase_scores_bull,
@@ -327,9 +342,7 @@ class FactorCombinationEngine:
         result.score = score
 
         # === Lookup empirical data ===
-        expiry_factor = self.COMBO_LOOKUP.get(
-            (regime.value, phase.value, alignment.value), None
-        )
+        expiry_factor = self.COMBO_LOOKUP.get((regime.value, phase.value, alignment.value), None)
 
         if expiry_factor:
             ret_60d, wr, n = expiry_factor
@@ -349,14 +362,21 @@ class FactorCombinationEngine:
         return result
 
     def _check_exclusion(
-        self, regime: Regime, phase: Phase,
-        alignment: MTFAlignment, holding_days: int,
+        self,
+        regime: Regime,
+        phase: Phase,
+        alignment: MTFAlignment,
+        holding_days: int,
     ) -> Tuple[bool, str]:
         if regime == Regime.RANGE:
             return True, "range_regime_excluded"
         if holding_days < 60:
             return True, "holding_period_too_short"
-        if regime == Regime.BEAR and phase == Phase.MARKUP and alignment != MTFAlignment.WEEKLY_DAILY:
+        if (
+            regime == Regime.BEAR
+            and phase == Phase.MARKUP
+            and alignment != MTFAlignment.WEEKLY_DAILY
+        ):
             return True, "bear_markup_non_weekly_daily"
         if regime == Regime.BEAR and phase == Phase.UNKNOWN and alignment == MTFAlignment.HIGHER_TF:
             return True, "bear_unknown_higher_tf_negative"
@@ -365,8 +385,11 @@ class FactorCombinationEngine:
         return False, ""
 
     def _determine_direction(
-        self, regime: Regime, phase: Phase,
-        alignment: MTFAlignment, confidence: Confidence,
+        self,
+        regime: Regime,
+        phase: Phase,
+        alignment: MTFAlignment,
+        confidence: Confidence,
     ) -> str:
         if regime == Regime.RANGE:
             return "空仓"
@@ -454,8 +477,11 @@ def batch_evaluate_from_df(
 
 
 def integrate_into_signal(
-    regime: str, phase: str, alignment: str,
-    confidence: str, holding_days: int = 120,
+    regime: str,
+    phase: str,
+    alignment: str,
+    confidence: str,
+    holding_days: int = 120,
 ) -> Dict[str, Any]:
     """生成可直接用于信号模型的组合评分"""
     engine = FactorCombinationEngine()
@@ -476,7 +502,10 @@ def integrate_into_signal(
 
 
 def create_signal_multiplier(
-    regime: str, phase: str, alignment: str, confidence: str,
+    regime: str,
+    phase: str,
+    alignment: str,
+    confidence: str,
 ) -> float:
     """基于因子组合生成信号乘数 [-1.0, 2.0]"""
     result = integrate_into_signal(regime, phase, alignment)

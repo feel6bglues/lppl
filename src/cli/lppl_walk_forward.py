@@ -106,8 +106,12 @@ def main() -> None:
     records_df["param_source"] = param_source
 
     mode_slug = "ensemble" if args.ensemble else "single_window"
-    records_path = os.path.join(args.output, f"walk_forward_{args.symbol.replace('.', '_')}_{mode_slug}.csv")
-    summary_path = os.path.join(args.output, f"walk_forward_{args.symbol.replace('.', '_')}_{mode_slug}_summary.csv")
+    records_path = os.path.join(
+        args.output, f"walk_forward_{args.symbol.replace('.', '_')}_{mode_slug}.csv"
+    )
+    summary_path = os.path.join(
+        args.output, f"walk_forward_{args.symbol.replace('.', '_')}_{mode_slug}_summary.csv"
+    )
     summary["param_source"] = param_source
     summary["step"] = scan_step
     summary["window_min"] = min(config.window_range)

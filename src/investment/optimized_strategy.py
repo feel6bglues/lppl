@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """MA+ATR优化策略 - 平衡交易频率与收益"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ import pandas as pd
 @dataclass
 class OptimizedSignalConfig:
     """优化策略配置 - 基于有效因子提取"""
+
     # 基础仓位
     full_position: float = 1.0
     half_position: float = 0.5
@@ -68,13 +70,13 @@ def compute_indicators(df: pd.DataFrame, config: OptimizedSignalConfig) -> pd.Da
     # MA交叉信号
     enriched["ma_fast_prev"] = enriched["ma_fast"].shift(1)
     enriched["ma_slow_prev"] = enriched["ma_slow"].shift(1)
-    enriched["bullish_cross"] = (
-        (enriched["ma_fast"] > enriched["ma_slow"])
-        & (enriched["ma_fast_prev"].fillna(enriched["ma_fast"]) <= enriched["ma_slow_prev"].fillna(enriched["ma_slow"]))
+    enriched["bullish_cross"] = (enriched["ma_fast"] > enriched["ma_slow"]) & (
+        enriched["ma_fast_prev"].fillna(enriched["ma_fast"])
+        <= enriched["ma_slow_prev"].fillna(enriched["ma_slow"])
     )
-    enriched["bearish_cross"] = (
-        (enriched["ma_fast"] < enriched["ma_slow"])
-        & (enriched["ma_fast_prev"].fillna(enriched["ma_fast"]) >= enriched["ma_slow_prev"].fillna(enriched["ma_slow"]))
+    enriched["bearish_cross"] = (enriched["ma_fast"] < enriched["ma_slow"]) & (
+        enriched["ma_fast_prev"].fillna(enriched["ma_fast"])
+        >= enriched["ma_slow_prev"].fillna(enriched["ma_slow"])
     )
 
     # ATR计算
@@ -92,7 +94,9 @@ def compute_indicators(df: pd.DataFrame, config: OptimizedSignalConfig) -> pd.Da
     enriched["atr_ratio"] = (enriched["atr"] / enriched["atr_ma"].replace(0.0, pd.NA)).fillna(1.0)
 
     # 回撤计算
-    enriched["rolling_peak"] = enriched["close"].rolling(config.drawdown_lookback, min_periods=1).max()
+    enriched["rolling_peak"] = (
+        enriched["close"].rolling(config.drawdown_lookback, min_periods=1).max()
+    )
     enriched["drawdown"] = (enriched["close"] / enriched["rolling_peak"]) - 1.0
 
     return enriched
@@ -174,7 +178,9 @@ def generate_signals(
                                 next_target = config.position_normal_vol
                             else:
                                 next_target = config.position_high_vol
-                            action = "buy" if current_target <= config.flat_position + 1e-8 else "add"
+                            action = (
+                                "buy" if current_target <= config.flat_position + 1e-8 else "add"
+                            )
                             position_reason = f"MA金叉买入(ATR={atr_ratio:.2f})"
                     else:
                         # 需要确认
@@ -188,7 +194,11 @@ def generate_signals(
                                         next_target = config.position_normal_vol
                                     else:
                                         next_target = config.position_high_vol
-                                    action = "buy" if current_target <= config.flat_position + 1e-8 else "add"
+                                    action = (
+                                        "buy"
+                                        if current_target <= config.flat_position + 1e-8
+                                        else "add"
+                                    )
                                     position_reason = f"MA金叉确认买入(ATR={atr_ratio:.2f})"
                                 confirm_buy_count = 0
                                 pending_action = None
@@ -216,7 +226,9 @@ def generate_signals(
                         confirm_sell_count += 1
                         if confirm_sell_count >= config.confirm_days:
                             next_target = config.flat_position
-                            action = "sell" if next_target <= config.flat_position + 1e-8 else "reduce"
+                            action = (
+                                "sell" if next_target <= config.flat_position + 1e-8 else "reduce"
+                            )
                             position_reason = f"MA死叉确认卖出(ATR={atr_ratio:.2f})"
                             holding_bars = 0
                             cooldown_remaining = config.cooldown_days
@@ -252,22 +264,24 @@ def generate_signals(
         if cooldown_remaining > 0:
             cooldown_remaining -= 1
 
-        records.append({
-            "date": row["date"],
-            "symbol": symbol,
-            "open": float(row["open"]),
-            "high": float(row["high"]),
-            "low": float(row["low"]),
-            "close": close_price,
-            "volume": float(row["volume"]),
-            "action": action,
-            "target_position": float(current_target),
-            "position_reason": position_reason,
-            "atr_ratio": atr_ratio,
-            "holding_bars": holding_bars,
-            "cooldown_remaining": cooldown_remaining,
-            "drawdown": drawdown,
-        })
+        records.append(
+            {
+                "date": row["date"],
+                "symbol": symbol,
+                "open": float(row["open"]),
+                "high": float(row["high"]),
+                "low": float(row["low"]),
+                "close": close_price,
+                "volume": float(row["volume"]),
+                "action": action,
+                "target_position": float(current_target),
+                "position_reason": position_reason,
+                "atr_ratio": atr_ratio,
+                "holding_bars": holding_bars,
+                "cooldown_remaining": cooldown_remaining,
+                "drawdown": drawdown,
+            }
+        )
 
     return pd.DataFrame(records)
 
@@ -332,13 +346,15 @@ def run_backtest(
                     cash -= cost + fee
                     units += buy_units
                     trade_type = "buy" if current_value <= 1e-8 else "add"
-                    trades.append({
-                        "date": row["date"],
-                        "symbol": row.get("symbol", ""),
-                        "type": trade_type,
-                        "price": exec_price_buy,
-                        "units": buy_units,
-                    })
+                    trades.append(
+                        {
+                            "date": row["date"],
+                            "symbol": row.get("symbol", ""),
+                            "type": trade_type,
+                            "price": exec_price_buy,
+                            "units": buy_units,
+                        }
+                    )
             elif desired_value < current_value - 1e-8:
                 trade_value = current_value - desired_value
                 sell_units = min(units, trade_value / exec_price_sell)
@@ -348,13 +364,15 @@ def run_backtest(
                     cash += proceeds - fee
                     units -= sell_units
                     trade_type = "sell" if target_position <= 1e-8 else "reduce"
-                    trades.append({
-                        "date": row["date"],
-                        "symbol": row.get("symbol", ""),
-                        "type": trade_type,
-                        "price": exec_price_sell,
-                        "units": sell_units,
-                    })
+                    trades.append(
+                        {
+                            "date": row["date"],
+                            "symbol": row.get("symbol", ""),
+                            "type": trade_type,
+                            "price": exec_price_sell,
+                            "units": sell_units,
+                        }
+                    )
 
         holdings_value = units * float(row["close"])
         portfolio_value = cash + holdings_value
@@ -364,16 +382,18 @@ def run_backtest(
         benchmark_return = 0.0 if not records else (float(row["close"]) / prev_close) - 1.0
         executed_position = holdings_value / portfolio_value if portfolio_value > 0 else 0.0
 
-        records.append({
-            **row,
-            "executed_position": executed_position,
-            "portfolio_value": portfolio_value,
-            "strategy_nav": strategy_nav,
-            "benchmark_nav": benchmark_nav,
-            "daily_return": daily_return,
-            "benchmark_return": benchmark_return,
-            "excess_return": daily_return - benchmark_return,
-        })
+        records.append(
+            {
+                **row,
+                "executed_position": executed_position,
+                "portfolio_value": portfolio_value,
+                "strategy_nav": strategy_nav,
+                "benchmark_nav": benchmark_nav,
+                "daily_return": daily_return,
+                "benchmark_return": benchmark_return,
+                "excess_return": daily_return - benchmark_return,
+            }
+        )
 
         prev_value = portfolio_value
         prev_close = float(row["close"])
@@ -393,7 +413,11 @@ def run_backtest(
     benchmark_return_total = float(result_df["benchmark_nav"].iloc[-1] - 1.0)
     periods = len(result_df)
     annualized_return = (final_nav ** (252.0 / periods) - 1.0) if final_nav > 0 else -1.0
-    annualized_benchmark = ((1 + benchmark_return_total) ** (252.0 / periods) - 1.0) if benchmark_return_total > -1 else -1.0
+    annualized_benchmark = (
+        ((1 + benchmark_return_total) ** (252.0 / periods) - 1.0)
+        if benchmark_return_total > -1
+        else -1.0
+    )
     annualized_excess = annualized_return - annualized_benchmark
     max_drawdown = float(result_df["drawdown_calc"].min())
 

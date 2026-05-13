@@ -125,7 +125,9 @@ def score_signal_tuning_results(
         if column not in scored.columns:
             scored[column] = 0.0
 
-    scored["turnover_for_ranking"] = scored.get("annualized_turnover_rate", scored.get("turnover_rate", 0.0))
+    scored["turnover_for_ranking"] = scored.get(
+        "annualized_turnover_rate", scored.get("turnover_rate", 0.0)
+    )
 
     metric_ranks = pd.DataFrame(index=scored.index)
     metric_ranks["calmar_ratio_rank"] = _rank_metric(scored["calmar_ratio"], higher_is_better=True)
@@ -134,7 +136,9 @@ def score_signal_tuning_results(
     )
     metric_ranks["max_drawdown_rank"] = _rank_metric(scored["max_drawdown"], higher_is_better=True)
     metric_ranks["trade_count_rank"] = _rank_metric(scored["trade_count"], higher_is_better=True)
-    metric_ranks["turnover_rate_rank"] = _rank_metric(scored["turnover_for_ranking"], higher_is_better=False)
+    metric_ranks["turnover_rate_rank"] = _rank_metric(
+        scored["turnover_for_ranking"], higher_is_better=False
+    )
     metric_ranks["whipsaw_rate_rank"] = _rank_metric(scored["whipsaw_rate"], higher_is_better=False)
 
     scored["objective_score"] = (

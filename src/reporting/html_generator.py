@@ -152,7 +152,20 @@ class HTMLGenerator:
 
         for row in report_data:
             if len(row) >= 12:
-                name, symbol, time_span, window, rmse, m, w, days_left, crash_date, risk, bottom_signal, bottom_strength = row[:12]
+                (
+                    name,
+                    symbol,
+                    time_span,
+                    window,
+                    rmse,
+                    m,
+                    w,
+                    days_left,
+                    crash_date,
+                    risk,
+                    bottom_signal,
+                    bottom_strength,
+                ) = row[:12]
             elif len(row) == 10:
                 name, symbol, time_span, window, rmse, m, w, days_left, crash_date, risk = row
                 bottom_signal = "无抄底信号"
@@ -163,17 +176,81 @@ class HTMLGenerator:
             window = int(window)
             rmse_val = float(rmse)
 
-            all_codes_data.append((name, symbol, time_span, window, rmse, m, w, days_left, crash_date, risk, rmse_val, bottom_signal, bottom_strength))
+            all_codes_data.append(
+                (
+                    name,
+                    symbol,
+                    time_span,
+                    window,
+                    rmse,
+                    m,
+                    w,
+                    days_left,
+                    crash_date,
+                    risk,
+                    rmse_val,
+                    bottom_signal,
+                    bottom_strength,
+                )
+            )
 
             if time_span == "短期":
-                short_term_data.append((name, symbol, window, rmse, m, w, days_left, crash_date, risk, rmse_val, bottom_signal, bottom_strength))
+                short_term_data.append(
+                    (
+                        name,
+                        symbol,
+                        window,
+                        rmse,
+                        m,
+                        w,
+                        days_left,
+                        crash_date,
+                        risk,
+                        rmse_val,
+                        bottom_signal,
+                        bottom_strength,
+                    )
+                )
             elif time_span == "中期":
-                medium_term_data.append((name, symbol, window, rmse, m, w, days_left, crash_date, risk, rmse_val, bottom_signal, bottom_strength))
+                medium_term_data.append(
+                    (
+                        name,
+                        symbol,
+                        window,
+                        rmse,
+                        m,
+                        w,
+                        days_left,
+                        crash_date,
+                        risk,
+                        rmse_val,
+                        bottom_signal,
+                        bottom_strength,
+                    )
+                )
             elif time_span == "长期":
-                long_term_data.append((name, symbol, window, rmse, m, w, days_left, crash_date, risk, rmse_val, bottom_signal, bottom_strength))
+                long_term_data.append(
+                    (
+                        name,
+                        symbol,
+                        window,
+                        rmse,
+                        m,
+                        w,
+                        days_left,
+                        crash_date,
+                        risk,
+                        rmse_val,
+                        bottom_signal,
+                        bottom_strength,
+                    )
+                )
 
         def sort_by_index_order(data):
-            return sorted(data, key=lambda x: index_order.index(x[1]) if x[1] in index_order else len(index_order))
+            return sorted(
+                data,
+                key=lambda x: index_order.index(x[1]) if x[1] in index_order else len(index_order),
+            )
 
         all_codes_data = sort_by_index_order(all_codes_data)
         short_term_data = sort_by_index_order(short_term_data)
@@ -186,12 +263,29 @@ class HTMLGenerator:
         for data in [short_term_data, medium_term_data, long_term_data]:
             for item in data:
                 if len(item) >= 12:
-                    name, symbol, window, rmse, m, w, days_left, crash_date, risk, rmse_val, bottom_signal, bottom_strength = item[:12]
+                    (
+                        name,
+                        symbol,
+                        window,
+                        rmse,
+                        m,
+                        w,
+                        days_left,
+                        crash_date,
+                        risk,
+                        rmse_val,
+                        bottom_signal,
+                        bottom_strength,
+                    ) = item[:12]
                 else:
-                    name, symbol, window, rmse, m, w, days_left, crash_date, risk, rmse_val = item[:10]
+                    name, symbol, window, rmse, m, w, days_left, crash_date, risk, rmse_val = item[
+                        :10
+                    ]
                     bottom_signal = ""
                 risk_str = str(risk) if risk else ""
-                if "极高" in risk_str or ("高" in risk_str and float(str(days_left).split()[0]) < 20):
+                if "极高" in risk_str or (
+                    "高" in risk_str and float(str(days_left).split()[0]) < 20
+                ):
                     high_risk_items.append((name, symbol, days_left, crash_date))
 
         if high_risk_items:
@@ -217,12 +311,39 @@ class HTMLGenerator:
             cards = []
             for item in data:
                 if len(item) >= 12:
-                    name, symbol, time_span, window, rmse, m, w, days_left, crash_date, risk, bottom_signal, bottom_strength = item[:12]
+                    (
+                        name,
+                        symbol,
+                        time_span,
+                        window,
+                        rmse,
+                        m,
+                        w,
+                        days_left,
+                        crash_date,
+                        risk,
+                        bottom_signal,
+                        bottom_strength,
+                    ) = item[:12]
                     rmse_val = float(rmse) if isinstance(rmse, str) else rmse
                 elif len(item) == 11:
-                    name, symbol, time_span, window, rmse, m, w, days_left, crash_date, risk, rmse_val = item
+                    (
+                        name,
+                        symbol,
+                        time_span,
+                        window,
+                        rmse,
+                        m,
+                        w,
+                        days_left,
+                        crash_date,
+                        risk,
+                        rmse_val,
+                    ) = item
                 else:
-                    name, symbol, window, rmse, m, w, days_left, crash_date, risk, rmse_val = item[:10]
+                    name, symbol, window, rmse, m, w, days_left, crash_date, risk, rmse_val = item[
+                        :10
+                    ]
                     rmse_val = float(rmse) if isinstance(rmse, str) else rmse
 
                 risk_class = "medium"
@@ -280,27 +401,35 @@ class HTMLGenerator:
 
             return "".join(cards)
 
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         html_content = html_template.replace("{current_time}", current_time)
         html_content = html_content.replace("{critical_alert}", critical_alert)
-        html_content = html_content.replace("{all_codes_cards}", generate_cards(all_codes_data, "#4ade80"))
-        html_content = html_content.replace("{short_term_cards}", generate_cards(short_term_data, "#38bdf8"))
-        html_content = html_content.replace("{medium_term_cards}", generate_cards(medium_term_data, "#fbbf24"))
-        html_content = html_content.replace("{long_term_cards}", generate_cards(long_term_data, "#a78bfa"))
+        html_content = html_content.replace(
+            "{all_codes_cards}", generate_cards(all_codes_data, "#4ade80")
+        )
+        html_content = html_content.replace(
+            "{short_term_cards}", generate_cards(short_term_data, "#38bdf8")
+        )
+        html_content = html_content.replace(
+            "{medium_term_cards}", generate_cards(medium_term_data, "#fbbf24")
+        )
+        html_content = html_content.replace(
+            "{long_term_cards}", generate_cards(long_term_data, "#a78bfa")
+        )
 
         return html_content
 
     def save_html(self, html_content: str, filename: str = None, data_date: str = None) -> str:
         if not filename:
             if data_date is None:
-                data_date = datetime.now().strftime('%Y%m%d')
+                data_date = datetime.now().strftime("%Y%m%d")
             filename = f"lppl_report_{data_date}.html"
 
         file_path = os.path.join(self.output_dir, filename)
 
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
             logger.info(f"HTML report saved to: {file_path}")
             return file_path

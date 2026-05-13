@@ -46,7 +46,9 @@ class InvestmentReportGenerator:
                 ]
             )
 
-        lines.extend(["## 二、汇总表", "", summary_df.to_markdown(index=False), "", "## 三、图表", ""])
+        lines.extend(
+            ["## 二、汇总表", "", summary_df.to_markdown(index=False), "", "## 三、图表", ""]
+        )
         if not plot_paths:
             lines.append("暂无图表输出")
         else:
@@ -76,14 +78,14 @@ class InvestmentReportGenerator:
             cards.append(
                 f"""
                 <div class="card">
-                  <h2>{row.get('name', '')} ({row.get('symbol', '')})</h2>
+                  <h2>{row.get("name", "")} ({row.get("symbol", "")})</h2>
                   <div class="grid">
-                    <div><span>回测区间</span><strong>{row.get('start_date', '')} ~ {row.get('end_date', '')}</strong></div>
-                    <div><span>最新信号</span><strong>{row.get('latest_signal', '')}</strong></div>
-                    <div><span>最新动作</span><strong>{row.get('latest_action', '')}</strong></div>
-                    <div><span>最终净值</span><strong>{row.get('final_nav', 0.0):.4f}</strong></div>
-                    <div><span>策略收益</span><strong>{row.get('total_return', 0.0):.2%}</strong></div>
-                    <div><span>最大回撤</span><strong>{row.get('max_drawdown', 0.0):.2%}</strong></div>
+                    <div><span>回测区间</span><strong>{row.get("start_date", "")} ~ {row.get("end_date", "")}</strong></div>
+                    <div><span>最新信号</span><strong>{row.get("latest_signal", "")}</strong></div>
+                    <div><span>最新动作</span><strong>{row.get("latest_action", "")}</strong></div>
+                    <div><span>最终净值</span><strong>{row.get("final_nav", 0.0):.4f}</strong></div>
+                    <div><span>策略收益</span><strong>{row.get("total_return", 0.0):.2%}</strong></div>
+                    <div><span>最大回撤</span><strong>{row.get("max_drawdown", 0.0):.2%}</strong></div>
                   </div>
                 </div>
                 """
@@ -106,7 +108,7 @@ class InvestmentReportGenerator:
                 f"""
                 <section>
                   <h2>{section}</h2>
-                  <div class="plot-grid">{''.join(images)}</div>
+                  <div class="plot-grid">{"".join(images)}</div>
                 </section>
                 """
             )
@@ -173,10 +175,10 @@ class InvestmentReportGenerator:
 <body>
   <div class="hero">
     <h1>指数投资分析报告</h1>
-    <p>生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+    <p>生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
   </div>
-  {''.join(cards)}
-  {''.join(sections) if sections else '<p>暂无图表输出</p>'}
+  {"".join(cards)}
+  {"".join(sections) if sections else "<p>暂无图表输出</p>"}
 </body>
 </html>
         """

@@ -15,10 +15,8 @@ ENTRYPOINT_ALIASES = {
 def setup_logging(level: int = logging.INFO) -> None:
     logging.basicConfig(
         level=level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.StreamHandler(sys.stdout)
-        ]
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
 
@@ -31,7 +29,9 @@ def dispatch_subcommand(argv: Optional[List[str]] = None) -> Optional[int]:
     if module_path is None:
         return None
 
-    module = __import__(module_path, fromlist=["main"])
+    import importlib
+
+    module = importlib.import_module(module_path)
     sub_main: Callable[[], int] = getattr(module, "main")
 
     original_argv = sys.argv[:]
@@ -66,6 +66,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     try:
         from src.data.manager import DataManager, summarize_update_results
+
         data_manager = DataManager()
         data_results = data_manager.update_all_data()
         success_count, failed_count = summarize_update_results(data_results)
@@ -99,13 +100,14 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     try:
         from src.computation import LPPLComputation
+
         computation = LPPLComputation()
         report_data, params_data = computation.run_computation(data_dict, close_executor=True)
 
         if not report_data:
             logger.warning("警告: 计算模块未返回任何结果")
             markdown_path = None
-            data_date = datetime.now().strftime('%Y%m%d')
+            data_date = datetime.now().strftime("%Y%m%d")
         else:
             logger.info(f"计算完成: 生成 {len(report_data)} 条扫描结果")
 
@@ -116,18 +118,19 @@ def main(argv: Optional[List[str]] = None) -> int:
                     if last_date_str:
                         try:
                             from datetime import datetime as dt
-                            data_date_val = dt.strptime(last_date_str, '%Y-%m-%d')
+
+                            data_date_val = dt.strptime(last_date_str, "%Y-%m-%d")
                             data_dates.append(data_date_val)
                         except ValueError:
                             pass
 
                 if data_dates:
                     latest_data_date = max(data_dates)
-                    data_date = latest_data_date.strftime('%Y%m%d')
+                    data_date = latest_data_date.strftime("%Y%m%d")
                 else:
-                    data_date = datetime.now().strftime('%Y%m%d')
+                    data_date = datetime.now().strftime("%Y%m%d")
             else:
-                data_date = datetime.now().strftime('%Y%m%d')
+                data_date = datetime.now().strftime("%Y%m%d")
 
             markdown_path = computation.generate_markdown(report_data, data_date=data_date)
             if not markdown_path:
@@ -153,6 +156,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     try:
         from src.reporting import HTMLGenerator
+
         html_generator = HTMLGenerator()
 
         if not report_data:
@@ -183,10 +187,11 @@ def main(argv: Optional[List[str]] = None) -> int:
 
 if __name__ == "__main__":
     import multiprocessing
+
     multiprocessing.freeze_support()
 
-    if sys.stdout.encoding != 'utf-8':
-        sys.stdout.reconfigure(encoding='utf-8')
+    if sys.stdout.encoding != "utf-8":
+        sys.stdout.reconfigure(encoding="utf-8")
 
     exit_code = 0
     try:

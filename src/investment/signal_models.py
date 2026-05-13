@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Signal evaluation models for investment strategies."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple
@@ -118,7 +119,11 @@ def evaluate_multi_factor_adaptive(
         return next_target, f"多因子卖出(评分={total_score:.2f})"
 
     # Reduce decision
-    if total_score < 0 and total_score > config.sell_score_threshold and current_target > config.flat_position + 1e-8:
+    if (
+        total_score < 0
+        and total_score > config.sell_score_threshold
+        and current_target > config.flat_position + 1e-8
+    ):
         next_target = config.half_position
         return next_target, f"多因子减仓(评分={total_score:.2f})"
 
@@ -157,7 +162,11 @@ def map_single_window_signal(
             return "negative_bubble", bottom_strength, bottom_signal, target
         return "negative_bubble_watch", bottom_strength, bottom_signal, current_target
 
-    if b_value <= 0 and days_to_crash < lppl_config.danger_days and r_squared >= lppl_config.r2_threshold:
+    if (
+        b_value <= 0
+        and days_to_crash < lppl_config.danger_days
+        and r_squared >= lppl_config.r2_threshold
+    ):
         return "bubble_risk", r_squared, "高危信号", signal_config.flat_position
 
     warning_threshold = max(0.0, lppl_config.r2_threshold - 0.1)
@@ -183,7 +192,9 @@ def map_ensemble_signal(
         return "none", 0.0, "无信号", current_target
 
     signal_strength = float(result.get("signal_strength", 0.0))
-    positive_consensus = float(result.get("positive_consensus_rate", result.get("consensus_rate", 0.0)))
+    positive_consensus = float(
+        result.get("positive_consensus_rate", result.get("consensus_rate", 0.0))
+    )
     negative_consensus = float(result.get("negative_consensus_rate", 0.0))
     positive_days = result.get("predicted_crash_days")
     negative_days = result.get("predicted_rebound_days")
@@ -191,7 +202,12 @@ def map_ensemble_signal(
     if negative_days is not None and negative_consensus > positive_consensus:
         negative_days = float(negative_days)
         if negative_days < signal_config.strong_buy_days:
-            return "negative_bubble", signal_strength, "Ensemble 抄底共识", signal_config.full_position
+            return (
+                "negative_bubble",
+                signal_strength,
+                "Ensemble 抄底共识",
+                signal_config.full_position,
+            )
         if negative_days < signal_config.buy_days:
             target = max(current_target, signal_config.half_position)
             return "negative_bubble", signal_strength, "Ensemble 抄底共识", target

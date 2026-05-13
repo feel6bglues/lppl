@@ -28,18 +28,29 @@ class Optimal8ReadableReportGenerator:
         self.report_dir.mkdir(parents=True, exist_ok=True)
         self.plot_dir.mkdir(parents=True, exist_ok=True)
 
-    def generate(self, summary_csv: str, output_stem: str = "optimal8_human_friendly_report_v2") -> Dict[str, str]:
+    def generate(
+        self, summary_csv: str, output_stem: str = "optimal8_human_friendly_report_v2"
+    ) -> Dict[str, str]:
         _set_chinese_font()
         summary_path = Path(summary_csv)
         if not summary_path.exists():
             raise FileNotFoundError(f"未找到汇总文件: {summary_csv}")
 
-        df = pd.read_csv(summary_path).sort_values("objective_score", ascending=False).reset_index(drop=True)
+        df = (
+            pd.read_csv(summary_path)
+            .sort_values("objective_score", ascending=False)
+            .reset_index(drop=True)
+        )
         if df.empty:
             raise ValueError(f"汇总文件为空: {summary_csv}")
 
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        band_colors = {"DANGER": "#dc2626", "Warning": "#f59e0b", "Watch": "#2563eb", "Safe": "#16a34a"}
+        band_colors = {
+            "DANGER": "#dc2626",
+            "Warning": "#f59e0b",
+            "Watch": "#2563eb",
+            "Safe": "#16a34a",
+        }
         colors = [band_colors.get(x, "#6b7280") for x in df["risk_band"]]
 
         chart1 = self._plot_priority(df, colors, stamp)
@@ -106,7 +117,13 @@ class Optimal8ReadableReportGenerator:
     def _plot_signal_structure(self, df: pd.DataFrame, stamp: str) -> Path:
         fig, ax = plt.subplots(figsize=(12, 6))
         ax.bar(df["symbol"], df["true_positive"], label="TP", color="#16a34a")
-        ax.bar(df["symbol"], df["false_positive"], bottom=df["true_positive"], label="FP", color="#ef4444")
+        ax.bar(
+            df["symbol"],
+            df["false_positive"],
+            bottom=df["true_positive"],
+            label="FP",
+            color="#ef4444",
+        )
         ax.set_title("图3｜信号结构（TP/FP）")
         ax.set_ylabel("次数")
         for i, (tp, fp) in enumerate(zip(df["true_positive"], df["false_positive"])):
@@ -124,7 +141,9 @@ class Optimal8ReadableReportGenerator:
         x = np.arange(len(df))
         width = 0.36
         calmar = df.get("calmar_ratio", pd.Series([0.0] * len(df))).astype(float)
-        excess = df.get("annualized_excess_return", pd.Series([0.0] * len(df))).astype(float) * 100.0
+        excess = (
+            df.get("annualized_excess_return", pd.Series([0.0] * len(df))).astype(float) * 100.0
+        )
         ax.bar(x - width / 2, calmar, width, label="Calmar", color="#1d4ed8")
         ax.bar(x + width / 2, excess, width, label="Annualized Excess(%)", color="#16a34a")
         ax.set_xticks(x)
@@ -179,11 +198,24 @@ class Optimal8ReadableReportGenerator:
 
     def _write_markdown(self, df: pd.DataFrame, charts, output_stem: str, stamp: str) -> Path:
         d = df.copy()
-        for c in ["precision", "recall", "false_positive_rate", "annualized_excess_return", "max_drawdown"]:
+        for c in [
+            "precision",
+            "recall",
+            "false_positive_rate",
+            "annualized_excess_return",
+            "max_drawdown",
+        ]:
             if c in d.columns:
                 d[c] = (d[c].astype(float) * 100).map(lambda x: f"{x:.1f}%")
         d["objective_score"] = d["objective_score"].map(lambda x: f"{x:.3f}")
-        for c in ["step", "window_count", "signal_count", "true_positive", "false_positive", "trade_count"]:
+        for c in [
+            "step",
+            "window_count",
+            "signal_count",
+            "true_positive",
+            "false_positive",
+            "trade_count",
+        ]:
             if c in d.columns:
                 d[c] = d[c].astype(int)
         if "calmar_ratio" in d.columns:

@@ -16,7 +16,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 TDX_DAY_RECORD_SIZE = 32
-TDX_DAY_FORMAT = '<IIIIIfII'
+TDX_DAY_FORMAT = "<IIIIIfII"
 
 LPPL_TO_TDX_MAP: Dict[str, Dict[str, str]] = {
     "000001.SH": {"market": "sh", "code": "000001"},
@@ -86,7 +86,7 @@ class TDXReader:
         try:
             records = []
 
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 while True:
                     data = f.read(TDX_DAY_RECORD_SIZE)
                     if not data or len(data) < TDX_DAY_RECORD_SIZE:
@@ -94,7 +94,16 @@ class TDXReader:
 
                     try:
                         unpacked = struct.unpack(TDX_DAY_FORMAT, data)
-                        date_int, open_price, high_price, low_price, close_price, amount, volume, _ = unpacked
+                        (
+                            date_int,
+                            open_price,
+                            high_price,
+                            low_price,
+                            close_price,
+                            amount,
+                            volume,
+                            _,
+                        ) = unpacked
 
                         if date_int < 19900101 or date_int > 21000101:
                             continue
@@ -105,15 +114,17 @@ class TDXReader:
                         day = int(date_str[6:8])
 
                         # TDX格式：所有品种（指数和个股）价格乘数均为100
-                        records.append({
-                            "date": f"{year}-{month:02d}-{day:02d}",
-                            "open": open_price / 100.0,
-                            "high": high_price / 100.0,
-                            "low": low_price / 100.0,
-                            "close": close_price / 100.0,
-                            "volume": volume,
-                            "amount": amount,
-                        })
+                        records.append(
+                            {
+                                "date": f"{year}-{month:02d}-{day:02d}",
+                                "open": open_price / 100.0,
+                                "high": high_price / 100.0,
+                                "low": low_price / 100.0,
+                                "close": close_price / 100.0,
+                                "volume": volume,
+                                "amount": amount,
+                            }
+                        )
                     except (struct.error, ValueError) as e:
                         logger.warning(f"Failed to parse record: {e}")
                         continue
@@ -126,7 +137,9 @@ class TDXReader:
             df["date"] = pd.to_datetime(df["date"])
             df = df.sort_values("date").reset_index(drop=True)
 
-            logger.info(f"Read {len(df)} records for {lppl_code}, date range: {df['date'].min().date()} to {df['date'].max().date()}")
+            logger.info(
+                f"Read {len(df)} records for {lppl_code}, date range: {df['date'].min().date()} to {df['date'].max().date()}"
+            )
 
             return df
 

@@ -60,7 +60,6 @@ REGIME_PARAMS = {
 
 
 class MarketRegimeDetector:
-
     def __init__(self, config: RegimeConfig | None = None):
         self.config = config or DEFAULT_REGIME_CONFIG
 
@@ -100,7 +99,7 @@ class MarketRegimeDetector:
             trend_down = False
 
         if len(close) >= self.config.vol_lookback + 1:
-            recent = close[-(self.config.vol_lookback + 1):]
+            recent = close[-(self.config.vol_lookback + 1) :]
             returns = np.diff(recent) / recent[:-1]
             returns = returns[np.isfinite(returns)]
             vol = float(np.std(returns) * np.sqrt(252)) if len(returns) > 0 else 0.0

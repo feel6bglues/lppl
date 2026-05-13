@@ -58,14 +58,14 @@ CPU_CORES = max(1, (os.cpu_count() or 4) - 2)
 
 # 指数配置 (与verify_lppl.py一致)
 SYMBOLS = {
-    '000001.SH': '上证综指',
-    '399001.SZ': '深证成指',
-    '399006.SZ': '创业板指',
-    '000016.SH': '上证50',
-    '000300.SH': '沪深300',
-    '000905.SH': '中证500',
-    '000852.SH': '中证1000',
-    '932000.SH': '中证2000',
+    "000001.SH": "上证综指",
+    "399001.SZ": "深证成指",
+    "399006.SZ": "创业板指",
+    "000016.SH": "上证50",
+    "000300.SH": "沪深300",
+    "000905.SH": "中证500",
+    "000852.SH": "中证1000",
+    "932000.SH": "中证2000",
 }
 
 
@@ -118,13 +118,13 @@ def ensure_output_dirs(output_dirs: dict) -> None:
 def create_config(use_ensemble: bool = False) -> LPPLConfig:
     """
     创建 LPPL 配置 - 对齐 target.md 参数
-    
+
     真正的 Ensemble 需要足够的样本量。
     使用 40 到 150 天，步长 10 天，共计 12 个观察窗口。
-    
+
     Args:
         use_ensemble: 是否使用 Ensemble 模式
-    
+
     Returns:
         LPPLConfig 对象
     """
@@ -133,10 +133,10 @@ def create_config(use_ensemble: bool = False) -> LPPLConfig:
 
     return LPPLConfig(
         window_range=w_range,
-        optimizer='de',  # 强制使用差分进化算法(DE)
-        maxiter=100,     # 增加迭代次数
-        popsize=15,     # 保持足够种群
-        tol=0.05,       # 适度容忍
+        optimizer="de",  # 强制使用差分进化算法(DE)
+        maxiter=100,  # 增加迭代次数
+        popsize=15,  # 保持足够种群
+        tol=0.05,  # 适度容忍
         m_bounds=(0.1, 0.9),
         w_bounds=(6.0, 13.0),
         tc_bound=(1, 150),
@@ -150,18 +150,21 @@ def create_config(use_ensemble: bool = False) -> LPPLConfig:
     )
 
 
-def run_verification(symbol: str, name: str,
-                    use_ensemble: bool = False,
-                    scan_step: int = 5,
-                    ma_window: int = 5,
-                    min_peak_drop: float = 0.10,
-                    min_peak_gap: int = 120,
-                    max_peaks: int = 10,
-                    config_override: dict = None,
-                    param_source: str = "default_cli"):
+def run_verification(
+    symbol: str,
+    name: str,
+    use_ensemble: bool = False,
+    scan_step: int = 5,
+    ma_window: int = 5,
+    min_peak_drop: float = 0.10,
+    min_peak_gap: int = 120,
+    max_peaks: int = 10,
+    config_override: dict = None,
+    param_source: str = "default_cli",
+):
     """
     运行单个指数的验证
-    
+
     Args:
         symbol: 指数代码
         name: 指数名称
@@ -171,16 +174,17 @@ def run_verification(symbol: str, name: str,
         min_peak_drop: 最小跌幅
         min_peak_gap: 最小间隔
         max_peaks: 最多分析的高点数
-    
+
     Returns:
         list of dict: 验证结果
     """
     from src.data.manager import DataManager
+
     mode_meta = get_mode_metadata(use_ensemble)
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"{name} ({symbol}) | 模式: {mode_meta['mode_label']}")
-    print(f"{'='*80}")
+    print(f"{'=' * 80}")
 
     # 获取数据
     dm = DataManager()
@@ -190,10 +194,12 @@ def run_verification(symbol: str, name: str,
         print("  无数据")
         return []
 
-    df = df.sort_values('date').reset_index(drop=True)
-    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values("date").reset_index(drop=True)
+    df["date"] = pd.to_datetime(df["date"])
 
-    date_range = f"{df['date'].iloc[0].strftime('%Y-%m-%d')} ~ {df['date'].iloc[-1].strftime('%Y-%m-%d')}"
+    date_range = (
+        f"{df['date'].iloc[0].strftime('%Y-%m-%d')} ~ {df['date'].iloc[-1].strftime('%Y-%m-%d')}"
+    )
     print(f"  数据: {len(df)}天 ({date_range})")
 
     # 查找局部最高点
@@ -201,11 +207,13 @@ def run_verification(symbol: str, name: str,
 
     print(f"  找到 {len(highs)} 个有效高点:")
     for h in highs:
-        h['date'] = pd.to_datetime(h['date'])
-        print(f"    {h['date'].strftime('%Y-%m-%d')}: {h['price']:.2f} (下跌{h['drop_pct']*100:.1f}%)")
+        h["date"] = pd.to_datetime(h["date"])
+        print(
+            f"    {h['date'].strftime('%Y-%m-%d')}: {h['price']:.2f} (下跌{h['drop_pct'] * 100:.1f}%)"
+        )
 
     # 限制分析数量
-    highs_sorted = sorted(highs, key=lambda x: x['drop_pct'], reverse=True)[:max_peaks]
+    highs_sorted = sorted(highs, key=lambda x: x["drop_pct"], reverse=True)[:max_peaks]
     print(f"\n  分析跌幅最大的 {len(highs_sorted)} 个高点:")
 
     # 创建配置
@@ -214,7 +222,9 @@ def run_verification(symbol: str, name: str,
         config.window_range = list(config_override.get("window_range", config.window_range))
         config.optimizer = str(config_override.get("optimizer", config.optimizer))
         config.r2_threshold = float(config_override.get("r2_threshold", config.r2_threshold))
-        config.danger_r2_offset = float(config_override.get("danger_r2_offset", config.danger_r2_offset))
+        config.danger_r2_offset = float(
+            config_override.get("danger_r2_offset", config.danger_r2_offset)
+        )
         config.consensus_threshold = float(
             config_override.get("consensus_threshold", config.consensus_threshold)
         )
@@ -241,17 +251,17 @@ def run_verification(symbol: str, name: str,
         analyze_func = analyze_peak_ensemble if use_ensemble else analyze_peak
         result = analyze_func(
             df,
-            peak['idx'],
+            peak["idx"],
             config.window_range,
             scan_step=scan_step,
             ma_window=ma_window,
-            config=config
+            config=config,
         )
 
         if result is not None:
-            result['symbol'] = symbol
-            result['name'] = name
-            result['drop_pct'] = peak['drop_pct']
+            result["symbol"] = symbol
+            result["name"] = name
+            result["drop_pct"] = peak["drop_pct"]
             result["param_source"] = param_source
             result["step"] = scan_step
             result["ma_window"] = ma_window
@@ -264,8 +274,10 @@ def run_verification(symbol: str, name: str,
             result["danger_days"] = config.danger_days
             results.append(result)
 
-            if result['detected']:
-                print(f"    ✅ 检测到预警: {result['first_danger_days']}天前, R²={result['first_danger_r2']:.3f}")
+            if result["detected"]:
+                print(
+                    f"    ✅ 检测到预警: {result['first_danger_days']}天前, R²={result['first_danger_r2']:.3f}"
+                )
             else:
                 print("    ❌ 未检测到预警")
         else:
@@ -276,12 +288,12 @@ def run_verification(symbol: str, name: str,
 
 def print_summary(results_df: pd.DataFrame):
     """打印验证结果汇总"""
-    print("\n" + "="*100)
+    print("\n" + "=" * 100)
     print("验证结果汇总")
-    print("="*100)
+    print("=" * 100)
 
     total = len(results_df)
-    detected = results_df['detected'].sum()
+    detected = results_df["detected"].sum()
     detection_rate = detected / total * 100 if total > 0 else 0
 
     print(f"\n总高点数: {total}")
@@ -289,35 +301,40 @@ def print_summary(results_df: pd.DataFrame):
 
     # 按指数统计
     print(f"\n{'指数':<10} {'高点数':>6} {'检测数':>6} {'检测率':>8} {'平均天数':>10}")
-    print("-"*50)
+    print("-" * 50)
 
-    for name in results_df['name'].unique():
-        idx_data = results_df[results_df['name'] == name]
+    for name in results_df["name"].unique():
+        idx_data = results_df[results_df["name"] == name]
         idx_total = len(idx_data)
-        idx_detected = idx_data['detected'].sum()
+        idx_detected = idx_data["detected"].sum()
         idx_rate = idx_detected / idx_total * 100 if idx_total > 0 else 0
 
-        detected_data = idx_data[idx_data['detected']]
-        avg_days = detected_data['first_danger_days'].mean() if len(detected_data) > 0 else np.nan
+        detected_data = idx_data[idx_data["detected"]]
+        avg_days = detected_data["first_danger_days"].mean() if len(detected_data) > 0 else np.nan
 
         days_str = f"{avg_days:.0f}d" if pd.notna(avg_days) else "N/A"
         print(f"{name:<10} {idx_total:>6} {idx_detected:>6} {idx_rate:>7.1f}% {days_str:>10}")
 
     # 高置信度案例
-    high_conf = results_df[(results_df['detected']) & (results_df['first_danger_r2'] > 0.8)]
+    high_conf = results_df[(results_df["detected"]) & (results_df["first_danger_r2"] > 0.8)]
     print(f"\n高置信度案例 (R²>0.8): {len(high_conf)}个")
 
     if len(high_conf) > 0:
-        print(f"\n{'指数':<10} {'高点日期':<12} {'高点价格':>10} {'预警天数':>10} {'R²':>6} {'m':>6} {'w':>6}")
-        print("-"*70)
-        for _, row in high_conf.sort_values('first_danger_r2', ascending=False).iterrows():
-            m_val = row['first_danger_m'] if pd.notna(row['first_danger_m']) else 0
-            w_val = row['first_danger_w'] if pd.notna(row['first_danger_w']) else 0
-            print(f"{row['name']:<10} {row['peak_date']:<12} {row['peak_price']:>10.2f} {row['first_danger_days']:>10.0f} {row['first_danger_r2']:>6.3f} {m_val:>6.3f} {w_val:>6.3f}")
+        print(
+            f"\n{'指数':<10} {'高点日期':<12} {'高点价格':>10} {'预警天数':>10} {'R²':>6} {'m':>6} {'w':>6}"
+        )
+        print("-" * 70)
+        for _, row in high_conf.sort_values("first_danger_r2", ascending=False).iterrows():
+            m_val = row["first_danger_m"] if pd.notna(row["first_danger_m"]) else 0
+            w_val = row["first_danger_w"] if pd.notna(row["first_danger_w"]) else 0
+            print(
+                f"{row['name']:<10} {row['peak_date']:<12} {row['peak_price']:>10.2f} {row['first_danger_days']:>10.0f} {row['first_danger_r2']:>6.3f} {m_val:>6.3f} {w_val:>6.3f}"
+            )
 
 
-def save_results(all_results: list, output_dir: str = "output/MA",
-                 use_ensemble: bool = False) -> pd.DataFrame:
+def save_results(
+    all_results: list, output_dir: str = "output/MA", use_ensemble: bool = False
+) -> pd.DataFrame:
     """保存结果到CSV"""
     if not all_results:
         return None
@@ -450,7 +467,7 @@ def generate_report(results_df: pd.DataFrame, output_path: str, use_ensemble: bo
 
     # 汇总统计
     total = len(results_df)
-    detected = results_df['detected'].sum()
+    detected = results_df["detected"].sum()
     detection_rate = detected / total * 100 if total > 0 else 0
 
     lines.append("## 一、验证结果汇总")
@@ -463,10 +480,10 @@ def generate_report(results_df: pd.DataFrame, output_path: str, use_ensemble: bo
     lines.append("| 指数 | 高点数 | 检测数 | 检测率 |")
     lines.append("|:-----|-------:|-------:|-------:|")
 
-    for name in results_df['name'].unique():
-        idx_data = results_df[results_df['name'] == name]
+    for name in results_df["name"].unique():
+        idx_data = results_df[results_df["name"] == name]
         idx_total = len(idx_data)
-        idx_detected = idx_data['detected'].sum()
+        idx_detected = idx_data["detected"].sum()
         idx_rate = idx_detected / idx_total * 100 if idx_total > 0 else 0
         lines.append(f"| {name} | {idx_total} | {idx_detected} | {idx_rate:.1f}% |")
 
@@ -475,7 +492,7 @@ def generate_report(results_df: pd.DataFrame, output_path: str, use_ensemble: bo
     lines.append("")
 
     # 高置信度案例
-    high_conf = results_df[(results_df['detected']) & (results_df['first_danger_r2'] > 0.8)]
+    high_conf = results_df[(results_df["detected"]) & (results_df["first_danger_r2"] > 0.8)]
     lines.append("## 二、高置信度案例 (R²>0.8)")
     lines.append("")
 
@@ -483,10 +500,12 @@ def generate_report(results_df: pd.DataFrame, output_path: str, use_ensemble: bo
         lines.append("| 指数 | 高点日期 | 高点价格 | 预警天数 | R² | m | w |")
         lines.append("|:-----|:---------|---------:|---------:|----:|----:|----:|")
 
-        for _, row in high_conf.sort_values('first_danger_r2', ascending=False).iterrows():
-            m_val = f"{row['first_danger_m']:.3f}" if pd.notna(row['first_danger_m']) else "N/A"
-            w_val = f"{row['first_danger_w']:.3f}" if pd.notna(row['first_danger_w']) else "N/A"
-            lines.append(f"| {row['name']} | {row['peak_date']} | {row['peak_price']:.2f} | {row['first_danger_days']:.0f} | {row['first_danger_r2']:.3f} | {m_val} | {w_val} |")
+        for _, row in high_conf.sort_values("first_danger_r2", ascending=False).iterrows():
+            m_val = f"{row['first_danger_m']:.3f}" if pd.notna(row["first_danger_m"]) else "N/A"
+            w_val = f"{row['first_danger_w']:.3f}" if pd.notna(row["first_danger_w"]) else "N/A"
+            lines.append(
+                f"| {row['name']} | {row['peak_date']} | {row['peak_price']:.2f} | {row['first_danger_days']:.0f} | {row['first_danger_r2']:.3f} | {m_val} | {w_val} |"
+            )
     else:
         lines.append("无高置信度案例")
 
@@ -506,7 +525,7 @@ def generate_report(results_df: pd.DataFrame, output_path: str, use_ensemble: bo
 
     # 写入文件
     content = "\n".join(lines)
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(content)
 
     print(f"报告已保存到 {output_path}")
@@ -515,30 +534,27 @@ def generate_report(results_df: pd.DataFrame, output_path: str, use_ensemble: bo
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(
-        description='LPPL 算法验证程序 V2',
+        description="LPPL 算法验证程序 V2",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
   python lppl_verify_v2.py --all
   python lppl_verify_v2.py --symbol 000001.SH
   python lppl_verify_v2.py --symbol 000001.SH --ensemble
-        """
+        """,
     )
 
-    parser.add_argument('--symbol', '-s', default=None,
-                        help='指数代码 (如 000001.SH)')
-    parser.add_argument('--all', '-a', action='store_true',
-                        help='验证所有8个指数')
-    parser.add_argument('--ensemble', '-e', action='store_true',
-                        help='使用 Ensemble 模式 (12窗口多窗口共识)')
-    parser.add_argument('--max-peaks', '-m', type=int, default=10,
-                        help='每个指数最多分析的高点数 (默认10)')
-    parser.add_argument('--step', type=int, default=5,
-                        help='扫描步长 (默认: 5)')
-    parser.add_argument('--ma', type=int, default=5,
-                        help='移动平均窗口 (默认: 5)')
-    parser.add_argument('--output', '-o', default='output/MA',
-                        help='输出目录 (默认 output/MA)')
+    parser.add_argument("--symbol", "-s", default=None, help="指数代码 (如 000001.SH)")
+    parser.add_argument("--all", "-a", action="store_true", help="验证所有8个指数")
+    parser.add_argument(
+        "--ensemble", "-e", action="store_true", help="使用 Ensemble 模式 (12窗口多窗口共识)"
+    )
+    parser.add_argument(
+        "--max-peaks", "-m", type=int, default=10, help="每个指数最多分析的高点数 (默认10)"
+    )
+    parser.add_argument("--step", type=int, default=5, help="扫描步长 (默认: 5)")
+    parser.add_argument("--ma", type=int, default=5, help="移动平均窗口 (默认: 5)")
+    parser.add_argument("--output", "-o", default="output/MA", help="输出目录 (默认 output/MA)")
     parser.add_argument(
         "--use-optimal-config",
         action="store_true",
@@ -554,9 +570,9 @@ def main():
     mode_meta = get_mode_metadata(args.ensemble)
 
     # 参数显示
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("LPPL 算法验证程序 V2")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print("参数配置:")
     print(f"  窗口范围: {mode_meta['window_label']}")
     print(f"  扫描步长: {args.step}天")
@@ -565,7 +581,7 @@ def main():
     print("  最小间隔: 120天")
     print(f"  模式: {mode_meta['mode_label']}")
     print("  优化器: Differential Evolution (DE)")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # 选择要验证的指数
     if args.all:
@@ -578,7 +594,7 @@ def main():
         symbols_to_verify = {args.symbol: SYMBOLS[args.symbol]}
     else:
         # 默认测试上证综指
-        symbols_to_verify = {'000001.SH': '上证综指'}
+        symbols_to_verify = {"000001.SH": "上证综指"}
 
     # 运行验证
     all_results = []
@@ -614,7 +630,8 @@ def main():
             param_source = config_override.get("param_source", "default_fallback")
 
         results = run_verification(
-            symbol, name,
+            symbol,
+            name,
             use_ensemble=args.ensemble,
             scan_step=args.step,
             ma_window=args.ma,

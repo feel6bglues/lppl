@@ -82,7 +82,9 @@ def generate_investment_signals(
 
         if is_multi_factor:
             # Multi-factor adaptive model
-            next_target, position_reason = evaluate_multi_factor_adaptive(row, signal_config, current_target)
+            next_target, position_reason = evaluate_multi_factor_adaptive(
+                row, signal_config, current_target
+            )
         else:
             # Legacy LPPL model
             if idx >= warmup and scan_counter % scan_step == 0:
@@ -95,19 +97,25 @@ def generate_investment_signals(
                         consensus_threshold=lppl_config.consensus_threshold,
                         config=lppl_config,
                     )
-                    lppl_signal, signal_strength, position_reason, next_target = map_ensemble_signal(
-                        result,
-                        current_target,
-                        signal_config,
-                        lppl_config,
+                    lppl_signal, signal_strength, position_reason, next_target = (
+                        map_ensemble_signal(
+                            result,
+                            current_target,
+                            signal_config,
+                            lppl_config,
+                        )
                     )
                 else:
-                    result = scan_single_date(close_prices, idx, lppl_config.window_range, lppl_config)
-                    lppl_signal, signal_strength, position_reason, next_target = map_single_window_signal(
-                        result,
-                        current_target,
-                        signal_config,
-                        lppl_config,
+                    result = scan_single_date(
+                        close_prices, idx, lppl_config.window_range, lppl_config
+                    )
+                    lppl_signal, signal_strength, position_reason, next_target = (
+                        map_single_window_signal(
+                            result,
+                            current_target,
+                            signal_config,
+                            lppl_config,
+                        )
                     )
             if idx >= warmup:
                 scan_counter += 1
@@ -221,7 +229,9 @@ def run_strategy_backtest(
     records = []
 
     for row in equity_df.to_dict("records"):
-        execution_base_price = float(row["open"] if backtest_config.execution_price == "open" else row["close"])
+        execution_base_price = float(
+            row["open"] if backtest_config.execution_price == "open" else row["close"]
+        )
         execution_buy_price = execution_base_price * (1.0 + backtest_config.slippage)
         execution_sell_price = execution_base_price * (1.0 - backtest_config.slippage)
         target_position = float(row.get("target_position", 0.0))
