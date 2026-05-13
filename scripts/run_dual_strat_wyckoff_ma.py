@@ -210,6 +210,7 @@ def compute_stats(sub_df):
 
 
 def run():
+    np.random.seed(42)
     print("=" * 70)
     print("双策略组合验证: Wyckoff + MA5/20金叉 (移除短期反转)")
     print("=" * 70)
@@ -324,11 +325,26 @@ def run():
     with jp.open("w", encoding="utf-8") as f:
         json.dump({
             "config": {"n_stocks": len(stocks), "n_windows": N_WINDOWS, "mc_sims": MC_SIMS,
-                       "period": "2020-2026", "strategies_used": ["wyckoff", "ma_cross"]},
+                       "mc_seed": 42, "window_seed": 42,
+                       "min_year": 2020, "max_year": 2026,
+                       "with_costs": False,
+                       "cost_model": {"buy_pct": 0, "sell_pct": 0, "round_trip_pct": 0,
+                                      "description": "无成本模型"},
+                       "strategies_used": ["wyckoff", "ma_cross"]},
             "strategies": results,
             "correlations": corr_data,
-            "portfolio": {"dual_strat_sharpe": round(combo, 3)},
+            "portfolio": {"dual_strat_sharpe": round(combo, 3),
+                          "method": "estimated_from_correlation",
+                          "formula": "avg(sharpe) * sqrt(n / (1 + (n-1) * avg(corr)))",
+                          "limitation": "基于各策略独立夏普和平均相关性估算, 非真实组合净值序列"},
             "monte_carlo": mc,
+            "reproducibility": {"mc_seeded": True, "mc_seed": 42,
+                                "window_seeded": True, "window_seed": 42,
+                                "requires_data_snapshot": "TDX .day as of run date"},
+            "comparable_with": [{"script": "run_dual_strat_backtest.py",
+                                 "same_period": False, "same_windows": False,
+                                 "same_costs": False,
+                                 "note": "口径不同(window=30, 无成本), 夏普不宜直接对比"}]
         }, f, ensure_ascii=False, indent=2, default=str)
     print(f"\n结果: {jp}")
     print("=" * 70)

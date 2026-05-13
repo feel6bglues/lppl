@@ -77,8 +77,13 @@ def get_regime(csi, d):
 
 def calc_atr(s, p=20):
     if len(s) < p + 1: return 0.0
-    hi, lo = s["high"].values[-p:], s["low"].values[-p:]
-    return float(np.mean([hi[i] - lo[i] for i in range(p)]))
+    tr_vals = []
+    for i in range(1, min(p + 1, len(s))):
+        hi = float(s.iloc[-i]["high"])
+        lo = float(s.iloc[-i]["low"])
+        pc = float(s.iloc[-i - 1]["close"])
+        tr_vals.append(max(hi - lo, abs(hi - pc), abs(lo - pc)))
+    return float(np.mean(tr_vals)) if tr_vals else 0.0
 
 
 # ===== S1: Wyckoff v2+P3 =====
@@ -215,6 +220,7 @@ def compute_stats(sub_df):
 
 
 def run():
+    np.random.seed(42)
     print("=" * 70)
     print("双策略组合验证: Wyckoff + MA5/20金叉 (移除短期反转)")
     print("=" * 70)
@@ -329,11 +335,26 @@ def run():
     with jp.open("w", encoding="utf-8") as f:
         json.dump({
             "config": {"n_stocks": len(stocks), "n_windows": N_WINDOWS, "mc_sims": MC_SIMS,
-                       "period": "2020-2026", "strategies_used": ["wyckoff", "ma_cross"]},
+                       "mc_seed": 42, "window_seed": 42,
+                       "min_year": 2020, "max_year": 2025,
+                       "with_costs": True,
+                       "cost_model": {"buy_pct": 0.075, "sell_pct": 0.175, "round_trip_pct": 0.25,
+                                      "description": "佣金万2.5+印花税千1+滑点万5"},
+                       "strategies_used": ["wyckoff", "ma_cross"]},
             "strategies": results,
             "correlations": corr_data,
-            "portfolio": {"dual_strat_sharpe": round(combo, 3)},
+            "portfolio": {"dual_strat_sharpe": round(combo, 3),
+                          "method": "estimated_from_correlation",
+                          "formula": "avg(sharpe) * sqrt(n / (1 + (n-1) * avg(corr)))",
+                          "limitation": "基于各策略独立夏普和平均相关性估算, 非真实组合净值序列"},
             "monte_carlo": mc,
+            "reproducibility": {"mc_seeded": True, "mc_seed": 42,
+                                "window_seeded": True, "window_seed": 42,
+                                "requires_data_snapshot": "TDX .day as of run date"},
+            "comparable_with": [{"script": "run_dual_strat_wyckoff_ma.py",
+                                 "same_period": False, "same_windows": False,
+                                 "same_costs": False,
+                                 "note": "策略逻辑相同但窗口数(30vs20)和成本模型不同"}]
         }, f, ensure_ascii=False, indent=2, default=str)
     print(f"\n结果: {jp}")
     print("=" * 70)

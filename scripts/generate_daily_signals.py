@@ -10,7 +10,8 @@
   - output/daily_signals/signals_{date}.csv: CSV格式
 """
 
-import csv, json, sys, time
+import csv, json, sys, time, math, logging
+from collections import Counter
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +19,9 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+logger = logging.getLogger("daily_signals")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -140,6 +144,9 @@ def check_wyckoff_signal(df: pd.DataFrame, symbol: str, as_of_date: str,
     phase = rpt.structure.phase.value if rpt.structure else "unknown"
     confidence = rpt.signal.confidence.value if rpt.signal and rpt.signal.confidence else "D"
 
+    if stock_regime == "bear" and phase not in ("accumulation",):
+        return None
+
     gross_upside = (target / entry - 1) * 100 if target and target > entry else 0
     net_upside = gross_upside - COST_ROUND_TRIP * 100 if gross_upside > 0 else gross_upside
 
@@ -156,7 +163,7 @@ def check_wyckoff_signal(df: pd.DataFrame, symbol: str, as_of_date: str,
         "current_price": round(close_now, 3),
         "upside_pct": round(gross_upside, 2) if target and target > entry else None,
         "net_upside_pct": round(net_upside, 2) if target and target > entry else None,
-        "risk_pct": round((1 - stop_loss / entry) * 100, 2) if stop_loss else None,
+        "risk_pct": round((1 - stop_loss / entry) * 100, 2) if stop_loss and stop_loss < entry else None,
         "est_cost_pct": round(COST_ROUND_TRIP * 100, 3),
     }
 
@@ -240,27 +247,36 @@ def check_ma_signal(df: pd.DataFrame, symbol: str, as_of_date: str) -> Optional[
 def process_stock(args):
     si, as_of_date, csi = args
     sym, name = si["symbol"], si["name"]
-    signals = []
     try:
         dm = DataManager()
         df = dm.get_data(sym)
         if df is None or df.empty or len(df) < 300:
-            return signals
+            return {"signals": [], "status": "skipped", "reason": "insufficient_data"}
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date").reset_index(drop=True)
 
-        w = check_wyckoff_signal(df, sym, as_of_date, csi)
+        # A1: 个股锚定自身最新完整日
+        stock_last = str(df["date"].max().date())
+        effective_date = stock_last if stock_last < as_of_date else as_of_date
+
+        signals = []
+        w = check_wyckoff_signal(df, sym, effective_date, csi)
         if w:
             w["name"] = name
+            w["analysis_date"] = effective_date
             signals.append(w)
 
-        m = check_ma_signal(df, sym, as_of_date)
+        m = check_ma_signal(df, sym, effective_date)
         if m:
             m["name"] = name
+            m["analysis_date"] = effective_date
             signals.append(m)
-    except Exception:
-        pass
-    return signals
+
+        if signals:
+            return {"signals": signals, "status": "signal", "reason": ""}
+        return {"signals": [], "status": "no_signal", "reason": ""}
+    except Exception as e:
+        return {"signals": [], "status": "error", "reason": type(e).__name__}
 
 
 # ---------- 主流程 ----------
@@ -285,6 +301,7 @@ def run():
 
     # 多进程处理
     all_signals = []
+    summary = Counter()
     mw = get_optimal_workers()
     bs = mw * 4
     args_list = [(s, as_of_date, csi) for s in stocks]
@@ -295,12 +312,15 @@ def run():
             futures = {ex.submit(process_stock, a): a[0]["symbol"] for a in batch}
             for f in as_completed(futures):
                 try:
-                    all_signals.extend(f.result(timeout=120))
+                    result = f.result(timeout=120)
+                    all_signals.extend(result.get("signals", []))
+                    summary[result.get("status", "unknown")] += 1
                 except Exception:
-                    pass
+                    summary["error"] += 1
             n = min(b + bs, len(args_list))
             elapsed = time.time() - t0
-            print(f"  [{elapsed:6.1f}s] {n}/{len(stocks)} 股票, {len(all_signals)}信号")
+            signal_count = len(all_signals)
+            print(f"  [{elapsed:6.1f}s] {n}/{len(stocks)} 股票, {signal_count}信号")
 
     if not all_signals:
         print("\n无交易信号生成")
@@ -356,20 +376,43 @@ def run():
     print(f"  Wyckoff: {len(wyc)}条")
     print(f"  MA5/20金叉: {len(ma)}条")
 
+    # 扫描统计
+    print(f"\n{'=' * 70}")
+    print("扫描统计:")
+    total = sum(summary.values())
+    print(f"  总计: {total} (应= {len(stocks)})")
+    for st in ["signal", "no_signal", "skipped", "error"]:
+        print(f"  {st}: {summary.get(st, 0)}")
+    if summary.get("error", 0) > 0:
+        print(f"  ⚠️ 异常数: {summary.get('error', 0)}")
+
+    # A3: JSON NaN 清洗
+    def _clean_nan(obj):
+        if isinstance(obj, float):
+            return None if (math.isnan(obj) or math.isinf(obj)) else obj
+        if isinstance(obj, dict):
+            return {k: _clean_nan(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return [_clean_nan(v) for v in obj]
+        return obj
+
     # 保存JSON
     ts = as_of_date
     json_path = OUTPUT_DIR / f"signals_{ts}.json"
     csv_path = OUTPUT_DIR / f"signals_{ts}.csv"
 
-    records = df.to_dict("records")
+    records = _clean_nan(df.to_dict("records"))
     with json_path.open("w", encoding="utf-8") as f:
         json.dump({
+            "schema_version": "1.0",
+            "generated_at": datetime.now().isoformat(),
             "date": ts,
             "total_signals": len(records),
             "n_stocks_scanned": len(stocks),
+            "summary": dict(summary),
             "by_strategy": {"wyckoff": len(wyc), "ma_cross": len(ma)},
             "signals": records,
-        }, f, ensure_ascii=False, indent=2, default=str)
+        }, f, ensure_ascii=False, indent=2)
 
     df.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
