@@ -1,0 +1,54 @@
+data:
+  tdx_paths:
+    sh: "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/"
+    sz: "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sz/lday/"
+  db_path: "data/trading.db"
+  csi300_path: "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc/sh/lday/sh000300.day"
+
+strategies:
+  wyckoff:
+    enabled: true
+    lookback_days: 400
+    weekly_lookback: 120
+    monthly_lookback: 40
+    weight: 0.30
+    score_threshold: 0.45
+    min_score: 0.0
+  ma_atr:
+    enabled: true
+    fast_period: 5
+    slow_period: 20
+    atr_period: 20
+    weight: 0.35
+    min_score: 0.0
+  reversal:
+    enabled: true
+    lookback_days: 5
+    threshold_pct: 5.0
+    hold_days: 5
+    take_profit_pct: 4.0
+    stop_loss_pct: 4.0
+    weight: 0.20
+    min_score: 0.0
+  regime:
+    enabled: true
+    weight: 0.15
+  alignment:
+    enabled: true
+    weight: 0.10
+
+risk:
+  max_positions: 30
+  max_single_stock_pct: 5.0
+  max_single_sector_pct: 20.0
+  max_drawdown_pct: 15.0
+  max_drawdown_stop_pct: 25.0
+  consecutive_losses: 5
+  var_confidence: 0.95
+  max_daily_var_pct: 2.0
+
+execution:
+  broker: "simulator"
+  order_timeout_minutes: 30
+  slippage_pct: 0.1
+  initial_capital: 100000.0
