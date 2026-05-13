@@ -55,7 +55,7 @@ def fetch_data():
             raw["date"] = pd.to_datetime(raw["date"])
             raw = raw.sort_values("date").reset_index(drop=True)
             all_data[code] = raw
-        except:
+        except Exception:
             print(f"  WARN: {code} failed")
     # 对齐
     all_dates = None

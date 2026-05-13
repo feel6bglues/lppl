@@ -149,7 +149,7 @@ class TDXReader:
 
 
 def get_tdx_reader(tdxdir: Optional[str] = None) -> TDXReader:
-    """获取TDXReader实例"""
     if tdxdir is None:
-        tdxdir = "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc"
+        tdxdir = os.environ.get("TDX_DATA_PATH",
+                     "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc")
     return TDXReader(tdxdir)

@@ -89,7 +89,7 @@ def trade_wyckoff(df, as_of_date, csi):
     if len(av) < 100: return None
     eng = WyckoffEngine(lookback_days=400, weekly_lookback=120, monthly_lookback=40)
     try: rpt = eng.analyze(av, symbol="", period="日线", multi_timeframe=True)
-    except: return None
+    except Exception: return None
     rr = rpt.risk_reward
     we = rr.entry_price if (rr and rr.entry_price and rr.entry_price>0) else None
     sl = rr.stop_loss if (rr and rr.stop_loss and rr.stop_loss>0) else None
@@ -173,7 +173,7 @@ def process_stock(args):
             if w1: trades.append({"strategy":"wyckoff", "symbol":sym, **w1})
             w2 = trade_ma(df, w)
             if w2: trades.append({"strategy":"ma_cross", "symbol":sym, **w2})
-    except: pass
+    except Exception: pass
     return trades
 
 
@@ -285,7 +285,7 @@ def run():
             futures = {ex.submit(process_stock, a): a[0]["symbol"] for a in batch}
             for f in as_completed(futures):
                 try: all_trades.extend(f.result(timeout=300))
-                except: pass
+                except Exception: pass
             print(f"  {min(b+bs,len(args_list))}/{len(stocks)} 股票, {len(all_trades)}交易")
 
     if not all_trades: print("无交易"); return

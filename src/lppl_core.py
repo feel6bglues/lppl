@@ -13,6 +13,7 @@ LPPL 底层数值核心
 import logging
 from typing import Any, Dict, Literal, Optional, Tuple
 
+from src.constants import ENABLE_NUMBA_JIT, REQUIRED_COLUMNS
 from src.exceptions import DataValidationError
 
 LPPL_RMSE_THRESHOLD = 10.0
@@ -94,7 +95,7 @@ if NUMBA_AVAILABLE:
 def lppl_func(
     t: np.ndarray, tc: float, m: float, w: float, a: float, b: float, c: float, phi: float
 ) -> np.ndarray:
-    from src.constants import ENABLE_NUMBA_JIT
+
 
     if NUMBA_AVAILABLE and ENABLE_NUMBA_JIT:
         return _lppl_func_numba(t, tc, m, w, a, b, c, phi)
@@ -102,7 +103,6 @@ def lppl_func(
 
 
 def cost_function(params: Tuple, t: np.ndarray, log_prices: np.ndarray) -> float:
-    from src.constants import ENABLE_NUMBA_JIT
 
     if NUMBA_AVAILABLE and ENABLE_NUMBA_JIT:
         return _cost_function_numba(params, t, log_prices)
@@ -140,7 +140,6 @@ def validate_input_data(df: pd.DataFrame, symbol: str) -> None:
     if df is None or df.empty:
         raise DataValidationError(f"{symbol}: DataFrame is None or empty")
 
-    from src.constants import REQUIRED_COLUMNS
 
     missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
     if missing_cols:

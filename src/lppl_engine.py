@@ -22,17 +22,15 @@ from src.lppl_core import precheck_fit_input, track_fit_failure
 
 logger = logging.getLogger(__name__)
 
+from src.lppl_core import NUMBA_AVAILABLE
+
 try:
     from numba import njit
-
-    NUMBA_AVAILABLE = True
 except ImportError:
-    NUMBA_AVAILABLE = False
 
     def njit(*args, **kwargs):
         def decorator(func):
             return func
-
         return decorator
 
 

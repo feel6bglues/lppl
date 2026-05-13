@@ -70,7 +70,7 @@ def read_tdx_stock(market: str, code: str) -> pd.DataFrame:
             continue
         try:
             dt, o, h, l, c, amt, vol, _ = struct.unpack(TDX_DAY_FORMAT, rec)
-        except:
+        except struct.error:
             continue
         yr, mo, dy = dt // 10000, (dt % 10000) // 100, dt % 100
         if yr < 1990 or yr > 2030:

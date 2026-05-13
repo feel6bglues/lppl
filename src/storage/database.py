@@ -144,13 +144,13 @@ class Database:
             return [r["symbol"] for r in rows]
 
     def insert_signal(self, signal_date: str, symbol: str, strategy: str,
-                      action: str, entry_price: Optional[float] = None,
-                      stop_loss: Optional[float] = None,
-                      take_profit: Optional[float] = None,
-                      confidence: Optional[str] = None,
-                      regime: Optional[str] = None,
-                      score: Optional[float] = None,
-                      details: Optional[str] = None):
+                       action: str, entry_price: Optional[float] = None,
+                       stop_loss: Optional[float] = None,
+                       take_profit: Optional[float] = None,
+                       confidence: Optional[str] = None,
+                       regime: Optional[str] = None,
+                       score: Optional[float] = None,
+                       details: Optional[str] = None) -> None:
         with self._connect() as conn:
             conn.execute("""
                 INSERT INTO daily_signals(signal_date, symbol, strategy, action,
@@ -199,7 +199,7 @@ class Database:
                 return False
 
     def close_position(self, symbol: str, exit_date: str, exit_price: float,
-                       exit_reason: str = ""):
+                       exit_reason: str = "") -> None:
         with self._connect() as conn:
             pos = conn.execute("""
                 SELECT id, entry_price, quantity FROM positions
@@ -234,7 +234,7 @@ class Database:
                      pnl_pct: Optional[float] = None,
                      strategy: str = "", exit_reason: str = "",
                      regime: Optional[str] = None,
-                     score: Optional[float] = None):
+                     score: Optional[float] = None) -> None:
         with self._connect() as conn:
             conn.execute("""
                 INSERT INTO trades(symbol, entry_date, exit_date, direction,
@@ -253,7 +253,7 @@ class Database:
     def snapshot_portfolio(self, date: str, cash: float, market_value: float,
                            total_value: float, daily_pnl: float = 0,
                            daily_pnl_pct: float = 0,
-                           n_positions: int = 0, n_signals: int = 0):
+                           n_positions: int = 0, n_signals: int = 0) -> None:
         with self._connect() as conn:
             prev = conn.execute(
                 "SELECT total_value FROM portfolio_snapshots ORDER BY date DESC LIMIT 1"
