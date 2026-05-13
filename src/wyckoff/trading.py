@@ -8,7 +8,7 @@ Wyckoff交易模拟工具函数
 4. 跳过未被执行的交易（入场价未触及）
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import pandas as pd
 

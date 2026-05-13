@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -171,11 +170,14 @@ class Database:
         clauses = []
         params: list = []
         if date:
-            clauses.append("signal_date = ?"); params.append(date)
+            clauses.append("signal_date = ?")
+            params.append(date)
         if strategy:
-            clauses.append("strategy = ?"); params.append(strategy)
+            clauses.append("strategy = ?")
+            params.append(strategy)
         if action:
-            clauses.append("action = ?"); params.append(action)
+            clauses.append("action = ?")
+            params.append(action)
         where = " AND ".join(clauses) if clauses else "1=1"
         with self._connect() as conn:
             return pd.read_sql(f"SELECT * FROM daily_signals WHERE {where} ORDER BY signal_date, symbol", conn, params=params)
