@@ -324,11 +324,11 @@ def print_summary(results_df: pd.DataFrame):
             f"\n{'指数':<10} {'高点日期':<12} {'高点价格':>10} {'预警天数':>10} {'R²':>6} {'m':>6} {'w':>6}"
         )
         print("-" * 70)
-        for _, row in high_conf.sort_values("first_danger_r2", ascending=False).iterrows():
-            m_val = row["first_danger_m"] if pd.notna(row["first_danger_m"]) else 0
-            w_val = row["first_danger_w"] if pd.notna(row["first_danger_w"]) else 0
+        for row in high_conf.sort_values("first_danger_r2", ascending=False).itertuples():
+            m_val = row.first_danger_m if pd.notna(row.first_danger_m) else 0
+            w_val = row.first_danger_w if pd.notna(row.first_danger_w) else 0
             print(
-                f"{row['name']:<10} {row['peak_date']:<12} {row['peak_price']:>10.2f} {row['first_danger_days']:>10.0f} {row['first_danger_r2']:>6.3f} {m_val:>6.3f} {w_val:>6.3f}"
+                f"{row.name:<10} {row.peak_date:<12} {row.peak_price:>10.2f} {row.first_danger_days:>10.0f} {row.first_danger_r2:>6.3f} {m_val:>6.3f} {w_val:>6.3f}"
             )
 
 
@@ -500,11 +500,11 @@ def generate_report(results_df: pd.DataFrame, output_path: str, use_ensemble: bo
         lines.append("| 指数 | 高点日期 | 高点价格 | 预警天数 | R² | m | w |")
         lines.append("|:-----|:---------|---------:|---------:|----:|----:|----:|")
 
-        for _, row in high_conf.sort_values("first_danger_r2", ascending=False).iterrows():
-            m_val = f"{row['first_danger_m']:.3f}" if pd.notna(row["first_danger_m"]) else "N/A"
-            w_val = f"{row['first_danger_w']:.3f}" if pd.notna(row["first_danger_w"]) else "N/A"
+        for row in high_conf.sort_values("first_danger_r2", ascending=False).itertuples():
+            m_val = f"{row.first_danger_m:.3f}" if pd.notna(row.first_danger_m) else "N/A"
+            w_val = f"{row.first_danger_w:.3f}" if pd.notna(row.first_danger_w) else "N/A"
             lines.append(
-                f"| {row['name']} | {row['peak_date']} | {row['peak_price']:.2f} | {row['first_danger_days']:.0f} | {row['first_danger_r2']:.3f} | {m_val} | {w_val} |"
+                f"| {row.name} | {row.peak_date} | {row.peak_price:.2f} | {row.first_danger_days:.0f} | {row.first_danger_r2:.3f} | {m_val} | {w_val} |"
             )
     else:
         lines.append("无高置信度案例")

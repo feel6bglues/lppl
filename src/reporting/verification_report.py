@@ -90,15 +90,15 @@ class VerificationReportGenerator:
         detection_rate = detected / total * 100 if total > 0 else 0
 
         cards_html = []
-        for _, row in summary_df.iterrows():
+        for row in summary_df.itertuples():
             cards_html.append(
                 f"""
                 <div class="card">
-                    <div class="card-title">{row.get("name", "")} ({row.get("symbol", "")})</div>
+                    <div class="card-title">{getattr(row, "name", "")} ({getattr(row, "symbol", "")})</div>
                     <div class="card-grid">
-                        <div><span>Detected</span><strong>{row.get("detected", "")}</strong></div>
-                        <div><span>Lead Days</span><strong>{row.get("first_danger_days", "")}</strong></div>
-                        <div><span>R²</span><strong>{row.get("first_danger_r2", "")}</strong></div>
+                        <div><span>Detected</span><strong>{getattr(row, "detected", "")}</strong></div>
+                        <div><span>Lead Days</span><strong>{getattr(row, "first_danger_days", "")}</strong></div>
+                        <div><span>R²</span><strong>{getattr(row, "first_danger_r2", "")}</strong></div>
                     </div>
                 </div>
                 """

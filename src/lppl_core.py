@@ -12,6 +12,10 @@ LPPL 底层数值核心
 import logging
 from typing import Any, Dict, Literal, Optional, Tuple
 
+from src.exceptions import DataValidationError
+
+LPPL_RMSE_THRESHOLD = 10.0
+
 FitFailureReason = Literal[
     "insufficient_data",
     "non_positive_price",
@@ -131,26 +135,24 @@ if NUMBA_AVAILABLE:
         return np.sum(residuals**2)
 
 
-def validate_input_data(df, symbol: str) -> Tuple[bool, str]:
+def validate_input_data(df, symbol: str) -> None:
     if df is None or df.empty:
-        return False, "DataFrame is None or empty"
+        raise DataValidationError(f"{symbol}: DataFrame is None or empty")
 
     from src.constants import REQUIRED_COLUMNS
 
     missing_cols = [col for col in REQUIRED_COLUMNS if col not in df.columns]
     if missing_cols:
-        return False, f"Missing required columns: {missing_cols}"
+        raise DataValidationError(f"{symbol}: Missing required columns: {missing_cols}")
 
     if len(df) < 50:
-        return False, f"Insufficient data rows: {len(df)} < 50"
+        raise DataValidationError(f"{symbol}: Insufficient data rows: {len(df)} < 50")
 
     if df["close"].isnull().any():
-        return False, "Null values found in close column"
+        raise DataValidationError(f"{symbol}: Null values found in close column")
 
     if (df["close"] <= 0).any():
-        return False, "Non-positive prices found in close column"
-
-    return True, "Validation passed"
+        raise DataValidationError(f"{symbol}: Non-positive prices found in close column")
 
 
 def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
@@ -216,7 +218,7 @@ def fit_single_window_task(args: Tuple) -> Optional[Dict[str, Any]]:
 
         rmse = np.sqrt(mse)
 
-        if not np.isfinite(rmse) or rmse > 10:
+        if not np.isfinite(rmse) or rmse > LPPL_RMSE_THRESHOLD:
             return None
 
         return {"window": window_size, "params": result.x, "rmse": rmse, "last_date": last_date}

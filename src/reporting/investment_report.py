@@ -29,19 +29,19 @@ class InvestmentReportGenerator:
             "",
         ]
 
-        for _, row in summary_df.iterrows():
+        for row in summary_df.itertuples():
             lines.extend(
                 [
-                    f"### {row.get('name', '')} ({row.get('symbol', '')})",
+                    f"### {getattr(row, 'name', '')} ({getattr(row, 'symbol', '')})",
                     "",
-                    f"- 回测区间: {row.get('start_date', '')} ~ {row.get('end_date', '')}",
-                    f"- 最新信号: {row.get('latest_signal', '')}",
-                    f"- 最新动作: {row.get('latest_action', '')}",
-                    f"- 最终净值: {row.get('final_nav', 0.0):.4f}",
-                    f"- 策略收益: {row.get('total_return', 0.0):.2%}",
-                    f"- 基准收益: {row.get('benchmark_return', 0.0):.2%}",
-                    f"- 最大回撤: {row.get('max_drawdown', 0.0):.2%}",
-                    f"- 交易次数: {int(row.get('trade_count', 0))}",
+                    f"- 回测区间: {getattr(row, 'start_date', '')} ~ {getattr(row, 'end_date', '')}",
+                    f"- 最新信号: {getattr(row, 'latest_signal', '')}",
+                    f"- 最新动作: {getattr(row, 'latest_action', '')}",
+                    f"- 最终净值: {getattr(row, 'final_nav', 0.0):.4f}",
+                    f"- 策略收益: {getattr(row, 'total_return', 0.0):.2%}",
+                    f"- 基准收益: {getattr(row, 'benchmark_return', 0.0):.2%}",
+                    f"- 最大回撤: {getattr(row, 'max_drawdown', 0.0):.2%}",
+                    f"- 交易次数: {int(getattr(row, 'trade_count', 0))}",
                     "",
                 ]
             )
@@ -74,18 +74,18 @@ class InvestmentReportGenerator:
         plot_paths = plot_paths or {}
 
         cards = []
-        for _, row in summary_df.iterrows():
+        for row in summary_df.itertuples():
             cards.append(
                 f"""
                 <div class="card">
-                  <h2>{row.get("name", "")} ({row.get("symbol", "")})</h2>
+                  <h2>{getattr(row, "name", "")} ({getattr(row, "symbol", "")})</h2>
                   <div class="grid">
-                    <div><span>回测区间</span><strong>{row.get("start_date", "")} ~ {row.get("end_date", "")}</strong></div>
-                    <div><span>最新信号</span><strong>{row.get("latest_signal", "")}</strong></div>
-                    <div><span>最新动作</span><strong>{row.get("latest_action", "")}</strong></div>
-                    <div><span>最终净值</span><strong>{row.get("final_nav", 0.0):.4f}</strong></div>
-                    <div><span>策略收益</span><strong>{row.get("total_return", 0.0):.2%}</strong></div>
-                    <div><span>最大回撤</span><strong>{row.get("max_drawdown", 0.0):.2%}</strong></div>
+                    <div><span>回测区间</span><strong>{getattr(row, "start_date", "")} ~ {getattr(row, "end_date", "")}</strong></div>
+                    <div><span>最新信号</span><strong>{getattr(row, "latest_signal", "")}</strong></div>
+                    <div><span>最新动作</span><strong>{getattr(row, "latest_action", "")}</strong></div>
+                    <div><span>最终净值</span><strong>{getattr(row, "final_nav", 0.0):.4f}</strong></div>
+                    <div><span>策略收益</span><strong>{getattr(row, "total_return", 0.0):.2%}</strong></div>
+                    <div><span>最大回撤</span><strong>{getattr(row, "max_drawdown", 0.0):.2%}</strong></div>
                   </div>
                 </div>
                 """

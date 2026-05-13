@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, fields
 from typing import Any, Dict, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 
 from src.lppl_core import calculate_bottom_signal_strength, detect_negative_bubble
@@ -238,135 +239,596 @@ def _map_ensemble_signal(
     return "none", 0.0, "无信号", current_target
 
 
-def generate_investment_signals(
-    df: pd.DataFrame,
+def _compute_common_indicators(
+    price_df: pd.DataFrame,
+    signal_config: InvestmentSignalConfig,
+    is_ma_cross_atr: bool = False,
+    is_ma_cross_atr_long_hold: bool = False,
+    is_ma_convergence_v1: bool = False,
+    is_ma_convergence_v2: bool = False,
+    is_multi_factor: bool = False,
+) -> None:
+    fast_ma_col = (
+        signal_config.trend_fast_ma
+        if (is_ma_cross_atr or is_ma_cross_atr_long_hold)
+        else signal_config.ma_short
+    )
+    slow_ma_col = (
+        signal_config.trend_slow_ma
+        if (is_ma_cross_atr or is_ma_cross_atr_long_hold)
+        else signal_config.ma_mid
+    )
+
+    price_df["ma_fast"] = price_df["close"].rolling(fast_ma_col, min_periods=1).mean()
+    price_df["ma_slow"] = price_df["close"].rolling(slow_ma_col, min_periods=1).mean()
+    price_df["ma_regime"] = (
+        price_df["close"].rolling(signal_config.regime_filter_ma, min_periods=1).mean()
+    )
+    price_df["ma_long_model"] = (
+        price_df["close"].rolling(signal_config.ma_long, min_periods=1).mean()
+    )
+
+    prev_close = price_df["close"].shift(1).fillna(price_df["close"])
+    true_range = pd.concat(
+        [
+            (price_df["high"] - price_df["low"]).abs(),
+            (price_df["high"] - prev_close).abs(),
+            (price_df["low"] - prev_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+    price_df["atr"] = true_range.rolling(signal_config.atr_period, min_periods=1).mean()
+    price_df["atr_ma"] = (
+        price_df["atr"].rolling(signal_config.atr_ma_window, min_periods=1).mean()
+    )
+    price_df["atr_ratio"] = (price_df["atr"] / price_df["atr_ma"].replace(0.0, pd.NA)).fillna(1.0)
+    if is_ma_convergence_v1:
+        min_periods = max(1, min(signal_config.atr_percentile_window, 20))
+        price_df["atr_low_quantile"] = (
+            price_df["atr_ratio"]
+            .rolling(signal_config.atr_percentile_window, min_periods=min_periods)
+            .quantile(signal_config.atr_low_percentile)
+            .fillna(price_df["atr_ratio"])
+        )
+        price_df["atr_high_quantile"] = (
+            price_df["atr_ratio"]
+            .rolling(signal_config.atr_percentile_window, min_periods=min_periods)
+            .quantile(signal_config.atr_high_percentile)
+            .fillna(price_df["atr_ratio"])
+        )
+
+    price_df["ma_fast_prev"] = price_df["ma_fast"].shift(1)
+    price_df["ma_slow_prev"] = price_df["ma_slow"].shift(1)
+    price_df["bullish_cross"] = (price_df["ma_fast"] > price_df["ma_slow"]) & (
+        price_df["ma_fast_prev"].fillna(price_df["ma_fast"])
+        <= price_df["ma_slow_prev"].fillna(price_df["ma_slow"])
+    )
+    price_df["bearish_cross"] = (price_df["ma_fast"] < price_df["ma_slow"]) & (
+        price_df["ma_fast_prev"].fillna(price_df["ma_fast"])
+        >= price_df["ma_slow_prev"].fillna(price_df["ma_slow"])
+    )
+
+    price_df["risk_rolling_peak"] = (
+        price_df["close"].rolling(signal_config.risk_drawdown_lookback, min_periods=1).max()
+    )
+    price_df["risk_price_drawdown"] = (price_df["close"] / price_df["risk_rolling_peak"]) - 1.0
+
+    if is_multi_factor or is_ma_convergence_v1 or is_ma_convergence_v2:
+        price_df["bb_middle"] = (
+            price_df["close"].rolling(signal_config.bb_period, min_periods=1).mean()
+        )
+        price_df["bb_std"] = (
+            price_df["close"].rolling(signal_config.bb_period, min_periods=1).std().fillna(0.0)
+        )
+        price_df["bb_upper"] = price_df["bb_middle"] + signal_config.bb_std * price_df["bb_std"]
+        price_df["bb_lower"] = price_df["bb_middle"] - signal_config.bb_std * price_df["bb_std"]
+        price_df["bb_width"] = (
+            (price_df["bb_upper"] - price_df["bb_lower"])
+            / price_df["bb_middle"].replace(0.0, pd.NA)
+        ).fillna(0.0)
+
+
+def _generate_ma_cross_atr_signals(
+    price_df: pd.DataFrame,
     symbol: str,
-    signal_config: Optional[InvestmentSignalConfig] = None,
-    lppl_config: Optional[LPPLConfig] = None,
-    use_ensemble: bool = False,
-    start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-    scan_step: int = 1,
+    signal_config: InvestmentSignalConfig,
+    start_ts: pd.Timestamp,
+    end_ts: pd.Timestamp,
 ) -> pd.DataFrame:
-    signal_config = signal_config or InvestmentSignalConfig()
-    lppl_config = lppl_config or LPPLConfig(window_range=[40, 60, 80], n_workers=1)
-    price_df = _normalize_price_frame(df)
-    scan_step = max(1, int(scan_step))
-
-    start_ts = pd.to_datetime(start_date) if start_date else price_df["date"].min()
-    end_ts = pd.to_datetime(end_date) if end_date else price_df["date"].max()
-
     current_target = signal_config.initial_position
-    records = []
-    close_prices = price_df["close"].values
-    warmup = max(lppl_config.window_range)
-    scan_counter = 0
-
-    # Check signal model
-    is_ma_cross_atr = signal_config.signal_model == "ma_cross_atr_v1"
-    is_ma_cross_atr_long_hold = signal_config.signal_model == "ma_cross_atr_long_hold_v1"
-    is_ma_convergence_v1 = signal_config.signal_model == "ma_convergence_atr_v1"
-    is_ma_convergence_v2 = signal_config.signal_model == "ma_convergence_atr_v2"
-    is_multi_factor = signal_config.signal_model == "multi_factor_adaptive_v1"
-
-    # For MA cross ATR model, compute indicators
-    if (
-        is_ma_cross_atr
-        or is_ma_cross_atr_long_hold
-        or is_ma_convergence_v1
-        or is_ma_convergence_v2
-        or is_multi_factor
-    ):
-        # Compute MA indicators
-        fast_ma_col = (
-            signal_config.trend_fast_ma
-            if (is_ma_cross_atr or is_ma_cross_atr_long_hold)
-            else signal_config.ma_short
-        )
-        slow_ma_col = (
-            signal_config.trend_slow_ma
-            if (is_ma_cross_atr or is_ma_cross_atr_long_hold)
-            else signal_config.ma_mid
-        )
-
-        price_df["ma_fast"] = price_df["close"].rolling(fast_ma_col, min_periods=1).mean()
-        price_df["ma_slow"] = price_df["close"].rolling(slow_ma_col, min_periods=1).mean()
-        price_df["ma_regime"] = (
-            price_df["close"].rolling(signal_config.regime_filter_ma, min_periods=1).mean()
-        )
-        price_df["ma_long_model"] = (
-            price_df["close"].rolling(signal_config.ma_long, min_periods=1).mean()
-        )
-
-        # Compute ATR
-        prev_close = price_df["close"].shift(1).fillna(price_df["close"])
-        true_range = pd.concat(
-            [
-                (price_df["high"] - price_df["low"]).abs(),
-                (price_df["high"] - prev_close).abs(),
-                (price_df["low"] - prev_close).abs(),
-            ],
-            axis=1,
-        ).max(axis=1)
-        price_df["atr"] = true_range.rolling(signal_config.atr_period, min_periods=1).mean()
-        price_df["atr_ma"] = (
-            price_df["atr"].rolling(signal_config.atr_ma_window, min_periods=1).mean()
-        )
-        price_df["atr_ratio"] = (price_df["atr"] / price_df["atr_ma"].replace(0.0, pd.NA)).fillna(
-            1.0
-        )
-        if is_ma_convergence_v1:
-            min_periods = max(1, min(signal_config.atr_percentile_window, 20))
-            price_df["atr_low_quantile"] = (
-                price_df["atr_ratio"]
-                .rolling(signal_config.atr_percentile_window, min_periods=min_periods)
-                .quantile(signal_config.atr_low_percentile)
-                .fillna(price_df["atr_ratio"])
-            )
-            price_df["atr_high_quantile"] = (
-                price_df["atr_ratio"]
-                .rolling(signal_config.atr_percentile_window, min_periods=min_periods)
-                .quantile(signal_config.atr_high_percentile)
-                .fillna(price_df["atr_ratio"])
-            )
-
-        # Compute MA crosses
-        price_df["ma_fast_prev"] = price_df["ma_fast"].shift(1)
-        price_df["ma_slow_prev"] = price_df["ma_slow"].shift(1)
-        price_df["bullish_cross"] = (price_df["ma_fast"] > price_df["ma_slow"]) & (
-            price_df["ma_fast_prev"].fillna(price_df["ma_fast"])
-            <= price_df["ma_slow_prev"].fillna(price_df["ma_slow"])
-        )
-        price_df["bearish_cross"] = (price_df["ma_fast"] < price_df["ma_slow"]) & (
-            price_df["ma_fast_prev"].fillna(price_df["ma_fast"])
-            >= price_df["ma_slow_prev"].fillna(price_df["ma_slow"])
-        )
-
-        # Risk drawdown
-        price_df["risk_rolling_peak"] = (
-            price_df["close"].rolling(signal_config.risk_drawdown_lookback, min_periods=1).max()
-        )
-        price_df["risk_price_drawdown"] = (price_df["close"] / price_df["risk_rolling_peak"]) - 1.0
-
-        # For multi-factor, also compute BB
-        if is_multi_factor or is_ma_convergence_v1 or is_ma_convergence_v2:
-            price_df["bb_middle"] = (
-                price_df["close"].rolling(signal_config.bb_period, min_periods=1).mean()
-            )
-            price_df["bb_std"] = (
-                price_df["close"].rolling(signal_config.bb_period, min_periods=1).std().fillna(0.0)
-            )
-            price_df["bb_upper"] = price_df["bb_middle"] + signal_config.bb_std * price_df["bb_std"]
-            price_df["bb_lower"] = price_df["bb_middle"] - signal_config.bb_std * price_df["bb_std"]
-            price_df["bb_width"] = (
-                (price_df["bb_upper"] - price_df["bb_lower"])
-                / price_df["bb_middle"].replace(0.0, pd.NA)
-            ).fillna(0.0)
-
     buy_confirm_count = 0
     sell_confirm_count = 0
     cooldown_remaining = 0
     holding_bars = 0
+    records = []
+
+    for row in price_df.itertuples(index=False):
+        ts = row.date
+        if ts < start_ts or ts > end_ts:
+            continue
+
+        close_price = float(row.close)
+        bullish_cross = bool(row.bullish_cross)
+        bearish_cross = bool(row.bearish_cross)
+        atr_ratio = float(row.atr_ratio)
+        regime_ma = float(getattr(row, "ma_regime", close_price))
+        regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
+        risk_drawdown = float(row.risk_price_drawdown)
+
+        if current_target > signal_config.flat_position + 1e-8:
+            holding_bars += 1
+        elif cooldown_remaining > 0:
+            cooldown_remaining -= 1
+
+        buy_candidate = (
+            bullish_cross
+            and atr_ratio <= signal_config.buy_volatility_cap
+            and regime_ratio >= signal_config.regime_filter_buffer
+        )
+        sell_candidate = bearish_cross or atr_ratio > signal_config.vol_breakout_mult
+
+        if buy_candidate:
+            buy_confirm_count += 1
+        else:
+            buy_confirm_count = 0
+
+        if sell_candidate:
+            sell_confirm_count += 1
+        else:
+            sell_confirm_count = 0
+
+        next_target = current_target
+        position_reason = "无信号"
+
+        if (
+            current_target > signal_config.flat_position + 1e-8
+            and signal_config.regime_filter_reduce_enabled
+            and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
+        ):
+            next_target = signal_config.flat_position
+            position_reason = "回撤止损"
+        elif buy_candidate:
+            next_target = signal_config.full_position
+            position_reason = f"MA金叉买入(ATR={atr_ratio:.2f})"
+        elif sell_candidate:
+            next_target = signal_config.flat_position
+            if bearish_cross:
+                position_reason = f"MA死叉卖出(ATR={atr_ratio:.2f})"
+            else:
+                position_reason = f"ATR高波卖出(ATR={atr_ratio:.2f})"
+
+        action = _resolve_action(current_target, next_target)
+        current_target = next_target
+
+        records.append(
+            {
+                "date": row.date,
+                "symbol": symbol,
+                "open": float(row.open),
+                "high": float(row.high),
+                "low": float(row.low),
+                "close": close_price,
+                "volume": float(row.volume),
+                "lppl_signal": "none",
+                "signal_strength": 0.0,
+                "position_reason": position_reason,
+                "action": action,
+                "target_position": float(current_target),
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def _generate_ma_cross_atr_long_hold_signals(
+    price_df: pd.DataFrame,
+    symbol: str,
+    signal_config: InvestmentSignalConfig,
+    start_ts: pd.Timestamp,
+    end_ts: pd.Timestamp,
+) -> pd.DataFrame:
+    current_target = signal_config.initial_position
+    buy_confirm_count = 0
+    sell_confirm_count = 0
+    cooldown_remaining = 0
+    holding_bars = 0
+    records = []
+
+    for row in price_df.itertuples(index=False):
+        ts = row.date
+        if ts < start_ts or ts > end_ts:
+            continue
+
+        close_price = float(row.close)
+        bearish_cross = bool(row.bearish_cross)
+        atr_ratio = float(row.atr_ratio)
+        regime_ma = float(getattr(row, "ma_regime", close_price))
+        regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
+        risk_drawdown = float(row.risk_price_drawdown)
+
+        if current_target > signal_config.flat_position + 1e-8:
+            holding_bars += 1
+        elif cooldown_remaining > 0:
+            cooldown_remaining -= 1
+
+        long_hold_buy_setup = (
+            float(row.ma_fast) > float(row.ma_slow)
+            and atr_ratio <= signal_config.buy_volatility_cap
+            and regime_ratio >= signal_config.regime_filter_buffer
+        )
+        long_hold_sell_setup = (
+            float(row.ma_fast) < float(row.ma_slow)
+            or atr_ratio > signal_config.vol_breakout_mult
+        )
+
+        if long_hold_buy_setup:
+            buy_confirm_count += 1
+        else:
+            buy_confirm_count = 0
+
+        if long_hold_sell_setup:
+            sell_confirm_count += 1
+        else:
+            sell_confirm_count = 0
+
+        previous_target = current_target
+        next_target = current_target
+        position_reason = "无信号"
+
+        if (
+            current_target > signal_config.flat_position + 1e-8
+            and signal_config.regime_filter_reduce_enabled
+            and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
+        ):
+            next_target = signal_config.flat_position
+            position_reason = "回撤止损"
+        else:
+            can_buy = (
+                current_target <= signal_config.flat_position + 1e-8
+                and cooldown_remaining <= 0
+                and buy_confirm_count >= max(1, signal_config.buy_confirm_days)
+            )
+            can_sell = (
+                current_target > signal_config.flat_position + 1e-8
+                and sell_confirm_count >= max(1, signal_config.sell_confirm_days)
+                and holding_bars >= int(signal_config.min_hold_bars)
+            )
+
+            if can_buy:
+                next_target = signal_config.full_position
+                position_reason = (
+                    f"长持仓买入(确认={buy_confirm_count},ATR={atr_ratio:.2f},"
+                    f"冷却={cooldown_remaining})"
+                )
+            elif (
+                current_target > signal_config.flat_position + 1e-8
+                and sell_confirm_count >= max(1, signal_config.sell_confirm_days)
+                and holding_bars < int(signal_config.min_hold_bars)
+            ):
+                next_target = current_target
+                position_reason = f"持仓不足{int(signal_config.min_hold_bars)}天,暂缓卖出"
+            elif can_sell:
+                next_target = signal_config.flat_position
+                if bearish_cross:
+                    position_reason = f"长持仓MA死叉卖出(ATR={atr_ratio:.2f})"
+                else:
+                    position_reason = f"长持仓ATR高波卖出(ATR={atr_ratio:.2f})"
+            else:
+                next_target = current_target
+                if (
+                    current_target <= signal_config.flat_position + 1e-8
+                    and cooldown_remaining > 0
+                ):
+                    position_reason = f"冷却中({cooldown_remaining}天)"
+                else:
+                    position_reason = f"长持仓持有(ATR={atr_ratio:.2f},持仓={holding_bars}天)"
+
+        action = _resolve_action(current_target, next_target)
+        current_target = next_target
+
+        if (
+            previous_target <= signal_config.flat_position + 1e-8
+            and current_target > signal_config.flat_position + 1e-8
+        ):
+            holding_bars = 0
+            buy_confirm_count = 0
+        elif (
+            previous_target > signal_config.flat_position + 1e-8
+            and current_target <= signal_config.flat_position + 1e-8
+        ):
+            holding_bars = 0
+            sell_confirm_count = 0
+            cooldown_remaining = int(signal_config.cooldown_days)
+
+        records.append(
+            {
+                "date": row.date,
+                "symbol": symbol,
+                "open": float(row.open),
+                "high": float(row.high),
+                "low": float(row.low),
+                "close": close_price,
+                "volume": float(row.volume),
+                "lppl_signal": "none",
+                "signal_strength": 0.0,
+                "position_reason": position_reason,
+                "action": action,
+                "target_position": float(current_target),
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def _generate_ma_convergence_signals(
+    price_df: pd.DataFrame,
+    symbol: str,
+    signal_config: InvestmentSignalConfig,
+    is_v2: bool,
+    start_ts: pd.Timestamp,
+    end_ts: pd.Timestamp,
+) -> pd.DataFrame:
+    current_target = signal_config.initial_position
+    buy_confirm_count = 0
+    sell_confirm_count = 0
+    cooldown_remaining = 0
+    holding_bars = 0
+    records = []
+
+    for row in price_df.itertuples(index=False):
+        ts = row.date
+        if ts < start_ts or ts > end_ts:
+            continue
+
+        close_price = float(row.close)
+        atr_ratio = float(row.atr_ratio)
+        regime_ma = float(getattr(row, "ma_regime", close_price))
+        regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
+        risk_drawdown = float(row.risk_price_drawdown)
+        ma_fast = float(row.ma_fast)
+        ma_slow = float(row.ma_slow)
+        ma_long_model = float(getattr(row, "ma_long_model", close_price))
+        bb_width = float(row.bb_width)
+        bullish_cross = bool(row.bullish_cross)
+        bearish_cross = bool(row.bearish_cross)
+
+        if current_target > signal_config.flat_position + 1e-8:
+            holding_bars += 1
+        elif cooldown_remaining > 0:
+            cooldown_remaining -= 1
+
+        if is_v2:
+            buy_setup = (
+                bullish_cross
+                and regime_ratio >= signal_config.regime_filter_buffer
+                and (
+                    atr_ratio < signal_config.atr_low_threshold
+                    or bb_width < signal_config.bb_width_threshold
+                )
+            )
+            sell_setup = (
+                bearish_cross
+                or (
+                    regime_ratio < signal_config.regime_filter_buffer
+                    and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
+                )
+                or atr_ratio > signal_config.atr_high_threshold
+            )
+        else:
+            atr_low_q = float(getattr(row, "atr_low_quantile", atr_ratio))
+            atr_high_q = float(getattr(row, "atr_high_quantile", atr_ratio))
+            buy_setup = (
+                bb_width <= signal_config.bb_width_cap
+                and atr_ratio <= atr_low_q
+                and (
+                    close_price > float(getattr(row, "bb_upper", close_price))
+                    or (ma_fast > ma_slow > ma_long_model)
+                )
+            )
+            sell_setup = (
+                bb_width <= signal_config.bb_width_cap
+                and atr_ratio >= atr_high_q
+                and (bearish_cross or regime_ratio < signal_config.regime_filter_buffer)
+            )
+
+        buy_confirm_count = buy_confirm_count + 1 if buy_setup else 0
+        sell_confirm_count = sell_confirm_count + 1 if sell_setup else 0
+        previous_target = current_target
+        next_target = current_target
+        position_reason = "无信号"
+
+        if (
+            current_target > signal_config.flat_position + 1e-8
+            and signal_config.regime_filter_reduce_enabled
+            and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
+        ):
+            next_target = signal_config.flat_position
+            position_reason = "回撤止损"
+        elif (
+            current_target <= signal_config.flat_position + 1e-8
+            and cooldown_remaining <= 0
+            and buy_confirm_count >= max(1, signal_config.buy_confirm_days)
+        ):
+            next_target = signal_config.full_position
+            position_reason = "收敛策略买入"
+        elif (
+            current_target > signal_config.flat_position + 1e-8
+            and sell_confirm_count >= max(1, signal_config.sell_confirm_days)
+            and holding_bars >= int(signal_config.min_hold_bars)
+        ):
+            next_target = signal_config.flat_position
+            position_reason = "收敛策略卖出"
+        else:
+            next_target = current_target
+            if current_target <= signal_config.flat_position + 1e-8 and cooldown_remaining > 0:
+                position_reason = f"冷却中({cooldown_remaining}天)"
+            else:
+                position_reason = "收敛策略持有"
+
+        action = _resolve_action(current_target, next_target)
+        current_target = next_target
+        if (
+            previous_target <= signal_config.flat_position + 1e-8
+            and current_target > signal_config.flat_position + 1e-8
+        ):
+            holding_bars = 0
+            buy_confirm_count = 0
+        elif (
+            previous_target > signal_config.flat_position + 1e-8
+            and current_target <= signal_config.flat_position + 1e-8
+        ):
+            holding_bars = 0
+            sell_confirm_count = 0
+            cooldown_remaining = int(signal_config.cooldown_days)
+
+        records.append(
+            {
+                "date": row.date,
+                "symbol": symbol,
+                "open": float(row.open),
+                "high": float(row.high),
+                "low": float(row.low),
+                "close": close_price,
+                "volume": float(row.volume),
+                "lppl_signal": "none",
+                "signal_strength": 0.0,
+                "position_reason": position_reason,
+                "action": action,
+                "target_position": float(current_target),
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def _generate_multifactor_signals(
+    price_df: pd.DataFrame,
+    symbol: str,
+    signal_config: InvestmentSignalConfig,
+    start_ts: pd.Timestamp,
+    end_ts: pd.Timestamp,
+) -> pd.DataFrame:
+    current_target = signal_config.initial_position
+    records = []
+
+    for row in price_df.itertuples(index=False):
+        ts = row.date
+        if ts < start_ts or ts > end_ts:
+            continue
+
+        close_price = float(row.close)
+        bullish_cross = bool(row.bullish_cross)
+        bearish_cross = bool(row.bearish_cross)
+        atr_ratio = float(row.atr_ratio)
+        regime_ma = float(getattr(row, "ma_regime", close_price))
+        regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
+        bb_width = float(getattr(row, "bb_width", 0.10))
+
+        trend_score = 0.0
+        if bullish_cross:
+            trend_score = 1.0
+        elif bearish_cross:
+            trend_score = -1.0
+        if regime_ratio >= 1.02:
+            trend_score += 0.5
+        elif regime_ratio <= 0.98:
+            trend_score -= 0.5
+
+        vol_score = 0.0
+        if atr_ratio < signal_config.atr_low_threshold:
+            vol_score = 1.0
+        elif atr_ratio > signal_config.atr_high_threshold:
+            vol_score = -1.0
+
+        state_score = 0.0
+        if bb_width < signal_config.bb_narrow_threshold:
+            state_score = 0.5
+        elif bb_width > signal_config.bb_wide_threshold:
+            state_score = -0.5
+
+        ma_fast = float(row.ma_fast)
+        ma_slow = float(row.ma_slow)
+        momentum_score = 0.5 if ma_fast > ma_slow else -0.5
+
+        total_score = (
+            trend_score * signal_config.trend_weight
+            + vol_score * signal_config.volatility_weight
+            + state_score * signal_config.market_state_weight
+            + momentum_score * signal_config.momentum_weight
+        )
+
+        risk_drawdown = float(row.risk_price_drawdown)
+
+        vol_position_cap = float(signal_config.full_position)
+        if atr_ratio > signal_config.atr_high_threshold:
+            vol_position_cap = 0.5
+        elif atr_ratio > 1.05:
+            vol_position_cap = 0.7
+
+        next_target = current_target
+        position_reason = "无信号"
+
+        if (
+            current_target > signal_config.flat_position + 1e-8
+            and signal_config.regime_filter_reduce_enabled
+            and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
+        ):
+            next_target = signal_config.flat_position
+            position_reason = f"回撤止损(评分={total_score:.2f})"
+        elif total_score >= signal_config.buy_score_threshold and trend_score > 0:
+            next_target = min(signal_config.full_position, vol_position_cap)
+            position_reason = f"多因子买入(评分={total_score:.2f})"
+        elif total_score <= signal_config.sell_score_threshold and trend_score < 0:
+            next_target = signal_config.flat_position
+            position_reason = f"多因子卖出(评分={total_score:.2f})"
+        elif (
+            total_score < 0
+            and total_score > signal_config.sell_score_threshold
+            and current_target > signal_config.flat_position + 1e-8
+        ):
+            next_target = signal_config.half_position
+            position_reason = f"多因子减仓(评分={total_score:.2f})"
+        else:
+            position_reason = f"多因子持有(评分={total_score:.2f})"
+
+        action = _resolve_action(current_target, next_target)
+        current_target = next_target
+
+        records.append(
+            {
+                "date": row.date,
+                "symbol": symbol,
+                "open": float(row.open),
+                "high": float(row.high),
+                "low": float(row.low),
+                "close": close_price,
+                "volume": float(row.volume),
+                "lppl_signal": "none",
+                "signal_strength": 0.0,
+                "position_reason": position_reason,
+                "action": action,
+                "target_position": float(current_target),
+            }
+        )
+
+    return pd.DataFrame(records)
+
+
+def _generate_legacy_signals(
+    price_df: pd.DataFrame,
+    symbol: str,
+    signal_config: InvestmentSignalConfig,
+    lppl_config: LPPLConfig,
+    start_ts: pd.Timestamp,
+    end_ts: pd.Timestamp,
+    scan_step: int,
+    close_prices: np.ndarray,
+    warmup: int,
+    use_ensemble: bool,
+) -> pd.DataFrame:
+    current_target = signal_config.initial_position
+    scan_counter = 0
+    records = []
 
     for idx, row in enumerate(price_df.itertuples(index=False)):
         ts = row.date
@@ -379,356 +841,51 @@ def generate_investment_signals(
         next_target = current_target
         close_price = float(row.close)
 
-        if is_ma_cross_atr or is_ma_cross_atr_long_hold:
-            # MA cross ATR model logic
-            bullish_cross = bool(row.bullish_cross)
-            bearish_cross = bool(row.bearish_cross)
-            atr_ratio = float(row.atr_ratio)
-            regime_ma = float(getattr(row, "ma_regime", close_price))
-            regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
-            risk_drawdown = float(row.risk_price_drawdown)
-
-            if current_target > signal_config.flat_position + 1e-8:
-                holding_bars += 1
-            elif cooldown_remaining > 0:
-                cooldown_remaining -= 1
-
-            # Buy/sell conditions
-            buy_candidate = (
-                bullish_cross
-                and atr_ratio <= signal_config.buy_volatility_cap
-                and regime_ratio >= signal_config.regime_filter_buffer
-            )
-            sell_candidate = bearish_cross or atr_ratio > signal_config.vol_breakout_mult
-            long_hold_buy_setup = (
-                float(row.ma_fast) > float(row.ma_slow)
-                and atr_ratio <= signal_config.buy_volatility_cap
-                and regime_ratio >= signal_config.regime_filter_buffer
-            )
-            long_hold_sell_setup = (
-                float(row.ma_fast) < float(row.ma_slow)
-                or atr_ratio > signal_config.vol_breakout_mult
-            )
-
-            confirm_buy_signal = long_hold_buy_setup if is_ma_cross_atr_long_hold else buy_candidate
-            confirm_sell_signal = (
-                long_hold_sell_setup if is_ma_cross_atr_long_hold else sell_candidate
-            )
-
-            if confirm_buy_signal:
-                buy_confirm_count += 1
-            else:
-                buy_confirm_count = 0
-
-            if confirm_sell_signal:
-                sell_confirm_count += 1
-            else:
-                sell_confirm_count = 0
-
-            previous_target = current_target
-
-            # Risk layer
-            if (
-                current_target > signal_config.flat_position + 1e-8
-                and signal_config.regime_filter_reduce_enabled
-                and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
-            ):
-                next_target = signal_config.flat_position
-                position_reason = "回撤止损"
-            elif is_ma_cross_atr_long_hold:
-                can_buy = (
-                    current_target <= signal_config.flat_position + 1e-8
-                    and cooldown_remaining <= 0
-                    and buy_confirm_count >= max(1, signal_config.buy_confirm_days)
+        if idx >= warmup and scan_counter % scan_step == 0:
+            if use_ensemble:
+                result = process_single_day_ensemble(
+                    close_prices,
+                    idx,
+                    lppl_config.window_range,
+                    min_r2=lppl_config.r2_threshold,
+                    consensus_threshold=lppl_config.consensus_threshold,
+                    config=lppl_config,
                 )
-                can_sell = (
-                    current_target > signal_config.flat_position + 1e-8
-                    and sell_confirm_count >= max(1, signal_config.sell_confirm_days)
-                    and holding_bars >= int(signal_config.min_hold_bars)
-                )
-
-                if can_buy:
-                    next_target = signal_config.full_position
-                    position_reason = (
-                        f"长持仓买入(确认={buy_confirm_count},ATR={atr_ratio:.2f},"
-                        f"冷却={cooldown_remaining})"
+                lppl_signal, signal_strength, position_reason, next_target = (
+                    _map_ensemble_signal(
+                        result,
+                        current_target,
+                        signal_config,
+                        lppl_config,
                     )
-                elif (
-                    current_target > signal_config.flat_position + 1e-8
-                    and sell_confirm_count >= max(1, signal_config.sell_confirm_days)
-                    and holding_bars < int(signal_config.min_hold_bars)
-                ):
-                    next_target = current_target
-                    position_reason = f"持仓不足{int(signal_config.min_hold_bars)}天,暂缓卖出"
-                elif can_sell:
-                    next_target = signal_config.flat_position
-                    if bearish_cross:
-                        position_reason = f"长持仓MA死叉卖出(ATR={atr_ratio:.2f})"
-                    else:
-                        position_reason = f"长持仓ATR高波卖出(ATR={atr_ratio:.2f})"
-                else:
-                    next_target = current_target
-                    if (
-                        current_target <= signal_config.flat_position + 1e-8
-                        and cooldown_remaining > 0
-                    ):
-                        position_reason = f"冷却中({cooldown_remaining}天)"
-                    else:
-                        position_reason = f"长持仓持有(ATR={atr_ratio:.2f},持仓={holding_bars}天)"
-            elif buy_candidate:
-                next_target = signal_config.full_position
-                position_reason = f"MA金叉买入(ATR={atr_ratio:.2f})"
-            elif sell_candidate:
-                next_target = signal_config.flat_position
-                if bearish_cross:
-                    position_reason = f"MA死叉卖出(ATR={atr_ratio:.2f})"
-                else:
-                    position_reason = f"ATR高波卖出(ATR={atr_ratio:.2f})"
-
-            action = _resolve_action(current_target, next_target)
-            current_target = next_target
-
-            if is_ma_cross_atr_long_hold:
-                if (
-                    previous_target <= signal_config.flat_position + 1e-8
-                    and current_target > signal_config.flat_position + 1e-8
-                ):
-                    holding_bars = 0
-                    buy_confirm_count = 0
-                elif (
-                    previous_target > signal_config.flat_position + 1e-8
-                    and current_target <= signal_config.flat_position + 1e-8
-                ):
-                    holding_bars = 0
-                    sell_confirm_count = 0
-                    cooldown_remaining = int(signal_config.cooldown_days)
-
-        elif is_ma_convergence_v1 or is_ma_convergence_v2:
-            atr_ratio = float(row.atr_ratio)
-            regime_ma = float(getattr(row, "ma_regime", close_price))
-            regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
-            risk_drawdown = float(row.risk_price_drawdown)
-            ma_fast = float(row.ma_fast)
-            ma_slow = float(row.ma_slow)
-            ma_long_model = float(getattr(row, "ma_long_model", close_price))
-            bb_width = float(row.bb_width)
-            bullish_cross = bool(row.bullish_cross)
-            bearish_cross = bool(row.bearish_cross)
-
-            if current_target > signal_config.flat_position + 1e-8:
-                holding_bars += 1
-            elif cooldown_remaining > 0:
-                cooldown_remaining -= 1
-
-            if is_ma_convergence_v1:
-                atr_low_q = float(getattr(row, "atr_low_quantile", atr_ratio))
-                atr_high_q = float(getattr(row, "atr_high_quantile", atr_ratio))
-                buy_setup = (
-                    bb_width <= signal_config.bb_width_cap
-                    and atr_ratio <= atr_low_q
-                    and (
-                        close_price > float(getattr(row, "bb_upper", close_price))
-                        or (ma_fast > ma_slow > ma_long_model)
-                    )
-                )
-                sell_setup = (
-                    bb_width <= signal_config.bb_width_cap
-                    and atr_ratio >= atr_high_q
-                    and (bearish_cross or regime_ratio < signal_config.regime_filter_buffer)
                 )
             else:
-                buy_setup = (
-                    bullish_cross
-                    and regime_ratio >= signal_config.regime_filter_buffer
-                    and (
-                        atr_ratio < signal_config.atr_low_threshold
-                        or bb_width < signal_config.bb_width_threshold
+                result = scan_single_date(
+                    close_prices, idx, lppl_config.window_range, lppl_config
+                )
+                lppl_signal, signal_strength, position_reason, next_target = (
+                    _map_single_window_signal(
+                        result,
+                        current_target,
+                        signal_config,
+                        lppl_config,
                     )
                 )
-                sell_setup = (
-                    bearish_cross
-                    or (
-                        regime_ratio < signal_config.regime_filter_buffer
-                        and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
-                    )
-                    or atr_ratio > signal_config.atr_high_threshold
-                )
+        if not signal_config.warning_trade_enabled and lppl_signal in (
+            "bubble_warning",
+            "bubble_watch",
+        ):
+            next_target = current_target
+            if lppl_signal == "bubble_warning":
+                position_reason = "观察信号不交易"
+            elif lppl_signal == "bubble_watch":
+                position_reason = "关注信号不交易"
 
-            buy_confirm_count = buy_confirm_count + 1 if buy_setup else 0
-            sell_confirm_count = sell_confirm_count + 1 if sell_setup else 0
-            previous_target = current_target
+        if idx >= warmup:
+            scan_counter += 1
 
-            if (
-                current_target > signal_config.flat_position + 1e-8
-                and signal_config.regime_filter_reduce_enabled
-                and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
-            ):
-                next_target = signal_config.flat_position
-                position_reason = "回撤止损"
-            elif (
-                current_target <= signal_config.flat_position + 1e-8
-                and cooldown_remaining <= 0
-                and buy_confirm_count >= max(1, signal_config.buy_confirm_days)
-            ):
-                next_target = signal_config.full_position
-                position_reason = "收敛策略买入"
-            elif (
-                current_target > signal_config.flat_position + 1e-8
-                and sell_confirm_count >= max(1, signal_config.sell_confirm_days)
-                and holding_bars >= int(signal_config.min_hold_bars)
-            ):
-                next_target = signal_config.flat_position
-                position_reason = "收敛策略卖出"
-            else:
-                next_target = current_target
-                if current_target <= signal_config.flat_position + 1e-8 and cooldown_remaining > 0:
-                    position_reason = f"冷却中({cooldown_remaining}天)"
-                else:
-                    position_reason = "收敛策略持有"
-
-            action = _resolve_action(current_target, next_target)
-            current_target = next_target
-            if (
-                previous_target <= signal_config.flat_position + 1e-8
-                and current_target > signal_config.flat_position + 1e-8
-            ):
-                holding_bars = 0
-                buy_confirm_count = 0
-            elif (
-                previous_target > signal_config.flat_position + 1e-8
-                and current_target <= signal_config.flat_position + 1e-8
-            ):
-                holding_bars = 0
-                sell_confirm_count = 0
-                cooldown_remaining = int(signal_config.cooldown_days)
-
-        elif is_multi_factor:
-            # Multi-factor adaptive model logic
-            bullish_cross = bool(row.bullish_cross)
-            bearish_cross = bool(row.bearish_cross)
-            atr_ratio = float(row.atr_ratio)
-            regime_ma = float(getattr(row, "ma_regime", close_price))
-            regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
-            bb_width = float(getattr(row, "bb_width", 0.10))
-
-            # Compute scores
-            trend_score = 0.0
-            if bullish_cross:
-                trend_score = 1.0
-            elif bearish_cross:
-                trend_score = -1.0
-            if regime_ratio >= 1.02:
-                trend_score += 0.5
-            elif regime_ratio <= 0.98:
-                trend_score -= 0.5
-
-            vol_score = 0.0
-            if atr_ratio < signal_config.atr_low_threshold:
-                vol_score = 1.0
-            elif atr_ratio > signal_config.atr_high_threshold:
-                vol_score = -1.0
-
-            state_score = 0.0
-            if bb_width < signal_config.bb_narrow_threshold:
-                state_score = 0.5
-            elif bb_width > signal_config.bb_wide_threshold:
-                state_score = -0.5
-
-            ma_fast = float(row.ma_fast)
-            ma_slow = float(row.ma_slow)
-            momentum_score = 0.5 if ma_fast > ma_slow else -0.5
-
-            total_score = (
-                trend_score * signal_config.trend_weight
-                + vol_score * signal_config.volatility_weight
-                + state_score * signal_config.market_state_weight
-                + momentum_score * signal_config.momentum_weight
-            )
-
-            risk_drawdown = float(row.risk_price_drawdown)
-
-            # Position sizing based on volatility
-            vol_position_cap = float(signal_config.full_position)
-            if atr_ratio > signal_config.atr_high_threshold:
-                vol_position_cap = 0.5
-            elif atr_ratio > 1.05:
-                vol_position_cap = 0.7
-
-            # Decision logic
-            if (
-                current_target > signal_config.flat_position + 1e-8
-                and signal_config.regime_filter_reduce_enabled
-                and risk_drawdown <= -signal_config.risk_drawdown_stop_threshold
-            ):
-                next_target = signal_config.flat_position
-                position_reason = f"回撤止损(评分={total_score:.2f})"
-            elif total_score >= signal_config.buy_score_threshold and trend_score > 0:
-                next_target = min(signal_config.full_position, vol_position_cap)
-                position_reason = f"多因子买入(评分={total_score:.2f})"
-            elif total_score <= signal_config.sell_score_threshold and trend_score < 0:
-                next_target = signal_config.flat_position
-                position_reason = f"多因子卖出(评分={total_score:.2f})"
-            elif (
-                total_score < 0
-                and total_score > signal_config.sell_score_threshold
-                and current_target > signal_config.flat_position + 1e-8
-            ):
-                next_target = signal_config.half_position
-                position_reason = f"多因子减仓(评分={total_score:.2f})"
-            else:
-                position_reason = f"多因子持有(评分={total_score:.2f})"
-
-            action = _resolve_action(current_target, next_target)
-            current_target = next_target
-
-        else:
-            # Legacy LPPL model
-            if idx >= warmup and scan_counter % scan_step == 0:
-                if use_ensemble:
-                    result = process_single_day_ensemble(
-                        close_prices,
-                        idx,
-                        lppl_config.window_range,
-                        min_r2=lppl_config.r2_threshold,
-                        consensus_threshold=lppl_config.consensus_threshold,
-                        config=lppl_config,
-                    )
-                    lppl_signal, signal_strength, position_reason, next_target = (
-                        _map_ensemble_signal(
-                            result,
-                            current_target,
-                            signal_config,
-                            lppl_config,
-                        )
-                    )
-                else:
-                    result = scan_single_date(
-                        close_prices, idx, lppl_config.window_range, lppl_config
-                    )
-                    lppl_signal, signal_strength, position_reason, next_target = (
-                        _map_single_window_signal(
-                            result,
-                            current_target,
-                            signal_config,
-                            lppl_config,
-                        )
-                    )
-            # warning/watch 不作为交易信号时，保持当前仓位
-            if not signal_config.warning_trade_enabled and lppl_signal in (
-                "bubble_warning",
-                "bubble_watch",
-            ):
-                next_target = current_target
-                if lppl_signal == "bubble_warning":
-                    position_reason = "观察信号不交易"
-                elif lppl_signal == "bubble_watch":
-                    position_reason = "关注信号不交易"
-
-            if idx >= warmup:
-                scan_counter += 1
-
-            action = _resolve_action(current_target, next_target)
-            current_target = next_target
+        action = _resolve_action(current_target, next_target)
+        current_target = next_target
 
         records.append(
             {
@@ -748,6 +905,59 @@ def generate_investment_signals(
         )
 
     return pd.DataFrame(records)
+
+
+def generate_investment_signals(
+    df: pd.DataFrame,
+    symbol: str,
+    signal_config: Optional[InvestmentSignalConfig] = None,
+    lppl_config: Optional[LPPLConfig] = None,
+    use_ensemble: bool = False,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    scan_step: int = 1,
+) -> pd.DataFrame:
+    signal_config = signal_config or InvestmentSignalConfig()
+    lppl_config = lppl_config or LPPLConfig(window_range=[40, 60, 80], n_workers=1)
+    price_df = _normalize_price_frame(df)
+    scan_step = max(1, int(scan_step))
+
+    start_ts = pd.to_datetime(start_date) if start_date else price_df["date"].min()
+    end_ts = pd.to_datetime(end_date) if end_date else price_df["date"].max()
+
+    close_prices = price_df["close"].values
+    warmup = max(lppl_config.window_range)
+
+    is_ma_cross_atr = signal_config.signal_model == "ma_cross_atr_v1"
+    is_ma_cross_atr_long_hold = signal_config.signal_model == "ma_cross_atr_long_hold_v1"
+    is_ma_convergence_v1 = signal_config.signal_model == "ma_convergence_atr_v1"
+    is_ma_convergence_v2 = signal_config.signal_model == "ma_convergence_atr_v2"
+    is_multi_factor = signal_config.signal_model == "multi_factor_adaptive_v1"
+
+    if (
+        is_ma_cross_atr
+        or is_ma_cross_atr_long_hold
+        or is_ma_convergence_v1
+        or is_ma_convergence_v2
+        or is_multi_factor
+    ):
+        _compute_common_indicators(
+            price_df, signal_config, is_ma_cross_atr, is_ma_cross_atr_long_hold,
+            is_ma_convergence_v1, is_ma_convergence_v2, is_multi_factor,
+        )
+
+    if is_ma_cross_atr:
+        return _generate_ma_cross_atr_signals(price_df, symbol, signal_config, start_ts, end_ts)
+    if is_ma_cross_atr_long_hold:
+        return _generate_ma_cross_atr_long_hold_signals(price_df, symbol, signal_config, start_ts, end_ts)
+    if is_ma_convergence_v1:
+        return _generate_ma_convergence_signals(price_df, symbol, signal_config, False, start_ts, end_ts)
+    if is_ma_convergence_v2:
+        return _generate_ma_convergence_signals(price_df, symbol, signal_config, True, start_ts, end_ts)
+    if is_multi_factor:
+        return _generate_multifactor_signals(price_df, symbol, signal_config, start_ts, end_ts)
+
+    return _generate_legacy_signals(price_df, symbol, signal_config, lppl_config, start_ts, end_ts, scan_step, close_prices, warmup, use_ensemble)
 
 
 def calculate_drawdown(nav_series: pd.Series) -> pd.DataFrame:

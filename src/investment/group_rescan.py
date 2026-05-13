@@ -395,21 +395,21 @@ def build_group_report(path: str | Path, plan: GroupRescanPlan, summary_df: pd.D
         lines.extend(["## Top Candidates", "", "无结果。"])
     else:
         lines.extend(["## Top Candidates", ""])
-        for _, row in summary_df.head(10).iterrows():
-            avg_excess = float(row.get("annualized_excess_return", row.get("avg_excess", 0.0)))
-            avg_drawdown = float(row.get("max_drawdown", row.get("avg_drawdown", 0.0)))
+        for row in summary_df.head(10).itertuples():
+            avg_excess = float(getattr(row, "annualized_excess_return", getattr(row, "avg_excess", 0.0)))
+            avg_drawdown = float(getattr(row, "max_drawdown", getattr(row, "avg_drawdown", 0.0)))
             lines.append(
                 (
-                    f"- MA{int(row['fast_ma'])}/{int(row['slow_ma'])} "
-                    f"ATR{int(row['atr_period'])}/{int(row['atr_ma_window'])} "
-                    f"buy={float(row['buy_volatility_cap']):.2f} "
-                    f"sell={float(row['vol_breakout_mult']):.2f} "
-                    f"vol_scale={'on' if bool(row['enable_volatility_scaling']) else 'off'} "
-                    f"tv={float(row['target_volatility']):.2f} "
-                    f"eligible_count={int(row['eligible_count'])}/{int(row['symbol_count'])} "
+                    f"- MA{int(row.fast_ma)}/{int(row.slow_ma)} "
+                    f"ATR{int(row.atr_period)}/{int(row.atr_ma_window)} "
+                    f"buy={float(row.buy_volatility_cap):.2f} "
+                    f"sell={float(row.vol_breakout_mult):.2f} "
+                    f"vol_scale={'on' if bool(row.enable_volatility_scaling) else 'off'} "
+                    f"tv={float(row.target_volatility):.2f} "
+                    f"eligible_count={int(row.eligible_count)}/{int(row.symbol_count)} "
                     f"avg_excess={avg_excess:.2%} "
                     f"avg_dd={avg_drawdown:.2%} "
-                    f"score={float(row['objective_score']):.3f}"
+                    f"score={float(row.objective_score):.3f}"
                 )
             )
 

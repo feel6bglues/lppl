@@ -44,6 +44,7 @@ _SHADOW_MEDIUM_THRESHOLD = 0.4
 _VOL_LOW_THRESHOLD = 0.2
 _CONFIRM_DROP_PCT = 0.05
 _CONFIRM_RISE_PCT = 0.05
+LIMIT_MOVE_LOOKBACK = 20
 
 
 class WyckoffAnalyzer:
@@ -632,10 +633,10 @@ class WyckoffAnalyzer:
         """检测涨跌停与炸板异动"""
         limit_moves = []
 
-        recent = df.tail(20)
+        recent = df.tail(LIMIT_MOVE_LOOKBACK)
 
-        for idx, row in recent.iterrows():
-            pct_change = (row["close"] - row["open"]) / row["open"]
+        for row in recent.itertuples():
+            pct_change = (row.close - row.open) / row.open
             is_limit_up = pct_change > 0.095
             is_limit_down = pct_change < -0.095
 

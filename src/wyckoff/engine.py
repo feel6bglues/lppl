@@ -448,9 +448,9 @@ class WyckoffEngine:
                     phenomena.append("下边界供给枯竭")
 
         # 高位炸板遗迹
-        for _, row in recent_20.iterrows():
-            pct = (row["close"] - row["open"]) / row["open"] if row["open"] > 0 else 0
-            if pct > 0.09 and row["high"] > row["close"] * 1.02:
+        for row in recent_20.itertuples():
+            pct = (row.close - row.open) / row.open if row.open > 0 else 0
+            if pct > 0.09 and row.high > row.close * 1.02:
                 distribution_evidence += 0.3
                 phenomena.append("高位炸板遗迹")
                 break
@@ -518,19 +518,19 @@ class WyckoffEngine:
             low_bound = step1.boundary_lower
             recent_20 = df.tail(20)
 
-            for i, row in recent_20.iterrows():
+            for row in recent_20.itertuples():
                 # 使用最佳版本阈值(a438a32)
                 # 1. 允许3%的误差
                 # 2. 收回到边界附近（97%）
-                if row["low"] < low_bound * 1.03:  # 允许3%的误差
+                if row.low < low_bound * 1.03:  # 允许3%的误差
                     # 检查是否快速收回
-                    if row["close"] >= low_bound * 0.97:  # 收回到边界附近
+                    if row.close >= low_bound * 0.97:  # 收回到边界附近
                         spring_detected = True
-                        spring_date = str(row["date"])
-                        spring_low_price = float(row["low"])
+                        spring_date = str(row.date)
+                        spring_low_price = float(row.low)
 
                         # 量能质量评估
-                        vol_level = self.rules.rule1_relative_volume(row["volume"], df["volume"])
+                        vol_level = self.rules.rule1_relative_volume(row.volume, df["volume"])
                         spring_volume = vol_level
 
                         if vol_level in ("地量", "萎缩"):
@@ -539,7 +539,7 @@ class WyckoffEngine:
                             spring_quality = "二级(放量需ST)"
 
                         # LPS 验证（规则6）- 检查后续K线
-                        post_spring_idx = df.index.get_loc(i)
+                        post_spring_idx = df.index.get_loc(row.Index)
                         if post_spring_idx < len(df) - 3:
                             post_spring_df = df.iloc[post_spring_idx + 1 :]
                             lps_result = self.rules.rule6_spring_validation(
@@ -557,11 +557,11 @@ class WyckoffEngine:
                 # 2. 量能配合条件放宽
                 if step1.boundary_upper > 0:
                     recent_5 = df.tail(5)
-                    for _, row in recent_5.iterrows():
-                        if row["close"] > step1.boundary_upper * 0.95:
+                    for row in recent_5.itertuples():
+                        if row.close > step1.boundary_upper * 0.95:
                             # 检查量能配合（放宽条件）
                             vol_level = self.rules.rule1_relative_volume(
-                                row["volume"], df["volume"]
+                                row.volume, df["volume"]
                             )
                             if vol_level in (
                                 "高于平均",
@@ -576,8 +576,8 @@ class WyckoffEngine:
             high_bound = step1.boundary_upper
             recent_10 = df.tail(10)
 
-            for _, row in recent_10.iterrows():
-                if row["high"] > high_bound * 1.02 and row["close"] <= high_bound * 1.01:
+            for row in recent_10.itertuples():
+                if row.high > high_bound * 1.02 and row.close <= high_bound * 1.01:
                     utad_detected = True
                     break
 
@@ -1092,16 +1092,16 @@ class WyckoffEngine:
 
         # 检查是否有Spring信号
         has_spring = False
-        for _, row in recent_20.iterrows():
-            if row["low"] < boundary_lower * 1.03 and row["close"] >= boundary_lower * 0.97:
+        for row in recent_20.itertuples():
+            if row.low < boundary_lower * 1.03 and row.close >= boundary_lower * 0.97:
                 has_spring = True
                 break
 
         # 检查是否有SOS信号
         has_sos = False
-        for _, row in recent_20.tail(5).iterrows():
-            if row["close"] > boundary_upper * 0.98:
-                vol_level = self.rules.rule1_relative_volume(row["volume"], df["volume"])
+        for row in recent_20.tail(5).itertuples():
+            if row.close > boundary_upper * 0.98:
+                vol_level = self.rules.rule1_relative_volume(row.volume, df["volume"])
                 if vol_level in ("高于平均", "天量"):
                     has_sos = True
                     break
@@ -1113,9 +1113,9 @@ class WyckoffEngine:
             return "Phase C"  # Spring = Phase C
         elif relative_position <= 0.40:
             # 检查是否有SC信号
-            for _, row in recent_20.iterrows():
-                if row["low"] < boundary_lower * 1.05:
-                    vol_level = self.rules.rule1_relative_volume(row["volume"], df["volume"])
+            for row in recent_20.itertuples():
+                if row.low < boundary_lower * 1.05:
+                    vol_level = self.rules.rule1_relative_volume(row.volume, df["volume"])
                     if vol_level in ("天量", "高于平均"):
                         return "Phase A"  # SC = Phase A
             return "Phase B"  # 区间下部但无SC
@@ -1147,8 +1147,8 @@ class WyckoffEngine:
 
         # 检查是否有UTAD信号
         has_utad = False
-        for _, row in recent_20.iterrows():
-            if row["high"] > boundary_upper * 1.02 and row["close"] <= boundary_upper * 1.01:
+        for row in recent_20.itertuples():
+            if row.high > boundary_upper * 1.02 and row.close <= boundary_upper * 1.01:
                 has_utad = True
                 break
 
@@ -1277,16 +1277,16 @@ class WyckoffEngine:
         limit_moves = []
         recent = df.tail(20)
 
-        for idx, row in recent.iterrows():
-            pct_change = (row["close"] - row["open"]) / row["open"]
+        for row in recent.itertuples():
+            pct_change = (row.close - row.open) / row.open
             is_limit_up = pct_change > 0.095
             is_limit_down = pct_change < -0.095
 
             if not is_limit_up and not is_limit_down:
                 continue
 
-            high_change = (row["high"] - row["open"]) / row["open"]
-            low_change = (row["low"] - row["open"]) / row["open"]
+            high_change = (row.high - row.open) / row.open
+            low_change = (row.low - row.open) / row.open
 
             if is_limit_up:
                 if high_change < 0.095:

@@ -148,11 +148,11 @@ class V3Rules:
         # Spring作废检查：放量再创新低
         # 检查Spring后是否有放量跌破Spring极低点的情况
         spring_invalidated = False
-        for _, row in post_spring_df.iterrows():
-            if row["low"] < spring_low * 0.99:  # 跌破Spring极低点
+        for row in post_spring_df.itertuples():
+            if row.low < spring_low * 0.99:  # 跌破Spring极低点
                 # 检查是否放量
                 avg_vol = post_spring_df["volume"].mean()
-                if row["volume"] > avg_vol * 1.5:  # 放量
+                if row.volume > avg_vol * 1.5:  # 放量
                     spring_invalidated = True
                     break
 

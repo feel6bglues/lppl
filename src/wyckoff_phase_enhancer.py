@@ -148,7 +148,21 @@ def enhance_phase_detection(
             phase_in_context = f"熊市{phase}: 不操作"
             score = 0.0
 
-    elif market_dir == "bull":
+        is_actionable = enhanced_action in ("轻仓试探", "做多")
+        return EnhancedSignal(
+            raw_phase=phase,
+            raw_direction=direction,
+            raw_confidence=confidence,
+            raw_mtf=mtf_alignment,
+            market_direction=market_dir,
+            market_confidence=market_breadth.confidence,
+            enhanced_action=enhanced_action,
+            enhanced_score=round(score, 3),
+            is_actionable=is_actionable,
+            phase_in_context=phase_in_context,
+        )
+
+    if market_dir == "bull":
         if phase == "markdown":
             if mtf_alignment in ("fully_aligned", "higher_timeframe_aligned") and confidence in (
                 "D",
@@ -174,24 +188,37 @@ def enhance_phase_detection(
             phase_in_context = f"牛市{phase}: 观望"
             score = 0.3
 
-    else:  # neutral
-        if phase == "markdown":
-            if mtf_alignment == "fully_aligned" and confidence in ("D", "B"):
-                enhanced_action = "轻仓试探"
-                phase_in_context = "中性市场markdown: 条件性做多"
-                score = 0.5
-            else:
-                enhanced_action = "空仓观望"
-                phase_in_context = "中性市场markdown: 观望"
-                score = 0.1
-        elif phase == "markup":
-            enhanced_action = "空仓观望"
-            phase_in_context = "中性市场markup: 不操作"
-            score = 0.0
+        is_actionable = enhanced_action in ("轻仓试探", "做多")
+        return EnhancedSignal(
+            raw_phase=phase,
+            raw_direction=direction,
+            raw_confidence=confidence,
+            raw_mtf=mtf_alignment,
+            market_direction=market_dir,
+            market_confidence=market_breadth.confidence,
+            enhanced_action=enhanced_action,
+            enhanced_score=round(score, 3),
+            is_actionable=is_actionable,
+            phase_in_context=phase_in_context,
+        )
+
+    if phase == "markdown":
+        if mtf_alignment == "fully_aligned" and confidence in ("D", "B"):
+            enhanced_action = "轻仓试探"
+            phase_in_context = "中性市场markdown: 条件性做多"
+            score = 0.5
         else:
             enhanced_action = "空仓观望"
-            phase_in_context = f"中性市场{phase}: 观望"
+            phase_in_context = "中性市场markdown: 观望"
             score = 0.1
+    elif phase == "markup":
+        enhanced_action = "空仓观望"
+        phase_in_context = "中性市场markup: 不操作"
+        score = 0.0
+    else:
+        enhanced_action = "空仓观望"
+        phase_in_context = f"中性市场{phase}: 观望"
+        score = 0.1
 
     is_actionable = enhanced_action in ("轻仓试探", "做多")
 

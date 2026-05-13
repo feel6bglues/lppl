@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import fcntl
 import logging
 import os
 import re
@@ -312,7 +313,12 @@ class DataManager:
                 logger.error(f"Combined data validation failed for {symbol}: {msg}")
                 return False
 
-            combined_df.to_parquet(file_path, index=False)
+            with open(file_path, "a") as flock_f:
+                fcntl.flock(flock_f.fileno(), fcntl.LOCK_EX)
+                try:
+                    combined_df.to_parquet(file_path, index=False)
+                finally:
+                    fcntl.flock(flock_f.fileno(), fcntl.LOCK_UN)
             logger.info(f"Data appended for {symbol}, total rows: {len(combined_df)}")
             return True
         except Exception as e:

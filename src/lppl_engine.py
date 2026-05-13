@@ -205,6 +205,9 @@ def fit_single_window(
     if config is None:
         config = DEFAULT_CONFIG
 
+    if close_prices is None or len(close_prices) == 0:
+        raise ValueError("close_prices cannot be empty")
+
     precheck = precheck_fit_input(close_prices, window_size)
     if precheck is not None:
         track_fit_failure(precheck, context=f"window={window_size}")
@@ -600,12 +603,12 @@ def calculate_trend_scores(
     # 如果没有is_danger列，根据参数计算
     if "is_danger" not in df.columns:
         is_danger_list = []
-        for _, row in df.iterrows():
+        for row in df.itertuples():
             is_d = (
-                config.m_bounds[0] < row["m"] < config.m_bounds[1]
-                and config.w_bounds[0] < row["w"] < config.w_bounds[1]
-                and row["days_to_crash"] < config.danger_days
-                and row["r_squared"] > config.r2_threshold
+                config.m_bounds[0] < row.m < config.m_bounds[1]
+                and config.w_bounds[0] < row.w < config.w_bounds[1]
+                and row.days_to_crash < config.danger_days
+                and row.r_squared > config.r2_threshold
             )
             is_danger_list.append(is_d)
         df["is_danger"] = is_danger_list
@@ -613,11 +616,11 @@ def calculate_trend_scores(
     # 如果没有is_warning列，根据参数计算
     if "is_warning" not in df.columns:
         is_warning_list = []
-        for _, row in df.iterrows():
-            phase = classify_top_phase(float(row["days_to_crash"]), float(row["r_squared"]), config)
+        for row in df.itertuples():
+            phase = classify_top_phase(float(row.days_to_crash), float(row.r_squared), config)
             is_w = (
-                config.m_bounds[0] < row["m"] < config.m_bounds[1]
-                and config.w_bounds[0] < row["w"] < config.w_bounds[1]
+                config.m_bounds[0] < row.m < config.m_bounds[1]
+                and config.w_bounds[0] < row.w < config.w_bounds[1]
                 and phase in {"watch", "warning", "danger"}
             )
             is_warning_list.append(is_w)

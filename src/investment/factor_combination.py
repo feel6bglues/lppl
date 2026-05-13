@@ -466,11 +466,11 @@ def batch_evaluate_from_df(
     """批量评估DataFrame中每行的因子组合"""
     engine = FactorCombinationEngine()
     outputs = []
-    for _, row in df.iterrows():
-        regime = Regime.from_str(str(row.get(regime_col, "range")))
-        phase = Phase.from_str(str(row.get(phase_col, "unknown")))
-        alignment = MTFAlignment.from_str(str(row.get(alignment_col, "mixed")))
-        confidence = Confidence.from_str(str(row.get(confidence_col, "D")))
+    for row in df.itertuples():
+        regime = Regime.from_str(str(getattr(row, regime_col, "range")))
+        phase = Phase.from_str(str(getattr(row, phase_col, "unknown")))
+        alignment = MTFAlignment.from_str(str(getattr(row, alignment_col, "mixed")))
+        confidence = Confidence.from_str(str(getattr(row, confidence_col, "D")))
         res = engine.evaluate(regime, phase, alignment, confidence, holding_days)
         outputs.append(res.to_dict())
     return pd.DataFrame(outputs)

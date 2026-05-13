@@ -71,7 +71,7 @@ def generate_investment_signals(
     warmup = max(lppl_config.window_range)
     scan_counter = 0
 
-    for idx, row in price_df.iterrows():
+    for idx, row in enumerate(price_df.itertuples()):
         if not output_mask.iloc[idx]:
             continue
 

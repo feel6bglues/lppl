@@ -130,17 +130,17 @@ def generate_signals(
 
     records = []
 
-    for idx, row in price_df.iterrows():
-        if not output_mask.iloc[idx]:
+    for row in price_df.itertuples():
+        if not output_mask.iloc[row.Index]:
             continue
 
-        close_price = float(row["close"])
+        close_price = float(row.close)
 
         # 获取信号
-        bullish_cross = bool(row.get("bullish_cross", False))
-        bearish_cross = bool(row.get("bearish_cross", False))
-        atr_ratio = float(row.get("atr_ratio", 1.0))
-        regime_ma = float(row.get("ma_regime", close_price))
+        bullish_cross = bool(getattr(row, "bullish_cross", False))
+        bearish_cross = bool(getattr(row, "bearish_cross", False))
+        atr_ratio = float(getattr(row, "atr_ratio", 1.0))
+        regime_ma = float(getattr(row, "ma_regime", close_price))
         regime_ratio = close_price / regime_ma if regime_ma > 0 else 1.0
         drawdown = float(row.get("drawdown", 0.0))
 

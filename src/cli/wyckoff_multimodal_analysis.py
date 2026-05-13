@@ -151,8 +151,8 @@ def parse_args():
 
     # LLM 配置 (可选)
     parser.add_argument("--llm-provider", type=str, help="LLM 提供商 (可选)")
-    parser.add_argument("--llm-api-key", type=str, help="LLM API Key (可选)")
     parser.add_argument("--llm-model", type=str, help="LLM 模型 (可选)")
+    # NOTE: LLM API Key 只从 WYCKOFF_LLM_API_KEY 环境变量读取，不支持 CLI 参数
 
     # 其他配置
     parser.add_argument("--config", type=str, help="YAML 配置文件路径")
@@ -486,10 +486,9 @@ def main():
     # 覆盖 LLM 配置
     if args.llm_provider:
         config.llm_provider = args.llm_provider
-    if args.llm_api_key:
-        config.llm_api_key = args.llm_api_key
     if args.llm_model:
         config.llm_model = args.llm_model
+    # NOTE: LLM API Key 只从 WYCKOFF_LLM_API_KEY 环境变量读取
 
     # 确定输出目录
     if args.symbol:
