@@ -6,6 +6,7 @@
 """
 
 import logging
+import os
 import re
 import struct
 from pathlib import Path
