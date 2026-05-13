@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from src.parallel import get_optimal_workers, worker_init
+from src.wyckoff.trading import calculate_wyckoff_return, calculate_wyckoff_decay_returns
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -217,17 +218,27 @@ def process_single_stock(args: tuple) -> List[Dict]:
             
             report = engine.analyze(available_data, symbol=symbol, period="日线", multi_timeframe=True)
             
-            future_return = calculate_future_return(df, spec["as_of_date"], days=60)
+            # 提取Wyckoff交易计划参数
+            rr = report.risk_reward
+            wyckoff_entry = rr.entry_price if rr and rr.entry_price and rr.entry_price > 0 else None
+            stop_loss = rr.stop_loss if rr and rr.stop_loss and rr.stop_loss > 0 else None
+            first_target = rr.first_target if rr and rr.first_target and rr.first_target > 0 else None
+            signal_type = report.signal.signal_type
+            is_no_trade = signal_type == "no_signal" or report.trading_plan.direction == "空仓观望"
+            
+            future_return = calculate_wyckoff_return(df, spec["as_of_date"], days=60,
+                wyckoff_entry=wyckoff_entry, stop_loss=stop_loss, first_target=first_target)
             if future_return is None:
                 continue
             
             in_bubble = is_in_bubble_period(spec["as_of_date"], bubble_periods)
             market_regime = classify_market_regime(index_data, spec["as_of_date"]) if index_data is not None else "unknown"
             
-            # 计算衰减收益
+            # 计算衰减收益（使用Wyckoff交易逻辑）
             decay_returns = {}
             for days in [10, 20, 30, 60, 90, 120]:
-                ret = calculate_future_return(df, spec["as_of_date"], days)
+                ret = calculate_wyckoff_return(df, spec["as_of_date"], days,
+                    wyckoff_entry=wyckoff_entry, stop_loss=stop_loss, first_target=first_target)
                 decay_returns[f"return_{days}d"] = ret["return_pct"] if ret else None
             
             results.append({
@@ -240,8 +251,13 @@ def process_single_stock(args: tuple) -> List[Dict]:
                 "phase": report.structure.phase.value,
                 "direction": report.trading_plan.direction,
                 "confidence": report.trading_plan.confidence.value,
-                "signal_type": report.signal.signal_type,
+                "signal_type": signal_type,
+                "is_no_trade": is_no_trade,
                 "mtf_alignment": report.multi_timeframe.alignment if report.multi_timeframe else "",
+                "wyckoff_entry_price": round(wyckoff_entry, 3) if wyckoff_entry else None,
+                "stop_loss": round(stop_loss, 3) if stop_loss else None,
+                "first_target": round(first_target, 3) if first_target else None,
+                "exit_reason": future_return.get("exit_reason", "hold_to_end"),
                 "in_bubble": in_bubble,
                 "market_regime": market_regime,
                 "future_60d_return": future_return["return_pct"],

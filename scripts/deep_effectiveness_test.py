@@ -39,6 +39,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.parallel import get_optimal_workers, worker_init
+from src.wyckoff.trading import calculate_wyckoff_return, calculate_wyckoff_decay_returns
 
 
 # ============================================================================
@@ -299,11 +300,27 @@ def process_single_stock_paired(args: tuple) -> List[Dict]:
             # 运行Wyckoff分析
             report = engine.analyze(available_data, symbol=symbol, period="日线", multi_timeframe=True)
             
-            # 计算衰减收益
-            decay_returns = calculate_decay_returns(df, spec.as_of_date, config.decay_days)
+            # 提取Wyckoff交易计划参数
+            rr = report.risk_reward
+            wyckoff_entry = rr.entry_price if rr and rr.entry_price and rr.entry_price > 0 else None
+            stop_loss = rr.stop_loss if rr and rr.stop_loss and rr.stop_loss > 0 else None
+            first_target = rr.first_target if rr and rr.first_target and rr.first_target > 0 else None
             
-            # 60天收益（主要指标）
-            future_return = calculate_future_return(df, spec.as_of_date, days=60)
+            # 按Wyckoff引擎规则过滤No Trade Zone
+            signal_type = report.signal.signal_type
+            is_no_trade = signal_type == "no_signal" or report.trading_plan.direction == "空仓观望"
+            
+            # 计算衰减收益（使用Wyckoff交易逻辑）
+            decay_returns = calculate_wyckoff_decay_returns(
+                df, spec.as_of_date, config.decay_days,
+                wyckoff_entry=wyckoff_entry, stop_loss=stop_loss, first_target=first_target
+            )
+            
+            # 60天收益（主要指标，使用Wyckoff交易逻辑）
+            future_return = calculate_wyckoff_return(
+                df, spec.as_of_date, days=60,
+                wyckoff_entry=wyckoff_entry, stop_loss=stop_loss, first_target=first_target
+            )
             if future_return is None:
                 continue
             
@@ -313,8 +330,11 @@ def process_single_stock_paired(args: tuple) -> List[Dict]:
             # 市场状态
             market_regime = classify_market_regime(index_data, spec.as_of_date) if index_data is not None else "unknown"
             
-            # 月度收益（用于月度分析）
-            monthly_return = calculate_future_return(df, spec.as_of_date, days=20)
+            # 月度收益（使用Wyckoff交易逻辑）
+            monthly_return = calculate_wyckoff_return(
+                df, spec.as_of_date, days=20,
+                wyckoff_entry=wyckoff_entry, stop_loss=stop_loss, first_target=first_target
+            )
             
             results.append({
                 "cycle_id": spec.cycle_id,
@@ -326,8 +346,15 @@ def process_single_stock_paired(args: tuple) -> List[Dict]:
                 "phase": report.structure.phase.value,
                 "direction": report.trading_plan.direction,
                 "confidence": report.trading_plan.confidence.value,
-                "signal_type": report.signal.signal_type,
+                "signal_type": signal_type,
+                "is_no_trade": is_no_trade,
                 "mtf_alignment": report.multi_timeframe.alignment if report.multi_timeframe else "",
+                "wyckoff_entry_price": round(wyckoff_entry, 3) if wyckoff_entry else None,
+                "stop_loss": round(stop_loss, 3) if stop_loss else None,
+                "first_target": round(first_target, 3) if first_target else None,
+                "exit_reason": future_return.get("exit_reason", "hold_to_end"),
+                "hit_stop": future_return.get("hit_stop", False),
+                "hit_target": future_return.get("hit_target", False),
                 "in_bubble": in_bubble,
                 "market_regime": market_regime,
                 "future_60d_return": future_return["return_pct"],
@@ -668,6 +695,24 @@ def perform_comprehensive_analysis(all_results: List[Dict], config: DeepTestConf
         "sharpe_ratio": round(np.mean(overall_returns) / np.std(overall_returns), 2) if np.std(overall_returns) > 0 else 0,
     }
     
+    # No Trade Zone统计
+    if "is_no_trade" in df.columns:
+        n_no_trade = int(df["is_no_trade"].sum())
+        n_tradeable = len(df) - n_no_trade
+        overall_stats["n_no_trade"] = n_no_trade
+        overall_stats["n_tradeable"] = n_tradeable
+        overall_stats["no_trade_rate"] = round(n_no_trade / len(df) * 100, 1) if len(df) > 0 else 0
+        
+        # 可交易样本的收益统计
+        tradeable = df[~df["is_no_trade"]]
+        if len(tradeable) >= 10:
+            t_returns = tradeable["future_60d_return"].values
+            t_mean, t_ci_lower, t_ci_upper = bootstrap_confidence_interval(t_returns)
+            overall_stats["tradeable_mean_return"] = round(t_mean, 2)
+            overall_stats["tradeable_ci_lower"] = round(t_ci_lower, 2)
+            overall_stats["tradeable_ci_upper"] = round(t_ci_upper, 2)
+            overall_stats["tradeable_win_rate"] = round(sum(t_returns > 0) / len(t_returns) * 100, 1)
+    
     # 2. 阶段分析（带置信区间）
     phase_analysis = {}
     for phase in df["phase"].unique():
@@ -784,10 +829,29 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
         "",
     ])
     
+    # No Trade Zone过滤统计
+    if "n_no_trade" in overall:
+        md_lines.extend([
+            "## 2. No Trade Zone过滤效果",
+            "",
+            "| 指标 | 值 |",
+            "|---|---|",
+            f"| 总样本 | {overall['n_samples']} |",
+            f"| No Trade Zone（被过滤） | {overall['n_no_trade']} ({overall['no_trade_rate']}%) |",
+            f"| 可交易样本 | {overall['n_tradeable']} |",
+        ])
+        if "tradeable_mean_return" in overall:
+            md_lines.extend([
+                f"| 可交易平均收益 | {overall['tradeable_mean_return']:.2f}% |",
+                f"| 可交易95%CI | [{overall['tradeable_ci_lower']:.2f}%, {overall['tradeable_ci_upper']:.2f}%] |",
+                f"| 可交易胜率 | {overall['tradeable_win_rate']:.1f}% |",
+            ])
+        md_lines.append("")
+    
     # 种子稳定性
     seed_stab = analysis["seed_stability"]
     md_lines.extend([
-        "## 2. 多种子稳定性分析",
+        "## 3. 多种子稳定性分析",
         "",
         "| 指标 | 值 |",
         "|---|---|",
@@ -802,7 +866,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     
     # 阶段分析
     md_lines.extend([
-        "## 3. 阶段有效性分析（带95%置信区间）",
+        "## 4. 阶段有效性分析（带95%置信区间）",
         "",
         "| 阶段 | 样本数 | 平均收益 | 95% CI | 胜率 | 中位收益 |",
         "|---|---:|---:|---:|---:|---:|",
@@ -818,7 +882,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     # LPPL过滤贡献
     lppl = analysis["lppl_contribution"]
     md_lines.extend([
-        "## 4. LPPL泡沫过滤贡献分析",
+        "## 5. LPPL泡沫过滤贡献分析",
         "",
         "| 状态 | 样本数 | 平均收益 | 胜率 |",
         "|---|---:|---:|---:|",
@@ -837,7 +901,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     
     # 衰减曲线
     md_lines.extend([
-        "## 5. 收益衰减曲线分析",
+        "## 6. 收益衰减曲线分析",
         "",
         "| 持有天数 | 平均收益 | 95% CI | 胜率 | 中位收益 |",
         "|---:|---:|---:|---:|---:|",
@@ -852,7 +916,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     
     # 市场状态分析
     md_lines.extend([
-        "## 6. 市场状态条件分析",
+        "## 7. 市场状态条件分析",
         "",
         "| 市场状态 | 样本数 | 平均收益 | 95% CI | 胜率 |",
         "|---|---:|---:|---:|---:|",
@@ -868,7 +932,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     
     # 阶段×市场状态
     md_lines.extend([
-        "## 7. 阶段×市场状态交叉分析",
+        "## 8. 阶段×市场状态交叉分析",
         "",
     ])
     for phase, regimes in analysis["phase_regime_analysis"].items():
@@ -889,7 +953,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     
     # 崩盘检测
     md_lines.extend([
-        "## 8. 崩盘检测敏感性分析",
+        "## 9. 崩盘检测敏感性分析",
         "",
         "| 崩盘事件 | 时间段 | 信号数 | 平均收益 | 胜率 | Markdown比例 |",
         "|---|---|---:|---:|---:|---:|",
@@ -907,7 +971,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     if "consistency_summary" in monthly and monthly["consistency_summary"]:
         cs = monthly["consistency_summary"]
         md_lines.extend([
-            "## 9. 月度一致性分析",
+            "## 10. 月度一致性分析",
             "",
             "| 指标 | 值 |",
             "|---|---|",
@@ -921,7 +985,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     
     # 多时间框架
     md_lines.extend([
-        "## 10. 多时间框架对齐分析",
+        "## 11. 多时间框架对齐分析",
         "",
         "| 对齐类型 | 样本数 | 平均收益 | 95% CI | 胜率 |",
         "|---|---:|---:|---:|---:|",

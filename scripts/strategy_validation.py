@@ -44,6 +44,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.parallel import get_optimal_workers, worker_init
+from src.wyckoff.trading import calculate_wyckoff_return
 
 
 # ============================================================================
@@ -220,29 +221,27 @@ def generate_cycle_specs(n_cycles: int, seed: int, bubble_periods: List[Tuple[st
     return sorted(specs, key=lambda x: x.as_of_date)
 
 
-def calculate_multi_period_return(df: pd.DataFrame, as_of_date: str, periods: List[int]) -> Dict[str, Optional[float]]:
-    """计算多个持有期的收益"""
+def calculate_multi_period_return(df: pd.DataFrame, as_of_date: str, periods: List[int],
+                                   wyckoff_entry: Optional[float] = None,
+                                   stop_loss: Optional[float] = None,
+                                   first_target: Optional[float] = None) -> Dict[str, Optional[float]]:
+    """计算多个持有期的收益（支持Wyckoff交易逻辑）"""
     as_of = pd.Timestamp(as_of_date)
     results = {}
     
     for days in periods:
-        future_data = df[df["date"] > as_of].head(days)
-        if len(future_data) < days * 0.8:
+        ret = calculate_wyckoff_return(df, as_of_date, days,
+                                       wyckoff_entry=wyckoff_entry,
+                                       stop_loss=stop_loss,
+                                       first_target=first_target)
+        if ret is None:
             results[f"return_{days}d"] = None
-            continue
-        
-        entry_price = float(df[df["date"] <= as_of].iloc[-1]["close"])
-        future_close = float(future_data.iloc[-1]["close"])
-        future_high = float(future_data["high"].max())
-        future_low = float(future_data["low"].min())
-        
-        return_pct = (future_close - entry_price) / entry_price * 100
-        max_gain_pct = (future_high - entry_price) / entry_price * 100
-        max_drawdown_pct = (entry_price - future_low) / entry_price * 100
-        
-        results[f"return_{days}d"] = round(return_pct, 2)
-        results[f"max_gain_{days}d"] = round(max_gain_pct, 2)
-        results[f"max_drawdown_{days}d"] = round(max_drawdown_pct, 2)
+            results[f"max_gain_{days}d"] = None
+            results[f"max_drawdown_{days}d"] = None
+        else:
+            results[f"return_{days}d"] = ret["return_pct"]
+            results[f"max_gain_{days}d"] = ret["max_gain_pct"]
+            results[f"max_drawdown_{days}d"] = ret["max_drawdown_pct"]
     
     return results
 
@@ -289,6 +288,16 @@ def process_single_stock(args: tuple) -> List[Dict]:
             # 运行Wyckoff分析
             report = engine.analyze(available_data, symbol=symbol, period="日线", multi_timeframe=True)
             
+            # 提取Wyckoff交易计划参数
+            rr = report.risk_reward
+            wyckoff_entry = rr.entry_price if rr and rr.entry_price and rr.entry_price > 0 else None
+            stop_loss = rr.stop_loss if rr and rr.stop_loss and rr.stop_loss > 0 else None
+            first_target = rr.first_target if rr and rr.first_target and rr.first_target > 0 else None
+            
+            # No Trade Zone过滤
+            signal_type = report.signal.signal_type
+            is_no_trade = signal_type == "no_signal" or report.trading_plan.direction == "空仓观望"
+            
             # 获取阶段和对齐信息
             phase = report.structure.phase.value
             alignment = report.multi_timeframe.alignment if report.multi_timeframe else ""
@@ -296,11 +305,16 @@ def process_single_stock(args: tuple) -> List[Dict]:
             # 分类市场状态
             market_regime = classify_market_regime(index_data, spec.as_of_date) if index_data is not None else "unknown"
             
-            # 计算多个持有期收益
-            period_returns = calculate_multi_period_return(df, spec.as_of_date, config.hold_periods)
+            # 计算多个持有期收益（使用Wyckoff交易逻辑）
+            period_returns = calculate_multi_period_return(
+                df, spec.as_of_date, config.hold_periods,
+                wyckoff_entry=wyckoff_entry, stop_loss=stop_loss, first_target=first_target
+            )
+            if period_returns.get(f"return_{config.hold_periods[0]}d") is None:
+                continue
             
             # 检查是否满足过滤条件
-            phase_pass = phase in config.target_phases
+            phase_pass = phase in config.target_phases and not is_no_trade
             regime_pass = market_regime in config.target_regimes
             alignment_pass = alignment == config.target_alignment
             
@@ -321,12 +335,17 @@ def process_single_stock(args: tuple) -> List[Dict]:
                 "symbol": symbol,
                 "name": name,
                 "phase": phase,
+                "signal_type": signal_type,
+                "is_no_trade": is_no_trade,
                 "alignment": alignment,
                 "market_regime": market_regime,
                 "phase_pass": phase_pass,
                 "regime_pass": regime_pass,
                 "alignment_pass": alignment_pass,
                 "all_pass": phase_pass and regime_pass and alignment_pass,
+                "wyckoff_entry_price": round(wyckoff_entry, 3) if wyckoff_entry else None,
+                "stop_loss": round(stop_loss, 3) if stop_loss else None,
+                "first_target": round(first_target, 3) if first_target else None,
                 "benchmark_60d_return": benchmark_return,
                 **period_returns,
             })
