@@ -72,10 +72,13 @@ def get_regime(csi,d):
     c=float(h.iloc[-1]["close"]); m120=float(h.tail(120)["close"].mean()); m60=float(h.tail(60)["close"].mean())
     if c>m120*1.02 and m60>m120: return "bull"
     if c<m120*0.98: return "bear"
-    return "range"
-
 def calc_atr(s,p=20):
     if len(s)<p+1: return 0.0
+    tr_vals=[]
+    for i in range(1,min(p+1,len(s))):
+        hi=float(s.iloc[-i]["high"]); lo=float(s.iloc[-i]["low"]); pc=float(s.iloc[-i-1]["close"])
+        tr_vals.append(max(hi-lo,abs(hi-pc),abs(lo-pc)))
+    return float(np.mean(tr_vals)) if tr_vals else 0.0
     hi,lo=s["high"].values[-p:],s["low"].values[-p:]
     return float(np.mean([hi[i]-lo[i] for i in range(p)]))
 
@@ -214,6 +217,7 @@ def compute_stats(sub_df):
             "avg_days":round(ad,1),"sharpe":round(ann_sharpe(rets,ad),3)}
 
 def run():
+    np.random.seed(42)
     print("="*70)
     print("三策略组合验证 v6: Wyckoff + MA5/20 + Short-term Reversal (2018-2026)")
     print("="*70)
@@ -322,7 +326,7 @@ def run():
 
     jp=OUTPUT_DIR/"v6_results.json"
     with jp.open("w",encoding="utf-8") as f:
-        json.dump({"config":{"n_stocks":len(stocks),"n_windows":N_WINDOWS,"mc_sims":MC_SIMS},
+        json.dump({"config":{"n_stocks":len(stocks),"n_windows":N_WINDOWS,"mc_sims":MC_SIMS,"mc_seed":42,"window_seed":42,"min_year":2020,"max_year":2025,"with_costs":True,"cost_model":{"buy_pct":0.075,"sell_pct":0.175,"round_trip_pct":0.25,"description":"佣金万2.5+印花税千1+滑点万5"}},
                    "strategies":results,"correlations":corr_data,
                    "portfolio":{"three_strat_sharpe":round(combo,3)},"monte_carlo":mc},
                   f,ensure_ascii=False,indent=2,default=str)

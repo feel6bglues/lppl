@@ -76,8 +76,13 @@ def get_regime(csi, d):
 
 def calc_atr(s, p=20):
     if len(s) < p + 1: return 0.0
-    hi, lo = s["high"].values[-p:], s["low"].values[-p:]
-    return float(np.mean([hi[i] - lo[i] for i in range(p)]))
+    tr_vals = []
+    for i in range(1, min(p + 1, len(s))):
+        hi = float(s.iloc[-i]["high"])
+        lo = float(s.iloc[-i]["low"])
+        pc = float(s.iloc[-i - 1]["close"])
+        tr_vals.append(max(hi - lo, abs(hi - pc), abs(lo - pc)))
+    return float(np.mean(tr_vals)) if tr_vals else 0.0
 
 
 # ===== S1: Wyckoff v2+P3 =====
@@ -326,7 +331,7 @@ def run():
     jp = OUTPUT_DIR / "dual_results.json"
     with jp.open("w", encoding="utf-8") as f:
         json.dump({
-            "config": {"n_stocks": len(stocks), "n_windows": N_WINDOWS, "mc_sims": MC_SIMS,
+            "config": {"n_stocks": len(stocks), "n_windows": N_WINDOWS, "mc_sims": MC_SIMS, "mc_seed": 42, "window_seed": 42, "min_year": 2020, "max_year": 2025, "with_costs": True, "cost_model": {"buy_pct": 0.075, "sell_pct": 0.175, "round_trip_pct": 0.25, "description": "佣金万2.5+印花税千1+滑点万5"},
                        "mc_seed": 42, "window_seed": 42,
                        "min_year": 2020, "max_year": 2026,
                        "with_costs": False,

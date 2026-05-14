@@ -160,6 +160,8 @@ def check_wyckoff_signal(df: pd.DataFrame, symbol: str, as_of_date: str,
         "confidence": confidence,
         "phase": phase,
         "regime": regime,
+        "macro_regime": macro_regime,
+        "stock_regime": stock_regime if stock_regime != "unknown" else None,
         "current_price": round(close_now, 3),
         "upside_pct": round(gross_upside, 2) if target and target > entry else None,
         "net_upside_pct": round(net_upside, 2) if target and target > entry else None,
@@ -245,7 +247,7 @@ def check_ma_signal(df: pd.DataFrame, symbol: str, as_of_date: str) -> Optional[
 
 # ---------- 多进程处理 ----------
 def process_stock(args):
-    si, as_of_date, csi = args
+    si, as_of_date, csi, market_anchor_date = args
     sym, name = si["symbol"], si["name"]
     try:
         dm = DataManager()
@@ -296,6 +298,7 @@ def run():
     csi_last = str(csi["date"].max().date()) if csi is not None else "unknown"
     print(f"沪深300: {len(csi) if csi is not None else 0}行, 最新日期: {csi_last}")
 
+    market_anchor_date = csi_last
     as_of_date = csi_last
     print(f"分析日期: {as_of_date}")
 
@@ -304,7 +307,7 @@ def run():
     summary = Counter()
     mw = get_optimal_workers()
     bs = mw * 4
-    args_list = [(s, as_of_date, csi) for s in stocks]
+    args_list = [(s, as_of_date, csi, market_anchor_date) for s in stocks]
 
     with ProcessPoolExecutor(max_workers=mw, initializer=worker_init) as ex:
         for b in range(0, len(args_list), bs):
@@ -407,6 +410,7 @@ def run():
             "schema_version": "1.0",
             "generated_at": datetime.now().isoformat(),
             "date": ts,
+            "market_anchor_date": market_anchor_date,
             "total_signals": len(records),
             "n_stocks_scanned": len(stocks),
             "summary": dict(summary),
