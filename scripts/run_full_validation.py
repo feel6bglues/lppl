@@ -9,7 +9,7 @@ import os
 import random
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -33,7 +33,7 @@ OUTPUT_DIR = PROJECT_ROOT / "output" / "full_validation"
 DB_PATH = str(OUTPUT_DIR / "validation.db")
 REPORT_PATH = OUTPUT_DIR / "analysis_report.json"
 N_DATES = 20
-N_WORKERS = 6
+N_WORKERS = min(16, os.cpu_count() or 8)
 WYCKOFF_TIMEOUT = 120
 SEED = 42
 RANDOM = random.Random(SEED)
@@ -62,8 +62,7 @@ def load_stock_list(limit: int = 0) -> List[Dict]:
 def load_csi300() -> Optional[pd.DataFrame]:
     from scripts.utils.tdx_config import CSI300_PATH
     from src.data.tdx_loader import load_tdx_data
-    p = str(CSI300_PATH)
-    df = load_tdx_data(p)
+    df = load_tdx_data(str(CSI300_PATH))
     if df is not None and not df.empty:
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date").reset_index(drop=True)
@@ -92,8 +91,12 @@ def get_regime(csi300: pd.DataFrame, d: str) -> str:
     return "range"
 
 
-def _worker_process_stock(args: Tuple) -> List[Dict]:
-    symbol, name, as_of_date, wyckoff_cfg = args
+def _worker_process_stock_all_dates(args: Tuple) -> List[Dict]:
+    """
+    股票级并行: 一个worker读取1只股票的全部数据,
+    处理所有日期后一次性返回.
+    """
+    symbol, name, dates, wyckoff_cfg = args
     results: List[Dict] = []
     try:
         from src.data.tdx_reader import TDXReader
@@ -104,56 +107,68 @@ def _worker_process_stock(args: Tuple) -> List[Dict]:
             return results
         df["date"] = pd.to_datetime(df["date"])
         df = df.sort_values("date").reset_index(drop=True)
-        av = df[df["date"] <= pd.Timestamp(as_of_date)]
-        if len(av) < 100:
-            return results
-        from src.engine.daily_signal_engine import (
-            generate_ma_signals, generate_reversal_signals,
-            score_wyckoff, score_maatr,
-        )
-        ma_cfg = {"fast_period": 5, "slow_period": 20, "atr_period": 20}
-        rev_cfg = {"lookback_days": 5, "threshold_pct": 5.0,
-                   "stop_loss_pct": 4.0, "take_profit_pct": 4.0}
-        for sig in generate_ma_signals(av, symbol, name, as_of_date, ma_cfg):
-            sig["as_of_date"] = as_of_date
-            results.append(sig)
-        for sig in generate_reversal_signals(av, symbol, name, as_of_date, rev_cfg):
-            sig["as_of_date"] = as_of_date
-            results.append(sig)
-        if len(av) < 150:
-            return results
+    except Exception:
+        return results
+
+    try:
         from src.wyckoff.engine import WyckoffEngine
         eng = WyckoffEngine(
             lookback_days=wyckoff_cfg.get("lookback_days", 400),
             weekly_lookback=wyckoff_cfg.get("weekly_lookback", 120),
             monthly_lookback=wyckoff_cfg.get("monthly_lookback", 40),
         )
-        rpt = eng.analyze(av, symbol=symbol, period="日线", multi_timeframe=True)
-        sig_type = rpt.signal.signal_type
-        direction = rpt.trading_plan.direction
-        if sig_type == "no_signal" or direction == "空仓观望":
-            return results
-        rr = rpt.risk_reward
-        entry_p = float(rr.entry_price) if (rr and rr.entry_price and rr.entry_price > 0) else None
-        sl = float(rr.stop_loss) if (rr and rr.stop_loss and rr.stop_loss > 0) else None
-        tp = float(rr.first_target) if (rr and rr.first_target and rr.first_target > 0) else None
-        phase = rpt.structure.phase.value
-        conf = rpt.signal.confidence.value if rpt.signal.confidence else "C"
-        wy_s1 = score_wyckoff(phase)
-        wy_s2 = score_maatr(av, as_of_date)
-        w1, w2, w3 = 0.40, 0.40, 0.20
-        score = w1 * wy_s1 + w2 * wy_s2 + 0.20
-        sc_threshold = wyckoff_cfg.get("score_threshold", 0.45)
-        if score >= sc_threshold:
-            results.append({
-                "as_of_date": as_of_date, "symbol": symbol, "name": name,
-                "action": "buy", "entry_price": entry_p, "stop_loss": sl,
-                "take_profit": tp, "confidence": conf, "strategy": "wyckoff",
-                "phase": phase, "regime": "", "score": round(score, 3),
-                "direction": direction,
-            })
     except Exception:
-        import traceback; traceback.print_exc()
+        return results
+
+    from src.engine.daily_signal_engine import (
+        generate_ma_signals, generate_reversal_signals,
+        score_wyckoff, score_maatr,
+    )
+    ma_cfg = {"fast_period": 5, "slow_period": 20, "atr_period": 20}
+    rev_cfg = {"lookback_days": 5, "threshold_pct": 5.0,
+               "stop_loss_pct": 4.0, "take_profit_pct": 4.0}
+
+    for as_of_date in dates:
+        try:
+            av = df[df["date"] <= pd.Timestamp(as_of_date)]
+            if len(av) < 100:
+                continue
+            t0 = time.time()
+
+            for sig in generate_ma_signals(av, symbol, name, as_of_date, ma_cfg):
+                sig["as_of_date"] = as_of_date
+                results.append(sig)
+            for sig in generate_reversal_signals(av, symbol, name, as_of_date, rev_cfg):
+                sig["as_of_date"] = as_of_date
+                results.append(sig)
+
+            if len(av) < 150:
+                continue
+
+            rpt = eng.analyze(av, symbol=symbol, period="日线", multi_timeframe=True)
+            sig_type = rpt.signal.signal_type
+            direction = rpt.trading_plan.direction
+            if sig_type == "no_signal" or direction == "空仓观望":
+                continue
+            rr = rpt.risk_reward
+            entry_p = float(rr.entry_price) if (rr and rr.entry_price and rr.entry_price > 0) else None
+            sl = float(rr.stop_loss) if (rr and rr.stop_loss and rr.stop_loss > 0) else None
+            tp = float(rr.first_target) if (rr and rr.first_target and rr.first_target > 0) else None
+            phase = rpt.structure.phase.value
+            conf = rpt.signal.confidence.value if rpt.signal.confidence else "C"
+            wy_s1 = score_wyckoff(phase)
+            wy_s2 = score_maatr(av, as_of_date)
+            score = 0.40 * wy_s1 + 0.40 * wy_s2 + 0.20
+            if score >= wyckoff_cfg.get("score_threshold", 0.45):
+                results.append({
+                    "as_of_date": as_of_date, "symbol": symbol, "name": name,
+                    "action": "buy", "entry_price": entry_p, "stop_loss": sl,
+                    "take_profit": tp, "confidence": conf, "strategy": "wyckoff",
+                    "phase": phase, "regime": "", "score": round(score, 3),
+                    "direction": direction,
+                })
+        except Exception:
+            pass
     return results
 
 
@@ -173,56 +188,85 @@ class FullValidator:
         signals = self.db.get_signals(date=d)
         return len(signals) > 0
 
-    def run_date(self, d: str) -> Dict:
-        logger.info(f"Processing date: {d}")
-        regime = get_regime(self.csi300, d)
-        all_signals: List[Dict] = []
+    def generate_regime_map(self) -> Dict[str, str]:
+        return {d: get_regime(self.csi300, d) for d in self.dates}
+
+    def run_all(self) -> List[Dict]:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        regime_map = self.generate_regime_map()
+        logger.info(f"Processing {len(self.stocks)} stocks across {len(self.dates)} dates "
+                    f"with {self.n_workers} workers")
+
+        total = len(self.stocks)
         args_list = [
-            (s["symbol"], s["name"], d, self.wyckoff_cfg)
+            (s["symbol"], s["name"], self.dates, self.wyckoff_cfg)
             for s in self.stocks
         ]
-        batch_size = max(1, self.n_workers * 4)
-        total = len(args_list)
+
+        all_signals: List[Dict] = []
+        t_start = time.time()
+
         with ProcessPoolExecutor(max_workers=self.n_workers) as ex:
-            for i in range(0, total, batch_size):
-                batch = args_list[i:i + batch_size]
-                futures = {ex.submit(_worker_process_stock, a): a[0] for a in batch}
-                for f in as_completed(futures):
+            # 流式提交: submit N_WORKERS*2 个, 每完成1个就提交下一个
+            futures = {}
+            it = iter(args_list)
+            initial_batch = min(self.n_workers * 2, total)
+            for _ in range(initial_batch):
+                try:
+                    a = next(it)
+                    futures[ex.submit(_worker_process_stock_all_dates, a)] = a[0]
+                except StopIteration:
+                    break
+
+            completed = 0
+            while futures:
+                done, _ = wait(futures, return_when=FIRST_COMPLETED)
+                for f in done:
+                    sym = futures.pop(f)
                     try:
                         sigs = f.result(timeout=WYCKOFF_TIMEOUT)
                         all_signals.extend(sigs)
-                    except Exception:
+                    except Exception as e:
+                        logger.warning(f"Worker failed for {sym}: {e}")
+                    completed += 1
+                    if completed % 500 == 0:
+                        elapsed = time.time() - t_start
+                        rate = completed / elapsed
+                        logger.info(f"  {completed}/{total} stocks, "
+                                    f"{len(all_signals)} signals, "
+                                    f"{rate:.0f} stocks/min")
+                    try:
+                        a = next(it)
+                        futures[ex.submit(_worker_process_stock_all_dates, a)] = a[0]
+                    except StopIteration:
                         pass
+
+        # 写入DB
         for sig in all_signals:
-            sig["regime"] = regime
+            d = sig["as_of_date"]
+            sig["regime"] = regime_map.get(d, "")
             self.db.insert_signal(
                 d, sig["symbol"], sig["strategy"], sig["action"],
                 entry_price=sig.get("entry_price"),
                 stop_loss=sig.get("stop_loss"),
                 take_profit=sig.get("take_profit"),
                 confidence=sig.get("confidence"),
-                regime=regime, score=sig.get("score"),
+                regime=sig["regime"], score=sig.get("score"),
                 details=f"phase={sig.get('phase','')} dir={sig.get('direction','')}",
             )
-        return {"date": d, "regime": regime, "signals": len(all_signals)}
 
-    def run_all(self) -> List[Dict]:
-        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-        results = []
+        elapsed = time.time() - t_start
+        logger.info(f"Completed {total} stocks in {elapsed:.0f}s "
+                    f"({total/elapsed:.0f} stocks/s, {len(all_signals)} signals)")
+
+        date_results = []
         for d in self.dates:
-            if self.is_date_processed(d):
-                existing = len(self.db.get_signals(date=d))
-                logger.info(f"Skipping {d} ({existing} signals in DB)")
-                results.append({"date": d, "regime": get_regime(self.csi300, d),
-                                "signals": existing, "skipped": True})
-                continue
-            t0 = time.time()
-            r = self.run_date(d)
-            elapsed = time.time() - t0
-            results.append(r)
-            logger.info(f"  {d} [{r['regime']}]: {r['signals']} signals "
-                        f"({elapsed:.0f}s)")
-        return results
+            sigs = self.db.get_signals(date=d)
+            date_results.append({
+                "date": d, "regime": regime_map.get(d, ""),
+                "signals": len(sigs), "skipped": False,
+            })
+        return date_results
 
     def analyze(self, results: List[Dict]) -> Dict:
         all_sigs = []
@@ -289,13 +333,13 @@ class FullValidator:
 
     def print_report(self, analysis: Dict):
         print(f"\n{'='*70}")
-        print(f"  全量验证分析报告")
+        print(f"  全量验证分析报告 (v2 - 股票级并行)")
         print(f"{'='*70}")
         cfg = analysis.get("config", {})
         ov = analysis.get("overall", {})
         print(f"\n配置: {cfg.get('n_stocks')} 股票 x {cfg.get('n_dates')} 日期")
         print(f"    范围: {cfg.get('date_range')}")
-        print(f"    并行: {cfg.get('n_workers')} workers")
+        print(f"    并行: {cfg.get('n_workers')} workers (股票级)")
         print(f"\n总体: {ov.get('total_signals')} 总信号量")
         print(f"     {ov.get('uniq_stocks')} 只股票产生过信号")
         print(f"     {ov.get('signals_per_date')} 信号/日 平均")
@@ -328,7 +372,6 @@ def main():
     parser.add_argument("--limit-dates", type=int, default=N_DATES)
     parser.add_argument("--workers", type=int, default=N_WORKERS)
     parser.add_argument("--quick", action="store_true")
-    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--report-only", action="store_true")
     args = parser.parse_args()
 
@@ -361,6 +404,7 @@ def main():
             val.print_report(analysis)
         return
 
+    logger.info(f"Workers: {args.workers} (CPU cores: {os.cpu_count()})")
     logger.info("Loading stock list...")
     stocks = load_stock_list(limit=args.limit_stocks)
     logger.info(f"Loaded {len(stocks)} stocks")
@@ -370,14 +414,14 @@ def main():
     if csi300 is None:
         logger.error("Failed to load CSI300")
         sys.exit(1)
-    logger.info(f"CSI300: {len(csi300)} rows")
+    logger.info(f"CSI300: {len(csi300)} rows, {csi300['date'].min().date()} ~ {csi300['date'].max().date()}")
 
     dates = select_dates(csi300, args.limit_dates)
     logger.info(f"Selected {len(dates)} dates: {dates[0]} ~ {dates[-1]}")
 
     val = FullValidator(stocks, dates, csi300, DB_PATH, args.workers)
-    results = val.run_all()
-    analysis = val.analyze(results)
+    date_results = val.run_all()
+    analysis = val.analyze(date_results)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     with open(REPORT_PATH, "w") as f:
         json.dump(analysis, f, ensure_ascii=False, indent=2, default=str)
