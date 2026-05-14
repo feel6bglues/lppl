@@ -1,0 +1,2 @@
+total_points,signal_count,event_count,true_positive,false_positive,false_negative,precision,recall,false_positive_rate,signal_density,symbol,mode,lookahead_days,drop_threshold,param_source,step,window_min,window_max,window_count,optimizer,r2_threshold,consensus_threshold,danger_days
+68,1,22,1,0,21,1.0,0.045454545454545456,0.0,0.014705882352941176,399001.SZ,ensemble,60,0.1,optimal_yaml,120,30,180,16,lbfgsb,0.5,0.3,20

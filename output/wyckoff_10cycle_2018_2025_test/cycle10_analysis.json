@@ -1,0 +1,305 @@
+{
+  "total_samples": 37651,
+  "overall_avg_return": 4.8,
+  "overall_median_return": -0.87,
+  "overall_win_rate": 48.3,
+  "phase_stats": {
+    "markdown": {
+      "count": 28863,
+      "avg_return": 5.07,
+      "median_return": -0.37,
+      "win_rate": 49.1,
+      "avg_max_gain": 33.47,
+      "avg_max_drawdown": 19.67
+    },
+    "unknown": {
+      "count": 3770,
+      "avg_return": 3.13,
+      "median_return": -2.32,
+      "win_rate": 45.9,
+      "avg_max_gain": 34.9,
+      "avg_max_drawdown": 21.91
+    },
+    "accumulation": {
+      "count": 168,
+      "avg_return": 9.03,
+      "median_return": 2.13,
+      "win_rate": 58.3,
+      "avg_max_gain": 30.63,
+      "avg_max_drawdown": 13.31
+    },
+    "markup": {
+      "count": 4519,
+      "avg_return": 4.09,
+      "median_return": -3.64,
+      "win_rate": 44.3,
+      "avg_max_gain": 35.8,
+      "avg_max_drawdown": 22.76
+    },
+    "distribution": {
+      "count": 331,
+      "avg_return": 7.2,
+      "median_return": 2.57,
+      "win_rate": 54.1,
+      "avg_max_gain": 29.94,
+      "avg_max_drawdown": 15.26
+    }
+  },
+  "direction_stats": {
+    "空仓观望": {
+      "count": 33022,
+      "avg_return": 4.89,
+      "win_rate": 48.8
+    },
+    "持有观察": {
+      "count": 4514,
+      "avg_return": 4.09,
+      "win_rate": 44.3
+    },
+    "观察等待": {
+      "count": 109,
+      "avg_return": 7.1,
+      "win_rate": 55.0
+    },
+    "轻仓试探": {
+      "count": 5,
+      "avg_return": -6.54,
+      "win_rate": 60.0
+    },
+    "做多": {
+      "count": 1,
+      "avg_return": 7.98,
+      "win_rate": 100.0
+    }
+  },
+  "confidence_stats": {
+    "D": {
+      "count": 31346,
+      "avg_return": 4.72,
+      "win_rate": 48.6
+    },
+    "C": {
+      "count": 5912,
+      "avg_return": 5.07,
+      "win_rate": 46.7
+    },
+    "B": {
+      "count": 393,
+      "avg_return": 6.72,
+      "win_rate": 51.7
+    }
+  },
+  "cycle_stats": {
+    "1": {
+      "year": 2018,
+      "as_of": "2018-03-12",
+      "count": 3165,
+      "avg_return": -28.33,
+      "win_rate": 6.0
+    },
+    "2": {
+      "year": 2018,
+      "as_of": "2018-06-17",
+      "count": 3253,
+      "avg_return": -18.14,
+      "win_rate": 12.4
+    },
+    "3": {
+      "year": 2019,
+      "as_of": "2019-11-10",
+      "count": 3410,
+      "avg_return": 6.69,
+      "win_rate": 46.7
+    },
+    "4": {
+      "year": 2019,
+      "as_of": "2019-11-16",
+      "count": 3415,
+      "avg_return": 9.83,
+      "win_rate": 53.0
+    },
+    "5": {
+      "year": 2019,
+      "as_of": "2019-11-23",
+      "count": 3418,
+      "avg_return": 6.0,
+      "win_rate": 46.8
+    },
+    "6": {
+      "year": 2020,
+      "as_of": "2020-06-24",
+      "count": 3570,
+      "avg_return": 11.88,
+      "win_rate": 57.9
+    },
+    "7": {
+      "year": 2021,
+      "as_of": "2021-07-10",
+      "count": 3991,
+      "avg_return": 13.04,
+      "win_rate": 65.2
+    },
+    "8": {
+      "year": 2021,
+      "as_of": "2021-05-23",
+      "count": 3924,
+      "avg_return": 15.05,
+      "win_rate": 56.0
+    },
+    "9": {
+      "year": 2022,
+      "as_of": "2022-08-18",
+      "count": 4502,
+      "avg_return": 1.19,
+      "win_rate": 46.0
+    },
+    "10": {
+      "year": 2024,
+      "as_of": "2024-05-16",
+      "count": 5003,
+      "avg_return": 18.7,
+      "win_rate": 73.1
+    }
+  },
+  "signal_accuracy": {
+    "no_signal": {
+      "count": 30942,
+      "avg_return": 4.74,
+      "win_rate": 48.6
+    },
+    "markdown": {
+      "count": 1693,
+      "avg_return": 6.8,
+      "win_rate": 51.8
+    },
+    "accumulation": {
+      "count": 27,
+      "avg_return": 20.98,
+      "win_rate": 66.7
+    },
+    "markup": {
+      "count": 4519,
+      "avg_return": 4.09,
+      "win_rate": 44.3
+    },
+    "distribution": {
+      "count": 329,
+      "avg_return": 7.26,
+      "win_rate": 54.4
+    },
+    "spring": {
+      "count": 110,
+      "avg_return": 6.72,
+      "win_rate": 54.5
+    },
+    "sos_candidate": {
+      "count": 31,
+      "avg_return": 6.85,
+      "win_rate": 64.5
+    }
+  },
+  "mtf_stats": {
+    "weekly_daily_aligned": {
+      "count": 6647,
+      "avg_return": 5.15,
+      "win_rate": 48.3
+    },
+    "mixed": {
+      "count": 9623,
+      "avg_return": 5.68,
+      "win_rate": 49.8
+    },
+    "fully_aligned": {
+      "count": 8938,
+      "avg_return": 4.68,
+      "win_rate": 47.4
+    },
+    "higher_timeframe_aligned": {
+      "count": 12443,
+      "avg_return": 4.01,
+      "win_rate": 47.8
+    }
+  },
+  "fit_analysis": {
+    "phase_fit": {
+      "accumulation": {
+        "count": 168,
+        "expected_positive": true,
+        "actual_positive_rate": 58.3,
+        "fit_rate": 58.3,
+        "avg_return": 9.03
+      },
+      "markup": {
+        "count": 4519,
+        "expected_positive": true,
+        "actual_positive_rate": 44.3,
+        "fit_rate": 44.3,
+        "avg_return": 4.09
+      },
+      "distribution": {
+        "count": 331,
+        "expected_positive": false,
+        "actual_positive_rate": 54.1,
+        "fit_rate": 45.9,
+        "avg_return": 7.2
+      },
+      "markdown": {
+        "count": 28863,
+        "expected_positive": false,
+        "actual_positive_rate": 49.1,
+        "fit_rate": 50.9,
+        "avg_return": 5.07
+      }
+    },
+    "confidence_fit": {
+      "B": {
+        "count": 393,
+        "expected_rank": 3,
+        "avg_return": 6.72,
+        "win_rate": 51.7
+      },
+      "C": {
+        "count": 5912,
+        "expected_rank": 2,
+        "avg_return": 5.07,
+        "win_rate": 46.7
+      },
+      "D": {
+        "count": 31346,
+        "expected_rank": 1,
+        "avg_return": 4.72,
+        "win_rate": 48.6
+      }
+    },
+    "mtf_fit": {
+      "fully_aligned": {
+        "count": 8938,
+        "expected_rank": 4,
+        "avg_return": 4.68,
+        "win_rate": 47.4
+      },
+      "weekly_daily_aligned": {
+        "count": 6647,
+        "expected_rank": 3,
+        "avg_return": 5.15,
+        "win_rate": 48.3
+      },
+      "higher_timeframe_aligned": {
+        "count": 12443,
+        "expected_rank": 2,
+        "avg_return": 4.01,
+        "win_rate": 47.8
+      },
+      "mixed": {
+        "count": 9623,
+        "expected_rank": 1,
+        "avg_return": 5.68,
+        "win_rate": 49.8
+      }
+    },
+    "overall_fit_score": 53.0,
+    "phase_fit_score": 49.8,
+    "confidence_fit_score": 50,
+    "mtf_fit_score": 62.5
+  }
+}

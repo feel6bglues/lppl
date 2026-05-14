@@ -1,0 +1,269 @@
+{
+  "overall": {
+    "total_signals": 5680,
+    "unique_stocks": 860,
+    "avg_stock_return": 19.63,
+    "avg_benchmark_return": 16.41,
+    "avg_excess_return": 3.22,
+    "excess_win_rate": 45.9,
+    "median_excess": -1.72
+  },
+  "lppl_effectiveness": {
+    "valid_count": 125,
+    "valid_avg_excess": 0.02,
+    "valid_win_rate": 42.4,
+    "invalid_count": 5555,
+    "invalid_avg_excess": 3.29,
+    "invalid_win_rate": 45.9
+  },
+  "lppl_bottom_signal": {
+    "count": 8,
+    "avg_excess": 6.73,
+    "win_rate": 75.0
+  },
+  "wyckoff_phase": {
+    "accumulation": {
+      "count": 274,
+      "avg_return": 22.74,
+      "avg_excess": 4.8,
+      "win_rate": 48.2,
+      "median_excess": -0.41
+    },
+    "unknown": {
+      "count": 1701,
+      "avg_return": 18.88,
+      "avg_excess": 2.25,
+      "win_rate": 41.6,
+      "median_excess": -3.69
+    },
+    "markdown": {
+      "count": 3075,
+      "avg_return": 19.98,
+      "avg_excess": 4.96,
+      "win_rate": 49.7,
+      "median_excess": -0.14
+    },
+    "markup": {
+      "count": 597,
+      "avg_return": 18.02,
+      "avg_excess": -3.76,
+      "win_rate": 37.4,
+      "median_excess": -8.62
+    },
+    "distribution": {
+      "count": 33,
+      "avg_return": 29.35,
+      "avg_excess": 5.2,
+      "win_rate": 45.5,
+      "median_excess": -2.92
+    }
+  },
+  "wyckoff_confidence": {
+    "B": {
+      "count": 523,
+      "avg_return": 19.27,
+      "avg_excess": 3.81,
+      "win_rate": 50.7
+    },
+    "C": {
+      "count": 2862,
+      "avg_return": 19.17,
+      "avg_excess": 2.95,
+      "win_rate": 45.6
+    },
+    "D": {
+      "count": 2295,
+      "avg_return": 20.3,
+      "avg_excess": 3.43,
+      "win_rate": 45.1
+    }
+  },
+  "combined_signal": {
+    "strong_buy": {
+      "count": 4,
+      "avg_return": 40.35,
+      "avg_excess": 16.62,
+      "win_rate": 100.0
+    },
+    "buy": {
+      "count": 234,
+      "avg_return": 22.5,
+      "avg_excess": 5.54,
+      "win_rate": 51.3
+    },
+    "watch": {
+      "count": 89,
+      "avg_return": 21.48,
+      "avg_excess": 2.97,
+      "win_rate": 40.4
+    },
+    "neutral": {
+      "count": 3693,
+      "avg_return": 19.66,
+      "avg_excess": 3.43,
+      "win_rate": 47.4
+    },
+    "avoid": {
+      "count": 1660,
+      "avg_return": 19.03,
+      "avg_excess": 2.42,
+      "win_rate": 41.8
+    }
+  },
+  "market_environment": {
+    "bear_bottom": {
+      "count": 2320,
+      "avg_return": 20.26,
+      "avg_benchmark": 14.94,
+      "avg_excess": 5.32,
+      "win_rate": 50.0
+    },
+    "bull_start": {
+      "count": 429,
+      "avg_return": 40.5,
+      "avg_benchmark": 35.34,
+      "avg_excess": 5.16,
+      "win_rate": 40.8
+    },
+    "crash_bottom": {
+      "count": 921,
+      "avg_return": 6.32,
+      "avg_benchmark": 5.24,
+      "avg_excess": 1.09,
+      "win_rate": 49.5
+    },
+    "rebound_start": {
+      "count": 615,
+      "avg_return": 18.06,
+      "avg_benchmark": 18.05,
+      "avg_excess": 0.01,
+      "win_rate": 33.3
+    },
+    "event_bottom": {
+      "count": 647,
+      "avg_return": 27.36,
+      "avg_benchmark": 35.28,
+      "avg_excess": -7.92,
+      "win_rate": 28.6
+    },
+    "structural_low": {
+      "count": 748,
+      "avg_return": 16.71,
+      "avg_benchmark": 6.19,
+      "avg_excess": 10.52,
+      "win_rate": 56.6
+    }
+  },
+  "by_window": {
+    "1": {
+      "date": "2012-12-04",
+      "label": "2012熊底",
+      "count": 421,
+      "avg_return": 23.69,
+      "bench_return": 14.92,
+      "avg_excess": 8.77,
+      "win_rate": 53.0
+    },
+    "2": {
+      "date": "2013-06-25",
+      "label": "2013钱荒底",
+      "count": 429,
+      "avg_return": 17.7,
+      "bench_return": 8.09,
+      "avg_excess": 9.61,
+      "win_rate": 58.0
+    },
+    "3": {
+      "date": "2014-07-22",
+      "label": "2014牛市启动",
+      "count": 429,
+      "avg_return": 40.5,
+      "bench_return": 35.34,
+      "avg_excess": 5.16,
+      "win_rate": 40.8
+    },
+    "4": {
+      "date": "2015-08-26",
+      "label": "2015股灾底",
+      "count": 453,
+      "avg_return": 6.96,
+      "bench_return": 5.51,
+      "avg_excess": 1.45,
+      "win_rate": 50.3
+    },
+    "5": {
+      "date": "2016-01-27",
+      "label": "2016熔断底",
+      "count": 468,
+      "avg_return": 5.71,
+      "bench_return": 4.97,
+      "avg_excess": 0.74,
+      "win_rate": 48.7
+    },
+    "6": {
+      "date": "2018-10-19",
+      "label": "2018熊底",
+      "count": 610,
+      "avg_return": 33.21,
+      "bench_return": 21.72,
+      "avg_excess": 11.49,
+      "win_rate": 64.6
+    },
+    "7": {
+      "date": "2019-01-04",
+      "label": "2019春季反弹启动",
+      "count": 615,
+      "avg_return": 18.06,
+      "bench_return": 18.05,
+      "avg_excess": 0.01,
+      "win_rate": 33.3
+    },
+    "8": {
+      "date": "2020-03-23",
+      "label": "2020疫情底",
+      "count": 647,
+      "avg_return": 27.36,
+      "bench_return": 35.28,
+      "avg_excess": -7.92,
+      "win_rate": 28.6
+    },
+    "9": {
+      "date": "2021-07-28",
+      "label": "2021结构底",
+      "count": 748,
+      "avg_return": 16.71,
+      "bench_return": 6.19,
+      "avg_excess": 10.52,
+      "win_rate": 56.6
+    },
+    "10": {
+      "date": "2022-10-31",
+      "label": "2022熊底",
+      "count": 860,
+      "avg_return": 10.68,
+      "bench_return": 13.57,
+      "avg_excess": -2.89,
+      "win_rate": 34.3
+    }
+  },
+  "combined_scenarios": {
+    "scene_a_lppl_bottom_accumulation_b": {
+      "count": 0,
+      "avg_excess": 0,
+      "win_rate": 0,
+      "description": "LPPL底部 + Wyckoff Accumulation + B级"
+    },
+    "scene_b_lppl_bottom_spring": {
+      "count": 3,
+      "avg_excess": 10.45,
+      "win_rate": 100.0,
+      "description": "LPPL底部 + Wyckoff Spring信号"
+    },
+    "scene_c_lppl_valid_b_confidence": {
+      "count": 9,
+      "avg_excess": 5.44,
+      "win_rate": 44.4,
+      "description": "LPPL有效 + Wyckoff B级置信度"
+    }
+  }
+}

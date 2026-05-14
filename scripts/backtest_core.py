@@ -434,6 +434,7 @@ def run_backtest(strategies: List[str], n_windows: int = 20,
             "multi_strat_sharpe": round(combo, 3),
             "method": "estimated_from_correlation",
             "formula": "avg(sharpe) * sqrt(n / (1 + (n-1) * avg(corr)))",
+            "limitation": "基于各策略独立夏普和平均相关性估算, 非真实组合净值序列",
         },
         "monte_carlo": mc,
         "reproducibility": {

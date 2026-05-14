@@ -1,0 +1,32 @@
+{
+  "symbol": "000300.SH",
+  "asset_type": "index",
+  "analysis_date": "2026-04-01",
+  "input_sources": [
+    "data"
+  ],
+  "timeframes_seen": [
+    "daily"
+  ],
+  "bc_found": false,
+  "phase": "no_trade_zone",
+  "micro_action": "BC 未找到，bc_not_found",
+  "boundary_upper_zone": "0",
+  "boundary_lower_zone": "0",
+  "volume_profile_label": "contracted",
+  "spring_detected": false,
+  "utad_detected": false,
+  "counterfactual_summary": "unknown",
+  "t1_risk_assessment": "unknown",
+  "rr_assessment": "fail",
+  "decision": "abandon",
+  "trigger": "",
+  "invalidation": "",
+  "target_1": "",
+  "confidence": "D",
+  "abandon_reason": "unfavorable_rr",
+  "conflicts": [],
+  "consistency_score": "medium_alignment",
+  "weekly_context": "unknown",
+  "intraday_context": "unknown"
+}

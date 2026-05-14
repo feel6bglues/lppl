@@ -1,0 +1,21 @@
+{
+  "symbol": "000300.SH",
+  "asset_type": "index",
+  "analysis_date": "2026-04-01",
+  "last_phase": "no_trade_zone",
+  "last_micro_action": "BC 未找到，bc_not_found",
+  "last_confidence": "D",
+  "bc_found": false,
+  "spring_detected": false,
+  "freeze_until": null,
+  "watch_status": "none",
+  "trigger_armed": false,
+  "trigger_text": "",
+  "invalid_level": "",
+  "target_1": "",
+  "weekly_context": "unknown",
+  "intraday_context": "unknown",
+  "conflict_summary": [],
+  "last_decision": "abandon",
+  "abandon_reason": "unfavorable_rr"
+}

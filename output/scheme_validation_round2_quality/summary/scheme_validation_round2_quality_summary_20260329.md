@@ -1,0 +1,10 @@
+| symbol    |   objective_score | eligible   | reject_reason                                    |   annualized_excess_return |   max_drawdown |   trade_count |   turnover_rate |   whipsaw_rate |
+|:----------|------------------:|:-----------|:-------------------------------------------------|---------------------------:|---------------:|--------------:|----------------:|---------------:|
+| 000905.SH |          0.85625  | False      | trade_count,non_positive_excess                  |                -0.0225136  |      -0.158797 |             2 |         0.9997  |              0 |
+| 000300.SH |          0.759375 | True       |                                                  |                 0.00352389 |      -0.166905 |             3 |         1.56799 |              0 |
+| 000001.SH |          0.621875 | False      | trade_count,non_positive_excess                  |                -0.0177236  |      -0.2727   |             2 |         0.9997  |              0 |
+| 932000.SH |          0.59375  | False      | non_positive_excess,max_drawdown_cap             |                -0.0368453  |      -0.43362  |             8 |         4.35705 |              0 |
+| 000016.SH |          0.559375 | True       |                                                  |                 0.0247392  |      -0.209708 |             5 |         2.64433 |              0 |
+| 399001.SZ |          0.53125  | False      | trade_count,non_positive_excess,max_drawdown_cap |                -0.00302784 |      -0.501028 |             2 |         0.9997  |              0 |
+| 000852.SH |          0.3      | False      | non_positive_excess,max_drawdown_cap             |                -0.037806   |      -0.43401  |             8 |         3.57864 |              0 |
+| 399006.SZ |          0.278125 | False      | non_positive_excess,max_drawdown_cap             |                -0.0678966  |      -0.575451 |            10 |         5.43747 |              0 |

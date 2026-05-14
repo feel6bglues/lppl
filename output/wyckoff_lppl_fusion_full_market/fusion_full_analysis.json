@@ -1,0 +1,482 @@
+{
+  "overall": {
+    "total_records": 3141,
+    "unique_stocks": 196,
+    "signal_distribution": {
+      "MD_NO_LPPL": 1585,
+      "OTHER": 1040,
+      "AVOID_LPPL_DANGER": 338,
+      "BUY_NO_LPPL": 169,
+      "MD_LPPL": 6,
+      "BUY_LPPL": 2,
+      "AVOID_OTHER": 1
+    }
+  },
+  "pure_wyckoff": {
+    "BUY": {
+      "count": 171,
+      "avg_return": 8.44,
+      "avg_excess": 0.69,
+      "median_excess": -2.8,
+      "positive_rate": 62.0,
+      "beat_bench_rate": 40.4,
+      "avg_dd": 9.71,
+      "dd_under_10": 66.1,
+      "ir": 0.0302
+    },
+    "AVOID": {
+      "count": 339,
+      "avg_return": 3.29,
+      "avg_excess": -2.95,
+      "median_excess": -8.56,
+      "positive_rate": 42.8,
+      "beat_bench_rate": 33.0,
+      "avg_dd": 20.53,
+      "dd_under_10": 25.7,
+      "ir": -0.0869
+    },
+    "HOLD": {
+      "count": 2631,
+      "avg_return": 13.81,
+      "avg_excess": 4.67,
+      "median_excess": -0.61,
+      "positive_rate": 65.8,
+      "beat_bench_rate": 48.6,
+      "avg_dd": 12.54,
+      "dd_under_10": 55.8,
+      "ir": 0.1416
+    }
+  },
+  "fusion": {
+    "AVOID_LPPL_DANGER": {
+      "count": 338,
+      "avg_return": 3.29,
+      "avg_excess": -2.95,
+      "median_excess": -8.57,
+      "positive_rate": 42.6,
+      "beat_bench_rate": 33.1,
+      "avg_dd": 20.54,
+      "dd_under_10": 25.7,
+      "ir": -0.0869
+    },
+    "BUY_NO_LPPL": {
+      "count": 169,
+      "avg_return": 8.26,
+      "avg_excess": 0.44,
+      "median_excess": -2.84,
+      "positive_rate": 61.5,
+      "beat_bench_rate": 39.6,
+      "avg_dd": 9.82,
+      "dd_under_10": 65.7,
+      "ir": 0.0193
+    },
+    "MD_LPPL": {
+      "count": 6,
+      "avg_return": 17.05,
+      "avg_excess": 5.45,
+      "median_excess": 0.98,
+      "positive_rate": 66.7,
+      "beat_bench_rate": 50.0,
+      "avg_dd": 9.88,
+      "dd_under_10": 83.3,
+      "ir": 0.2067
+    },
+    "MD_NO_LPPL": {
+      "count": 1585,
+      "avg_return": 15.43,
+      "avg_excess": 5.93,
+      "median_excess": 1.49,
+      "positive_rate": 69.8,
+      "beat_bench_rate": 52.5,
+      "avg_dd": 11.39,
+      "dd_under_10": 61.5,
+      "ir": 0.194
+    },
+    "OTHER": {
+      "count": 1040,
+      "avg_return": 11.32,
+      "avg_excess": 2.75,
+      "median_excess": -2.99,
+      "positive_rate": 59.5,
+      "beat_bench_rate": 42.6,
+      "avg_dd": 14.31,
+      "dd_under_10": 47.0,
+      "ir": 0.0756
+    }
+  },
+  "lppl_in_markdown": {
+    "danger": {
+      "count": 14,
+      "avg_return": 13.59,
+      "avg_excess": 1.09,
+      "median_excess": -3.26,
+      "positive_rate": 71.4,
+      "beat_bench_rate": 42.9,
+      "avg_dd": 12.51,
+      "dd_under_10": 57.1,
+      "ir": 0.052
+    },
+    "none": {
+      "count": 1571,
+      "avg_return": 15.45,
+      "avg_excess": 5.97,
+      "median_excess": 1.54,
+      "positive_rate": 69.8,
+      "beat_bench_rate": 52.6,
+      "avg_dd": 11.38,
+      "dd_under_10": 61.5,
+      "ir": 0.1949
+    }
+  },
+  "market_env_signal": {
+    "bear_bottom": {
+      "wy_BUY": {
+        "count": 59,
+        "avg_return": 14.68,
+        "avg_excess": 3.41,
+        "median_excess": -5.91,
+        "positive_rate": 57.6,
+        "beat_bench_rate": 39.0,
+        "avg_dd": 13.82,
+        "dd_under_10": 55.9,
+        "ir": 0.1
+      },
+      "wy_AVOID": {
+        "count": 50,
+        "avg_return": 19.03,
+        "avg_excess": 6.42,
+        "median_excess": -9.75,
+        "positive_rate": 56.0,
+        "beat_bench_rate": 38.0,
+        "avg_dd": 18.07,
+        "dd_under_10": 44.0,
+        "ir": 0.1213
+      },
+      "fusion_AVOID_LPPL_DANGER": {
+        "count": 50,
+        "avg_return": 19.03,
+        "avg_excess": 6.42,
+        "median_excess": -9.75,
+        "positive_rate": 56.0,
+        "beat_bench_rate": 38.0,
+        "avg_dd": 18.07,
+        "dd_under_10": 44.0,
+        "ir": 0.1213
+      },
+      "fusion_MD_LPPL": {
+        "count": 6,
+        "avg_return": 17.05,
+        "avg_excess": 5.45,
+        "median_excess": 0.98,
+        "positive_rate": 66.7,
+        "beat_bench_rate": 50.0,
+        "avg_dd": 9.88,
+        "dd_under_10": 83.3,
+        "ir": 0.2067
+      }
+    },
+    "bull_start": {
+      "wy_BUY": {
+        "count": 35,
+        "avg_return": 1.93,
+        "avg_excess": -6.22,
+        "median_excess": -6.35,
+        "positive_rate": 57.1,
+        "beat_bench_rate": 20.0,
+        "avg_dd": 9.26,
+        "dd_under_10": 62.9,
+        "ir": -0.6608
+      },
+      "wy_AVOID": {
+        "count": 174,
+        "avg_return": -1.54,
+        "avg_excess": -6.2,
+        "median_excess": -7.28,
+        "positive_rate": 37.9,
+        "beat_bench_rate": 31.0,
+        "avg_dd": 22.5,
+        "dd_under_10": 17.8,
+        "ir": -0.2332
+      },
+      "fusion_BUY_LPPL": {
+        "count": 1,
+        "avg_return": 29.58,
+        "avg_excess": 14.03,
+        "median_excess": 14.03,
+        "positive_rate": 100.0,
+        "beat_bench_rate": 100.0,
+        "avg_dd": 0.47,
+        "dd_under_10": 100.0,
+        "ir": 0
+      },
+      "fusion_AVOID_LPPL_DANGER": {
+        "count": 173,
+        "avg_return": -1.56,
+        "avg_excess": -6.23,
+        "median_excess": -7.63,
+        "positive_rate": 37.6,
+        "beat_bench_rate": 31.2,
+        "avg_dd": 22.53,
+        "dd_under_10": 17.9,
+        "ir": -0.2335
+      }
+    },
+    "crash_bottom": {
+      "wy_BUY": {
+        "count": 10,
+        "avg_return": -12.58,
+        "avg_excess": -7.47,
+        "median_excess": -2.86,
+        "positive_rate": 30.0,
+        "beat_bench_rate": 30.0,
+        "avg_dd": 16.33,
+        "dd_under_10": 30.0,
+        "ir": -0.3935
+      },
+      "wy_AVOID": {
+        "count": 7,
+        "avg_return": -18.3,
+        "avg_excess": -19.61,
+        "median_excess": -14.98,
+        "positive_rate": 42.9,
+        "beat_bench_rate": 28.6,
+        "avg_dd": 25.9,
+        "dd_under_10": 42.9,
+        "ir": -0.6855
+      },
+      "fusion_AVOID_LPPL_DANGER": {
+        "count": 7,
+        "avg_return": -18.3,
+        "avg_excess": -19.61,
+        "median_excess": -14.98,
+        "positive_rate": 42.9,
+        "beat_bench_rate": 28.6,
+        "avg_dd": 25.9,
+        "dd_under_10": 42.9,
+        "ir": -0.6855
+      }
+    },
+    "event_bottom": {
+      "wy_BUY": {
+        "count": 19,
+        "avg_return": 18.97,
+        "avg_excess": 2.3,
+        "median_excess": 0.26,
+        "positive_rate": 89.5,
+        "beat_bench_rate": 52.6,
+        "avg_dd": 2.44,
+        "dd_under_10": 100.0,
+        "ir": 0.1474
+      },
+      "wy_AVOID": {
+        "count": 19,
+        "avg_return": 29.35,
+        "avg_excess": 5.02,
+        "median_excess": -15.82,
+        "positive_rate": 63.2,
+        "beat_bench_rate": 31.6,
+        "avg_dd": 14.31,
+        "dd_under_10": 31.6,
+        "ir": 0.1038
+      },
+      "fusion_AVOID_LPPL_DANGER": {
+        "count": 19,
+        "avg_return": 29.35,
+        "avg_excess": 5.02,
+        "median_excess": -15.82,
+        "positive_rate": 63.2,
+        "beat_bench_rate": 31.6,
+        "avg_dd": 14.31,
+        "dd_under_10": 31.6,
+        "ir": 0.1038
+      }
+    },
+    "rebound_start": {
+      "wy_BUY": {
+        "count": 11,
+        "avg_return": 5.78,
+        "avg_excess": 1.18,
+        "median_excess": -3.43,
+        "positive_rate": 63.6,
+        "beat_bench_rate": 45.5,
+        "avg_dd": 7.14,
+        "dd_under_10": 72.7,
+        "ir": 0.0688
+      },
+      "wy_AVOID": {
+        "count": 40,
+        "avg_return": -5.03,
+        "avg_excess": -8.24,
+        "median_excess": -15.02,
+        "positive_rate": 35.0,
+        "beat_bench_rate": 27.5,
+        "avg_dd": 20.96,
+        "dd_under_10": 22.5,
+        "ir": -0.3227
+      },
+      "fusion_BUY_LPPL": {
+        "count": 1,
+        "avg_return": 17.87,
+        "avg_excess": 29.69,
+        "median_excess": 29.69,
+        "positive_rate": 100.0,
+        "beat_bench_rate": 100.0,
+        "avg_dd": 0.69,
+        "dd_under_10": 100.0,
+        "ir": 0
+      },
+      "fusion_AVOID_LPPL_DANGER": {
+        "count": 40,
+        "avg_return": -5.03,
+        "avg_excess": -8.24,
+        "median_excess": -15.02,
+        "positive_rate": 35.0,
+        "beat_bench_rate": 27.5,
+        "avg_dd": 20.96,
+        "dd_under_10": 22.5,
+        "ir": -0.3227
+      }
+    },
+    "structural_low": {
+      "wy_BUY": {
+        "count": 37,
+        "avg_return": 5.72,
+        "avg_excess": 4.14,
+        "median_excess": 2.16,
+        "positive_rate": 67.6,
+        "beat_bench_rate": 56.8,
+        "avg_dd": 6.28,
+        "dd_under_10": 75.7,
+        "ir": 0.3364
+      },
+      "wy_AVOID": {
+        "count": 49,
+        "avg_return": 4.15,
+        "avg_excess": 2.69,
+        "median_excess": -5.83,
+        "positive_rate": 44.9,
+        "beat_bench_rate": 40.8,
+        "avg_dd": 17.34,
+        "dd_under_10": 32.7,
+        "ir": 0.0884
+      },
+      "fusion_AVOID_LPPL_DANGER": {
+        "count": 49,
+        "avg_return": 4.15,
+        "avg_excess": 2.69,
+        "median_excess": -5.83,
+        "positive_rate": 44.9,
+        "beat_bench_rate": 40.8,
+        "avg_dd": 17.34,
+        "dd_under_10": 32.7,
+        "ir": 0.0884
+      }
+    }
+  },
+  "drawdown_distribution": {
+    "wy_BUY": {
+      "<5%": {
+        "count": 77,
+        "avg_excess": 8.37,
+        "positive_rate": 96.1
+      },
+      "5-10%": {
+        "count": 29,
+        "avg_excess": -1.68,
+        "positive_rate": 62.07
+      },
+      "10-15%": {
+        "count": 15,
+        "avg_excess": -5.42,
+        "positive_rate": 20.0
+      },
+      "15-20%": {
+        "count": 10,
+        "avg_excess": -9.97,
+        "positive_rate": 0.0
+      },
+      "20-30%": {
+        "count": 18,
+        "avg_excess": -5.5,
+        "positive_rate": 16.67
+      },
+      "30-50%": {
+        "count": 13,
+        "avg_excess": -16.91,
+        "positive_rate": 0.0
+      },
+      ">50%": {
+        "count": 1,
+        "avg_excess": -42.73,
+        "positive_rate": 0.0
+      }
+    },
+    "wy_AVOID": {
+      "<5%": {
+        "count": 47,
+        "avg_excess": 28.93,
+        "positive_rate": 100.0
+      },
+      "5-10%": {
+        "count": 34,
+        "avg_excess": 9.69,
+        "positive_rate": 70.59
+      },
+      "10-15%": {
+        "count": 39,
+        "avg_excess": 2.14,
+        "positive_rate": 48.72
+      },
+      "15-20%": {
+        "count": 59,
+        "avg_excess": 0.09,
+        "positive_rate": 45.76
+      },
+      "20-30%": {
+        "count": 79,
+        "avg_excess": -12.96,
+        "positive_rate": 24.05
+      },
+      "30-50%": {
+        "count": 65,
+        "avg_excess": -24.34,
+        "positive_rate": 4.62
+      },
+      ">50%": {
+        "count": 10,
+        "avg_excess": -48.65,
+        "positive_rate": 0.0
+      }
+    },
+    "fusion_BUY_LPPL": {
+      "<5%": {
+        "count": 2,
+        "avg_excess": 21.86,
+        "positive_rate": 100.0
+      }
+    },
+    "fusion_MD_LPPL": {
+      "<5%": {
+        "count": 4,
+        "avg_excess": 16.68,
+        "positive_rate": 100.0
+      },
+      "5-10%": {
+        "count": 1,
+        "avg_excess": -11.94,
+        "positive_rate": 0.0
+      },
+      "30-50%": {
+        "count": 1,
+        "avg_excess": -22.06,
+        "positive_rate": 0.0
+      }
+    }
+  },
+  "buy_vs_avoid": {
+    "buy_avg_excess": 0.69,
+    "avoid_avg_excess": -2.95,
+    "difference": 3.64,
+    "cohens_d": 0.119
+  }
+}

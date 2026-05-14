@@ -1,0 +1,523 @@
+{
+  "200": {
+    "total_samples": 10328,
+    "phase_stats": {
+      "markdown": {
+        "count": 5282,
+        "pct": 51.1
+      },
+      "markup": {
+        "count": 2080,
+        "pct": 20.1
+      },
+      "unknown": {
+        "count": 2844,
+        "pct": 27.5
+      },
+      "accumulation": {
+        "count": 54,
+        "pct": 0.5
+      },
+      "distribution": {
+        "count": 68,
+        "pct": 0.7
+      }
+    },
+    "signal_stats": {
+      "no_signal": {
+        "count": 6803,
+        "pct": 65.9
+      },
+      "markup": {
+        "count": 2080,
+        "pct": 20.1
+      },
+      "spring": {
+        "count": 26,
+        "pct": 0.3
+      },
+      "accumulation": {
+        "count": 23,
+        "pct": 0.2
+      },
+      "markdown": {
+        "count": 1329,
+        "pct": 12.9
+      },
+      "distribution": {
+        "count": 62,
+        "pct": 0.6
+      },
+      "sos_candidate": {
+        "count": 5,
+        "pct": 0.0
+      }
+    },
+    "direction_stats": {
+      "空仓观望": {
+        "count": 8222,
+        "pct": 79.6
+      },
+      "持有观察": {
+        "count": 2078,
+        "pct": 20.1
+      },
+      "观察等待": {
+        "count": 25,
+        "pct": 0.2
+      },
+      "轻仓试探": {
+        "count": 3,
+        "pct": 0.0
+      }
+    },
+    "confidence_stats": {
+      "D": {
+        "count": 7107,
+        "pct": 68.8
+      },
+      "C": {
+        "count": 3023,
+        "pct": 29.3
+      },
+      "B": {
+        "count": 198,
+        "pct": 1.9
+      }
+    },
+    "mtf_stats": {
+      "mixed": {
+        "count": 3052,
+        "pct": 29.6
+      },
+      "higher_timeframe_aligned": {
+        "count": 2687,
+        "pct": 26.0
+      },
+      "fully_aligned": {
+        "count": 2191,
+        "pct": 21.2
+      },
+      "weekly_daily_aligned": {
+        "count": 2398,
+        "pct": 23.2
+      }
+    }
+  },
+  "400": {
+    "total_samples": 10328,
+    "phase_stats": {
+      "markdown": {
+        "count": 5288,
+        "pct": 51.2
+      },
+      "markup": {
+        "count": 2033,
+        "pct": 19.7
+      },
+      "unknown": {
+        "count": 2830,
+        "pct": 27.4
+      },
+      "distribution": {
+        "count": 162,
+        "pct": 1.6
+      },
+      "accumulation": {
+        "count": 15,
+        "pct": 0.1
+      }
+    },
+    "signal_stats": {
+      "no_signal": {
+        "count": 6789,
+        "pct": 65.7
+      },
+      "markup": {
+        "count": 2033,
+        "pct": 19.7
+      },
+      "distribution": {
+        "count": 156,
+        "pct": 1.5
+      },
+      "spring": {
+        "count": 12,
+        "pct": 0.1
+      },
+      "accumulation": {
+        "count": 3,
+        "pct": 0.0
+      },
+      "markdown": {
+        "count": 1335,
+        "pct": 12.9
+      }
+    },
+    "direction_stats": {
+      "空仓观望": {
+        "count": 8283,
+        "pct": 80.2
+      },
+      "持有观察": {
+        "count": 2031,
+        "pct": 19.7
+      },
+      "观察等待": {
+        "count": 12,
+        "pct": 0.1
+      },
+      "轻仓试探": {
+        "count": 2,
+        "pct": 0.0
+      }
+    },
+    "confidence_stats": {
+      "D": {
+        "count": 7097,
+        "pct": 68.7
+      },
+      "C": {
+        "count": 3030,
+        "pct": 29.3
+      },
+      "B": {
+        "count": 201,
+        "pct": 1.9
+      }
+    },
+    "mtf_stats": {
+      "mixed": {
+        "count": 3060,
+        "pct": 29.6
+      },
+      "higher_timeframe_aligned": {
+        "count": 2700,
+        "pct": 26.1
+      },
+      "fully_aligned": {
+        "count": 2178,
+        "pct": 21.1
+      },
+      "weekly_daily_aligned": {
+        "count": 2390,
+        "pct": 23.1
+      }
+    }
+  },
+  "600": {
+    "total_samples": 10328,
+    "phase_stats": {
+      "markdown": {
+        "count": 5289,
+        "pct": 51.2
+      },
+      "markup": {
+        "count": 2054,
+        "pct": 19.9
+      },
+      "unknown": {
+        "count": 2837,
+        "pct": 27.5
+      },
+      "distribution": {
+        "count": 124,
+        "pct": 1.2
+      },
+      "accumulation": {
+        "count": 24,
+        "pct": 0.2
+      }
+    },
+    "signal_stats": {
+      "no_signal": {
+        "count": 6796,
+        "pct": 65.8
+      },
+      "markup": {
+        "count": 2054,
+        "pct": 19.9
+      },
+      "distribution": {
+        "count": 118,
+        "pct": 1.1
+      },
+      "markdown": {
+        "count": 1336,
+        "pct": 12.9
+      },
+      "sos_candidate": {
+        "count": 2,
+        "pct": 0.0
+      },
+      "spring": {
+        "count": 14,
+        "pct": 0.1
+      },
+      "accumulation": {
+        "count": 8,
+        "pct": 0.1
+      }
+    },
+    "direction_stats": {
+      "空仓观望": {
+        "count": 8260,
+        "pct": 80.0
+      },
+      "持有观察": {
+        "count": 2052,
+        "pct": 19.9
+      },
+      "观察等待": {
+        "count": 13,
+        "pct": 0.1
+      },
+      "轻仓试探": {
+        "count": 3,
+        "pct": 0.0
+      }
+    },
+    "confidence_stats": {
+      "D": {
+        "count": 7103,
+        "pct": 68.8
+      },
+      "C": {
+        "count": 3020,
+        "pct": 29.2
+      },
+      "B": {
+        "count": 205,
+        "pct": 2.0
+      }
+    },
+    "mtf_stats": {
+      "mixed": {
+        "count": 3052,
+        "pct": 29.6
+      },
+      "higher_timeframe_aligned": {
+        "count": 2701,
+        "pct": 26.2
+      },
+      "fully_aligned": {
+        "count": 2177,
+        "pct": 21.1
+      },
+      "weekly_daily_aligned": {
+        "count": 2398,
+        "pct": 23.2
+      }
+    }
+  },
+  "1000": {
+    "total_samples": 10328,
+    "phase_stats": {
+      "markdown": {
+        "count": 5397,
+        "pct": 52.3
+      },
+      "markup": {
+        "count": 2000,
+        "pct": 19.4
+      },
+      "unknown": {
+        "count": 2755,
+        "pct": 26.7
+      },
+      "accumulation": {
+        "count": 58,
+        "pct": 0.6
+      },
+      "distribution": {
+        "count": 118,
+        "pct": 1.1
+      }
+    },
+    "signal_stats": {
+      "no_signal": {
+        "count": 6854,
+        "pct": 66.4
+      },
+      "markup": {
+        "count": 2000,
+        "pct": 19.4
+      },
+      "spring": {
+        "count": 36,
+        "pct": 0.3
+      },
+      "distribution": {
+        "count": 112,
+        "pct": 1.1
+      },
+      "markdown": {
+        "count": 1304,
+        "pct": 12.6
+      },
+      "accumulation": {
+        "count": 17,
+        "pct": 0.2
+      },
+      "sos_candidate": {
+        "count": 5,
+        "pct": 0.0
+      }
+    },
+    "direction_stats": {
+      "空仓观望": {
+        "count": 8292,
+        "pct": 80.3
+      },
+      "持有观察": {
+        "count": 1998,
+        "pct": 19.3
+      },
+      "观察等待": {
+        "count": 36,
+        "pct": 0.3
+      },
+      "轻仓试探": {
+        "count": 2,
+        "pct": 0.0
+      }
+    },
+    "confidence_stats": {
+      "D": {
+        "count": 7156,
+        "pct": 69.3
+      },
+      "C": {
+        "count": 2977,
+        "pct": 28.8
+      },
+      "B": {
+        "count": 195,
+        "pct": 1.9
+      }
+    },
+    "mtf_stats": {
+      "mixed": {
+        "count": 3072,
+        "pct": 29.7
+      },
+      "higher_timeframe_aligned": {
+        "count": 2692,
+        "pct": 26.1
+      },
+      "fully_aligned": {
+        "count": 2131,
+        "pct": 20.6
+      },
+      "weekly_daily_aligned": {
+        "count": 2433,
+        "pct": 23.6
+      }
+    }
+  },
+  "1200": {
+    "total_samples": 10328,
+    "phase_stats": {
+      "markdown": {
+        "count": 5556,
+        "pct": 53.8
+      },
+      "markup": {
+        "count": 1968,
+        "pct": 19.1
+      },
+      "unknown": {
+        "count": 2644,
+        "pct": 25.6
+      },
+      "accumulation": {
+        "count": 72,
+        "pct": 0.7
+      },
+      "distribution": {
+        "count": 88,
+        "pct": 0.9
+      }
+    },
+    "signal_stats": {
+      "no_signal": {
+        "count": 6950,
+        "pct": 67.3
+      },
+      "markup": {
+        "count": 1968,
+        "pct": 19.1
+      },
+      "spring": {
+        "count": 46,
+        "pct": 0.4
+      },
+      "distribution": {
+        "count": 82,
+        "pct": 0.8
+      },
+      "markdown": {
+        "count": 1256,
+        "pct": 12.2
+      },
+      "accumulation": {
+        "count": 21,
+        "pct": 0.2
+      },
+      "sos_candidate": {
+        "count": 5,
+        "pct": 0.0
+      }
+    },
+    "direction_stats": {
+      "空仓观望": {
+        "count": 8314,
+        "pct": 80.5
+      },
+      "持有观察": {
+        "count": 1966,
+        "pct": 19.0
+      },
+      "观察等待": {
+        "count": 45,
+        "pct": 0.4
+      },
+      "轻仓试探": {
+        "count": 3,
+        "pct": 0.0
+      }
+    },
+    "confidence_stats": {
+      "D": {
+        "count": 7248,
+        "pct": 70.2
+      },
+      "C": {
+        "count": 2891,
+        "pct": 28.0
+      },
+      "B": {
+        "count": 189,
+        "pct": 1.8
+      }
+    },
+    "mtf_stats": {
+      "mixed": {
+        "count": 3108,
+        "pct": 30.1
+      },
+      "higher_timeframe_aligned": {
+        "count": 2653,
+        "pct": 25.7
+      },
+      "fully_aligned": {
+        "count": 2065,
+        "pct": 20.0
+      },
+      "weekly_daily_aligned": {
+        "count": 2502,
+        "pct": 24.2
+      }
+    }
+  }
+}

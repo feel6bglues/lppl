@@ -1,0 +1,241 @@
+{
+  "total_samples": 24433,
+  "overall_avg_stock_return": 2.79,
+  "overall_avg_benchmark_return": 6.0,
+  "overall_avg_excess_return": -3.21,
+  "overall_excess_win_rate": 36.2,
+  "phase_excess": {
+    "accumulation": {
+      "count": 818,
+      "avg_stock_return": 9.62,
+      "avg_benchmark_return": 13.08,
+      "avg_excess_return": -3.46,
+      "excess_win_rate": 36.9,
+      "stock_win_rate": 49.8
+    },
+    "markdown": {
+      "count": 12252,
+      "avg_stock_return": -0.47,
+      "avg_benchmark_return": 0.92,
+      "avg_excess_return": -1.38,
+      "excess_win_rate": 39.2,
+      "stock_win_rate": 38.0
+    },
+    "markup": {
+      "count": 5591,
+      "avg_stock_return": 3.58,
+      "avg_benchmark_return": 10.89,
+      "avg_excess_return": -7.31,
+      "excess_win_rate": 29.8,
+      "stock_win_rate": 39.4
+    },
+    "distribution": {
+      "count": 461,
+      "avg_stock_return": 10.99,
+      "avg_benchmark_return": 18.2,
+      "avg_excess_return": -7.22,
+      "excess_win_rate": 30.4,
+      "stock_win_rate": 51.8
+    },
+    "unknown": {
+      "count": 5311,
+      "avg_stock_return": 7.72,
+      "avg_benchmark_return": 10.42,
+      "avg_excess_return": -2.7,
+      "excess_win_rate": 36.2,
+      "stock_win_rate": 46.5
+    }
+  },
+  "signal_excess": {
+    "spring": {
+      "count": 552,
+      "avg_stock_return": 9.49,
+      "avg_benchmark_return": 13.71,
+      "avg_excess_return": -4.21,
+      "excess_win_rate": 38.8
+    },
+    "no_signal": {
+      "count": 16699,
+      "avg_stock_return": 2.21,
+      "avg_benchmark_return": 4.3,
+      "avg_excess_return": -2.09,
+      "excess_win_rate": 37.8
+    },
+    "markup": {
+      "count": 5591,
+      "avg_stock_return": 3.58,
+      "avg_benchmark_return": 10.89,
+      "avg_excess_return": -7.31,
+      "excess_win_rate": 29.8
+    },
+    "markdown": {
+      "count": 867,
+      "avg_stock_return": -1.8,
+      "avg_benchmark_return": -5.97,
+      "avg_excess_return": 4.17,
+      "excess_win_rate": 48.4
+    },
+    "distribution": {
+      "count": 458,
+      "avg_stock_return": 10.99,
+      "avg_benchmark_return": 18.37,
+      "avg_excess_return": -7.37,
+      "excess_win_rate": 29.9
+    },
+    "sos_candidate": {
+      "count": 53,
+      "avg_stock_return": 9.76,
+      "avg_benchmark_return": 18.83,
+      "avg_excess_return": -9.08,
+      "excess_win_rate": 22.6
+    },
+    "accumulation": {
+      "count": 213,
+      "avg_stock_return": 9.91,
+      "avg_benchmark_return": 10.02,
+      "avg_excess_return": -0.11,
+      "excess_win_rate": 35.7
+    }
+  },
+  "direction_excess": {
+    "观察等待": {
+      "count": 539,
+      "avg_stock_return": 9.82,
+      "avg_benchmark_return": 13.84,
+      "avg_excess_return": -4.03,
+      "excess_win_rate": 39.1
+    },
+    "空仓观望": {
+      "count": 18290,
+      "avg_stock_return": 2.35,
+      "avg_benchmark_return": 4.27,
+      "avg_excess_return": -1.92,
+      "excess_win_rate": 38.0
+    },
+    "持有观察": {
+      "count": 5573,
+      "avg_stock_return": 3.64,
+      "avg_benchmark_return": 10.91,
+      "avg_excess_return": -7.27,
+      "excess_win_rate": 29.9
+    },
+    "做多": {
+      "count": 4,
+      "avg_stock_return": -6.9,
+      "avg_benchmark_return": 7.85,
+      "avg_excess_return": -14.74,
+      "excess_win_rate": 25.0
+    },
+    "轻仓试探": {
+      "count": 27,
+      "avg_stock_return": -10.54,
+      "avg_benchmark_return": 5.75,
+      "avg_excess_return": -16.29,
+      "excess_win_rate": 14.8
+    }
+  },
+  "cycle_excess": {
+    "1": {
+      "year": 2010,
+      "as_of": "2010-11-12",
+      "count": 1683,
+      "avg_stock_return": -2.91,
+      "avg_benchmark_return": -5.78,
+      "avg_excess_return": 2.87,
+      "excess_win_rate": 47.4
+    },
+    "2": {
+      "year": 2011,
+      "as_of": "2011-09-11",
+      "count": 1946,
+      "avg_stock_return": -11.97,
+      "avg_benchmark_return": -5.31,
+      "avg_excess_return": -6.66,
+      "excess_win_rate": 24.8
+    },
+    "3": {
+      "year": 2012,
+      "as_of": "2012-03-12",
+      "count": 2072,
+      "avg_stock_return": -20.8,
+      "avg_benchmark_return": -16.95,
+      "avg_excess_return": -3.85,
+      "excess_win_rate": 36.8
+    },
+    "4": {
+      "year": 2013,
+      "as_of": "2013-06-17",
+      "count": 2257,
+      "avg_stock_return": 12.98,
+      "avg_benchmark_return": 0.37,
+      "avg_excess_return": 12.61,
+      "excess_win_rate": 60.8
+    },
+    "5": {
+      "year": 2014,
+      "as_of": "2014-11-10",
+      "count": 2301,
+      "avg_stock_return": 63.55,
+      "avg_benchmark_return": 77.66,
+      "avg_excess_return": -14.11,
+      "excess_win_rate": 29.1
+    },
+    "6": {
+      "year": 2021,
+      "as_of": "2021-11-16",
+      "count": 4175,
+      "avg_stock_return": -12.05,
+      "avg_benchmark_return": -18.25,
+      "avg_excess_return": 6.2,
+      "excess_win_rate": 53.1
+    },
+    "7": {
+      "year": 2023,
+      "as_of": "2023-11-23",
+      "count": 4904,
+      "avg_stock_return": -15.16,
+      "avg_benchmark_return": 2.08,
+      "avg_excess_return": -17.24,
+      "excess_win_rate": 17.6
+    },
+    "8": {
+      "year": 2025,
+      "as_of": "2025-06-24",
+      "count": 5095,
+      "avg_stock_return": 17.39,
+      "avg_benchmark_return": 17.31,
+      "avg_excess_return": 0.08,
+      "excess_win_rate": 32.9
+    }
+  },
+  "confidence_excess": {
+    "C": {
+      "count": 6947,
+      "avg_stock_return": 3.88,
+      "avg_benchmark_return": 10.29,
+      "avg_excess_return": -6.42,
+      "excess_win_rate": 32.0
+    },
+    "D": {
+      "count": 17189,
+      "avg_stock_return": 2.37,
+      "avg_benchmark_return": 4.41,
+      "avg_excess_return": -2.04,
+      "excess_win_rate": 37.7
+    },
+    "B": {
+      "count": 293,
+      "avg_stock_return": 1.92,
+      "avg_benchmark_return": -2.88,
+      "avg_excess_return": 4.8,
+      "excess_win_rate": 49.8
+    },
+    "A": {
+      "count": 4,
+      "avg_stock_return": -6.9,
+      "avg_benchmark_return": 7.85,
+      "avg_excess_return": -14.74,
+      "excess_win_rate": 25.0
+    }
+  }
+}

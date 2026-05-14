@@ -1,0 +1,214 @@
+{
+  "total_samples": 24433,
+  "overall_avg_return": 2.79,
+  "overall_median_return": -6.1,
+  "overall_win_rate": 40.8,
+  "phase_stats": {
+    "accumulation": {
+      "count": 818,
+      "avg_return": 9.62,
+      "median_return": 0.0,
+      "win_rate": 49.8,
+      "avg_max_gain": 38.44,
+      "avg_max_drawdown": 18.72
+    },
+    "markdown": {
+      "count": 12252,
+      "avg_return": -0.47,
+      "median_return": -7.32,
+      "win_rate": 38.0,
+      "avg_max_gain": 30.81,
+      "avg_max_drawdown": 24.26
+    },
+    "markup": {
+      "count": 5591,
+      "avg_return": 3.58,
+      "median_return": -8.21,
+      "win_rate": 39.4,
+      "avg_max_gain": 42.84,
+      "avg_max_drawdown": 25.95
+    },
+    "distribution": {
+      "count": 461,
+      "avg_return": 10.99,
+      "median_return": 1.63,
+      "win_rate": 51.8,
+      "avg_max_gain": 34.09,
+      "avg_max_drawdown": 18.53
+    },
+    "unknown": {
+      "count": 5311,
+      "avg_return": 7.72,
+      "median_return": -2.39,
+      "win_rate": 46.5,
+      "avg_max_gain": 42.84,
+      "avg_max_drawdown": 21.1
+    }
+  },
+  "direction_stats": {
+    "观察等待": {
+      "count": 539,
+      "avg_return": 9.82,
+      "win_rate": 50.1
+    },
+    "空仓观望": {
+      "count": 18290,
+      "avg_return": 2.35,
+      "win_rate": 41.0
+    },
+    "持有观察": {
+      "count": 5573,
+      "avg_return": 3.64,
+      "win_rate": 39.4
+    },
+    "做多": {
+      "count": 4,
+      "avg_return": -6.9,
+      "win_rate": 25.0
+    },
+    "轻仓试探": {
+      "count": 27,
+      "avg_return": -10.54,
+      "win_rate": 33.3
+    }
+  },
+  "confidence_stats": {
+    "C": {
+      "count": 6947,
+      "avg_return": 3.88,
+      "win_rate": 40.9
+    },
+    "D": {
+      "count": 17189,
+      "avg_return": 2.37,
+      "win_rate": 40.8
+    },
+    "B": {
+      "count": 293,
+      "avg_return": 1.92,
+      "win_rate": 40.3
+    },
+    "A": {
+      "count": 4,
+      "avg_return": -6.9,
+      "win_rate": 25.0
+    }
+  },
+  "cycle_stats": {
+    "1": {
+      "year": 2010,
+      "as_of": "2010-11-12",
+      "count": 1683,
+      "avg_return": -2.91,
+      "win_rate": 35.9
+    },
+    "2": {
+      "year": 2011,
+      "as_of": "2011-09-11",
+      "count": 1946,
+      "avg_return": -11.97,
+      "win_rate": 16.4
+    },
+    "3": {
+      "year": 2012,
+      "as_of": "2012-03-12",
+      "count": 2072,
+      "avg_return": -20.8,
+      "win_rate": 11.9
+    },
+    "4": {
+      "year": 2013,
+      "as_of": "2013-06-17",
+      "count": 2257,
+      "avg_return": 12.98,
+      "win_rate": 61.5
+    },
+    "5": {
+      "year": 2014,
+      "as_of": "2014-11-10",
+      "count": 2301,
+      "avg_return": 63.55,
+      "win_rate": 91.6
+    },
+    "6": {
+      "year": 2021,
+      "as_of": "2021-11-16",
+      "count": 4175,
+      "avg_return": -12.05,
+      "win_rate": 23.7
+    },
+    "7": {
+      "year": 2023,
+      "as_of": "2023-11-23",
+      "count": 4904,
+      "avg_return": -15.16,
+      "win_rate": 19.3
+    },
+    "8": {
+      "year": 2025,
+      "as_of": "2025-06-24",
+      "count": 5095,
+      "avg_return": 17.39,
+      "win_rate": 66.2
+    }
+  },
+  "signal_accuracy": {
+    "spring": {
+      "count": 552,
+      "avg_return": 9.49,
+      "win_rate": 49.6
+    },
+    "no_signal": {
+      "count": 16699,
+      "avg_return": 2.21,
+      "win_rate": 40.9
+    },
+    "markup": {
+      "count": 5591,
+      "avg_return": 3.58,
+      "win_rate": 39.4
+    },
+    "markdown": {
+      "count": 867,
+      "avg_return": -1.8,
+      "win_rate": 34.9
+    },
+    "distribution": {
+      "count": 458,
+      "avg_return": 10.99,
+      "win_rate": 51.7
+    },
+    "sos_candidate": {
+      "count": 53,
+      "avg_return": 9.76,
+      "win_rate": 47.2
+    },
+    "accumulation": {
+      "count": 213,
+      "avg_return": 9.91,
+      "win_rate": 50.7
+    }
+  },
+  "mtf_stats": {
+    "mixed": {
+      "count": 8862,
+      "avg_return": 2.43,
+      "win_rate": 40.8
+    },
+    "weekly_daily_aligned": {
+      "count": 5901,
+      "avg_return": 8.06,
+      "win_rate": 47.6
+    },
+    "higher_timeframe_aligned": {
+      "count": 6555,
+      "avg_return": -2.7,
+      "win_rate": 34.4
+    },
+    "fully_aligned": {
+      "count": 3115,
+      "avg_return": 5.38,
+      "win_rate": 41.8
+    }
+  }
+}

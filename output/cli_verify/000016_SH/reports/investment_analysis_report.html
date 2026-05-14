@@ -1,0 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>指数投资分析报告</title>
+  <style>
+    body {
+      font-family: "Segoe UI", "PingFang SC", sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      margin: 0;
+      padding: 32px;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0f172a, #1d4ed8);
+      color: white;
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      margin-bottom: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    span {
+      display: block;
+      font-size: 12px;
+      color: #64748b;
+    }
+    strong {
+      font-size: 18px;
+    }
+    .plot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .plot-item {
+      background: white;
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+    .plot-item img {
+      width: 100%;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>指数投资分析报告</h1>
+    <p>生成时间: 2026-04-01 20:40:49</p>
+  </div>
+  
+                <div class="card">
+                  <h2>上证50 (000016.SH)</h2>
+                  <div class="grid">
+                    <div><span>回测区间</span><strong>2020-01-02 ~ 2026-03-27</strong></div>
+                    <div><span>最新信号</span><strong>none</strong></div>
+                    <div><span>最新动作</span><strong>hold</strong></div>
+                    <div><span>最终净值</span><strong>1.0238</strong></div>
+                    <div><span>策略收益</span><strong>2.38%</strong></div>
+                    <div><span>最大回撤</span><strong>-21.87%</strong></div>
+                  </div>
+                </div>
+                
+  
+                <section>
+                  <h2>核心图表</h2>
+                  <div class="plot-grid">
+                    <figure class="plot-item">
+                      <img src="../plots/000016_SH_strategy_overview.png" alt="000016_SH_strategy_overview.png" />
+                      <figcaption>000016_SH_strategy_overview.png</figcaption>
+                    </figure>
+                    
+                    <figure class="plot-item">
+                      <img src="../plots/000016_SH_strategy_drawdown.png" alt="000016_SH_strategy_drawdown.png" />
+                      <figcaption>000016_SH_strategy_drawdown.png</figcaption>
+                    </figure>
+                    </div>
+                </section>
+                
+</body>
+</html>
+        

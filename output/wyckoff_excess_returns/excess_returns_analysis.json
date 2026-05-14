@@ -1,0 +1,223 @@
+{
+  "total_samples": 13830,
+  "overall_avg_stock_return": 5.3,
+  "overall_avg_benchmark_return": -0.72,
+  "overall_avg_excess_return": 6.02,
+  "overall_excess_win_rate": 51.9,
+  "phase_excess": {
+    "markdown": {
+      "count": 10123,
+      "avg_stock_return": 6.6,
+      "avg_benchmark_return": -0.94,
+      "avg_excess_return": 7.53,
+      "excess_win_rate": 55.1,
+      "stock_win_rate": 53.8
+    },
+    "unknown": {
+      "count": 2099,
+      "avg_stock_return": 1.33,
+      "avg_benchmark_return": 0.28,
+      "avg_excess_return": 1.05,
+      "excess_win_rate": 42.0,
+      "stock_win_rate": 42.8
+    },
+    "markup": {
+      "count": 1428,
+      "avg_stock_return": 1.08,
+      "avg_benchmark_return": -0.39,
+      "avg_excess_return": 1.47,
+      "excess_win_rate": 41.8,
+      "stock_win_rate": 41.6
+    },
+    "accumulation": {
+      "count": 108,
+      "avg_stock_return": 14.34,
+      "avg_benchmark_return": -1.3,
+      "avg_excess_return": 15.64,
+      "excess_win_rate": 75.0,
+      "stock_win_rate": 63.0
+    },
+    "distribution": {
+      "count": 72,
+      "avg_stock_return": 8.7,
+      "avg_benchmark_return": -5.3,
+      "avg_excess_return": 14.0,
+      "excess_win_rate": 59.7,
+      "stock_win_rate": 50.0
+    }
+  },
+  "signal_excess": {
+    "no_signal": {
+      "count": 10176,
+      "avg_stock_return": 6.07,
+      "avg_benchmark_return": -0.07,
+      "avg_excess_return": 6.14,
+      "excess_win_rate": 51.5
+    },
+    "markdown": {
+      "count": 2046,
+      "avg_stock_return": 3.81,
+      "avg_benchmark_return": -4.02,
+      "avg_excess_return": 7.83,
+      "excess_win_rate": 59.6
+    },
+    "markup": {
+      "count": 1428,
+      "avg_stock_return": 1.08,
+      "avg_benchmark_return": -0.39,
+      "avg_excess_return": 1.47,
+      "excess_win_rate": 41.8
+    },
+    "spring": {
+      "count": 61,
+      "avg_stock_return": 9.7,
+      "avg_benchmark_return": -1.15,
+      "avg_excess_return": 10.85,
+      "excess_win_rate": 63.9
+    },
+    "sos_candidate": {
+      "count": 4,
+      "avg_stock_return": 13.73,
+      "avg_benchmark_return": 0.87,
+      "avg_excess_return": 12.86,
+      "excess_win_rate": 100.0
+    },
+    "accumulation": {
+      "count": 43,
+      "avg_stock_return": 20.98,
+      "avg_benchmark_return": -1.71,
+      "avg_excess_return": 22.69,
+      "excess_win_rate": 88.4
+    },
+    "distribution": {
+      "count": 72,
+      "avg_stock_return": 8.7,
+      "avg_benchmark_return": -5.3,
+      "avg_excess_return": 14.0,
+      "excess_win_rate": 59.7
+    }
+  },
+  "direction_excess": {
+    "空仓观望": {
+      "count": 12341,
+      "avg_stock_return": 5.76,
+      "avg_benchmark_return": -0.76,
+      "avg_excess_return": 6.52,
+      "excess_win_rate": 53.0
+    },
+    "持有观察": {
+      "count": 1391,
+      "avg_stock_return": 0.91,
+      "avg_benchmark_return": -0.58,
+      "avg_excess_return": 1.48,
+      "excess_win_rate": 41.8
+    },
+    "观察等待": {
+      "count": 58,
+      "avg_stock_return": 10.16,
+      "avg_benchmark_return": -1.34,
+      "avg_excess_return": 11.5,
+      "excess_win_rate": 65.5
+    },
+    "做多": {
+      "count": 5,
+      "avg_stock_return": -3.57,
+      "avg_benchmark_return": 3.43,
+      "avg_excess_return": -7.01,
+      "excess_win_rate": 20.0
+    },
+    "轻仓试探": {
+      "count": 35,
+      "avg_stock_return": 8.71,
+      "avg_benchmark_return": 6.91,
+      "avg_excess_return": 1.8,
+      "excess_win_rate": 45.7
+    }
+  },
+  "cycle_excess": {
+    "1": {
+      "year": 2012,
+      "as_of": "2012-05-13",
+      "count": 1842,
+      "avg_stock_return": -14.72,
+      "avg_benchmark_return": -12.71,
+      "avg_excess_return": -2.01,
+      "excess_win_rate": 37.8
+    },
+    "2": {
+      "year": 2013,
+      "as_of": "2013-11-12",
+      "count": 1929,
+      "avg_stock_return": 9.19,
+      "avg_benchmark_return": -6.84,
+      "avg_excess_return": 16.03,
+      "excess_win_rate": 70.3
+    },
+    "3": {
+      "year": 2015,
+      "as_of": "2015-09-11",
+      "count": 2046,
+      "avg_stock_return": 0.23,
+      "avg_benchmark_return": -8.41,
+      "avg_excess_return": 8.64,
+      "excess_win_rate": 59.3
+    },
+    "4": {
+      "year": 2016,
+      "as_of": "2016-03-12",
+      "count": 2113,
+      "avg_stock_return": 12.17,
+      "avg_benchmark_return": 9.39,
+      "avg_excess_return": 2.78,
+      "excess_win_rate": 56.6
+    },
+    "5": {
+      "year": 2021,
+      "as_of": "2021-06-17",
+      "count": 2879,
+      "avg_stock_return": 15.0,
+      "avg_benchmark_return": -0.35,
+      "avg_excess_return": 15.35,
+      "excess_win_rate": 59.6
+    },
+    "6": {
+      "year": 2022,
+      "as_of": "2022-11-10",
+      "count": 3021,
+      "avg_stock_return": 4.4,
+      "avg_benchmark_return": 8.27,
+      "avg_excess_return": -3.87,
+      "excess_win_rate": 33.1
+    }
+  },
+  "confidence_excess": {
+    "D": {
+      "count": 10213,
+      "avg_stock_return": 6.07,
+      "avg_benchmark_return": -0.09,
+      "avg_excess_return": 6.15,
+      "excess_win_rate": 51.4
+    },
+    "B": {
+      "count": 1746,
+      "avg_stock_return": 4.83,
+      "avg_benchmark_return": -3.66,
+      "avg_excess_return": 8.49,
+      "excess_win_rate": 60.9
+    },
+    "C": {
+      "count": 1870,
+      "avg_stock_return": 1.55,
+      "avg_benchmark_return": -1.46,
+      "avg_excess_return": 3.01,
+      "excess_win_rate": 46.0
+    },
+    "A": {
+      "count": 1,
+      "avg_stock_return": -6.06,
+      "avg_benchmark_return": -0.35,
+      "avg_excess_return": -5.71,
+      "excess_win_rate": 0.0
+    }
+  }
+}

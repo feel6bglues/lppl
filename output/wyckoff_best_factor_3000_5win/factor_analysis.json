@@ -1,0 +1,275 @@
+{
+  "overall": {
+    "total_records": 13670,
+    "unique_stocks": 2899,
+    "signal_distribution": {
+      "HOLD": 12383,
+      "AVOID": 671,
+      "BUY": 616
+    }
+  },
+  "signal_stats": {
+    "BUY": {
+      "count": 616,
+      "avg_return": 25.24,
+      "median_return": 20.54,
+      "avg_excess": 7.86,
+      "median_excess": 1.78,
+      "positive_return_rate": 93.0,
+      "beat_benchmark_rate": 56.3,
+      "avg_max_dd": 3.24,
+      "dd_under_10_rate": 95.1,
+      "ir": 0.3259
+    },
+    "AVOID": {
+      "count": 671,
+      "avg_return": 14.51,
+      "median_return": 7.7,
+      "avg_excess": 1.59,
+      "median_excess": -5.52,
+      "positive_return_rate": 64.7,
+      "beat_benchmark_rate": 40.4,
+      "avg_max_dd": 12.55,
+      "dd_under_10_rate": 52.5,
+      "ir": 0.0442
+    },
+    "HOLD": {
+      "count": 12383,
+      "avg_return": 20.57,
+      "median_return": 14.51,
+      "avg_excess": 10.64,
+      "median_excess": 5.01,
+      "positive_return_rate": 80.7,
+      "beat_benchmark_rate": 60.4,
+      "avg_max_dd": 8.09,
+      "dd_under_10_rate": 71.1,
+      "ir": 0.3348
+    }
+  },
+  "buy_vs_avoid": {
+    "buy_avg_excess": 7.86,
+    "avoid_avg_excess": 1.59,
+    "difference": 6.27,
+    "cohens_d": 0.203
+  },
+  "market_env_signal": {
+    "event_bottom": {
+      "BUY": {
+        "count": 8,
+        "avg_excess": -1.76,
+        "positive_rate": 50.0,
+        "avg_dd": 6.11
+      },
+      "AVOID": {
+        "count": 65,
+        "avg_excess": 1.68,
+        "positive_rate": 44.6,
+        "avg_dd": 12.84
+      },
+      "HOLD": {
+        "count": 2394,
+        "avg_excess": 18.46,
+        "positive_rate": 81.2,
+        "avg_dd": 7.52
+      }
+    },
+    "bear_bottom": {
+      "BUY": {
+        "count": 491,
+        "avg_excess": 9.19,
+        "positive_rate": 97.8,
+        "avg_dd": 2.51
+      },
+      "AVOID": {
+        "count": 432,
+        "avg_excess": 1.08,
+        "positive_rate": 71.1,
+        "avg_dd": 10.77
+      },
+      "HOLD": {
+        "count": 4555,
+        "avg_excess": 8.85,
+        "positive_rate": 88.6,
+        "avg_dd": 4.67
+      }
+    },
+    "crash_bottom": {
+      "BUY": {
+        "count": 61,
+        "avg_excess": -1.56,
+        "positive_rate": 68.9,
+        "avg_dd": 5.67
+      },
+      "AVOID": {
+        "count": 51,
+        "avg_excess": 0.0,
+        "positive_rate": 70.6,
+        "avg_dd": 8.83
+      },
+      "HOLD": {
+        "count": 2714,
+        "avg_excess": 4.69,
+        "positive_rate": 70.4,
+        "avg_dd": 11.6
+      }
+    },
+    "structural_low": {
+      "BUY": {
+        "count": 56,
+        "avg_excess": 7.83,
+        "positive_rate": 83.9,
+        "avg_dd": 6.58
+      },
+      "AVOID": {
+        "count": 123,
+        "avg_excess": 4.01,
+        "positive_rate": 50.4,
+        "avg_dd": 20.17
+      },
+      "HOLD": {
+        "count": 2720,
+        "avg_excess": 12.7,
+        "positive_rate": 77.4,
+        "avg_dd": 10.8
+      }
+    }
+  },
+  "by_window": {
+    "1": {
+      "date": "2022-04-27",
+      "label": "event_bottom",
+      "total": 2467,
+      "buy_count": 8,
+      "avoid_count": 65,
+      "BUY_excess": -1.76,
+      "BUY_positive_rate": 50.0,
+      "AVOID_excess": 1.68,
+      "AVOID_positive_rate": 44.6,
+      "HOLD_excess": 18.46,
+      "HOLD_positive_rate": 81.2
+    },
+    "2": {
+      "date": "2022-10-31",
+      "label": "bear_bottom",
+      "total": 2589,
+      "buy_count": 84,
+      "avoid_count": 225,
+      "BUY_excess": -0.02,
+      "BUY_positive_rate": 90.5,
+      "AVOID_excess": -9.21,
+      "AVOID_positive_rate": 55.6,
+      "HOLD_excess": -1.01,
+      "HOLD_positive_rate": 80.2
+    },
+    "3": {
+      "date": "2024-02-05",
+      "label": "crash_bottom",
+      "total": 2826,
+      "buy_count": 61,
+      "avoid_count": 51,
+      "BUY_excess": -1.56,
+      "BUY_positive_rate": 68.9,
+      "AVOID_excess": 0.0,
+      "AVOID_positive_rate": 70.6,
+      "HOLD_excess": 4.69,
+      "HOLD_positive_rate": 70.4
+    },
+    "4": {
+      "date": "2024-09-13",
+      "label": "bear_bottom",
+      "total": 2889,
+      "buy_count": 407,
+      "avoid_count": 207,
+      "BUY_excess": 11.09,
+      "BUY_positive_rate": 99.3,
+      "AVOID_excess": 12.26,
+      "AVOID_positive_rate": 87.9,
+      "HOLD_excess": 18.72,
+      "HOLD_positive_rate": 97.0
+    },
+    "5": {
+      "date": "2025-01-13",
+      "label": "structural_low",
+      "total": 2899,
+      "buy_count": 56,
+      "avoid_count": 123,
+      "BUY_excess": 7.83,
+      "BUY_positive_rate": 83.9,
+      "AVOID_excess": 4.01,
+      "AVOID_positive_rate": 50.4,
+      "HOLD_excess": 12.7,
+      "HOLD_positive_rate": 77.4
+    }
+  },
+  "drawdown_distribution": {
+    "BUY": {
+      "<5%": {
+        "count": 530,
+        "avg_excess": 9.18,
+        "positive_rate": 97.92
+      },
+      "5-10%": {
+        "count": 42,
+        "avg_excess": 4.58,
+        "positive_rate": 76.19
+      },
+      "10-15%": {
+        "count": 18,
+        "avg_excess": -5.47,
+        "positive_rate": 44.44
+      },
+      "15-20%": {
+        "count": 3,
+        "avg_excess": -26.12,
+        "positive_rate": 0.0
+      },
+      "20-30%": {
+        "count": 7,
+        "avg_excess": -21.36,
+        "positive_rate": 0.0
+      },
+      "30-50%": {
+        "count": 2,
+        "avg_excess": -45.08,
+        "positive_rate": 0.0
+      }
+    },
+    "AVOID": {
+      "<5%": {
+        "count": 203,
+        "avg_excess": 20.88,
+        "positive_rate": 97.54
+      },
+      "5-10%": {
+        "count": 137,
+        "avg_excess": 5.09,
+        "positive_rate": 79.56
+      },
+      "10-15%": {
+        "count": 83,
+        "avg_excess": -3.46,
+        "positive_rate": 59.04
+      },
+      "15-20%": {
+        "count": 68,
+        "avg_excess": -5.47,
+        "positive_rate": 52.94
+      },
+      "20-30%": {
+        "count": 107,
+        "avg_excess": -18.49,
+        "positive_rate": 23.36
+      },
+      "30-50%": {
+        "count": 57,
+        "avg_excess": -30.74,
+        "positive_rate": 5.26
+      },
+      ">50%": {
+        "count": 2,
+        "avg_excess": -56.24,
+        "positive_rate": 0.0
+      }
+    }
+  }
+}

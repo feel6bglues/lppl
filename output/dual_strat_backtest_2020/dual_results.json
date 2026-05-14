@@ -46,10 +46,10 @@
     }
   },
   "portfolio": {
-    "dual_strat_sharpe": 1.964,
     "method": "estimated_from_correlation",
     "formula": "avg(sharpe) * sqrt(n / (1 + (n-1) * avg(corr)))",
-    "limitation": "基于各策略独立夏普和平均相关性估算, 非真实组合净值序列"
+    "limitation": "基于各策略独立夏普和平均相关性估算, 非真实组合净值序列",
+    "multi_strat_sharpe": 1.964
   },
   "monte_carlo": {
     "wyckoff": {

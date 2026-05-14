@@ -1,0 +1,925 @@
+{
+  "total_samples": 324930,
+  "overall_avg_return": 2.21,
+  "overall_median_return": -1.77,
+  "overall_win_rate": 46.5,
+  "phase_stats": {
+    "markdown": {
+      "count": 223326,
+      "avg_return": 3.82,
+      "median_return": -0.49,
+      "win_rate": 48.9,
+      "avg_max_gain": 28.52,
+      "avg_max_drawdown": 16.69
+    },
+    "unknown": {
+      "count": 44938,
+      "avg_return": 0.84,
+      "median_return": -2.7,
+      "win_rate": 44.7,
+      "avg_max_gain": 28.99,
+      "avg_max_drawdown": 20.78
+    },
+    "markup": {
+      "count": 51323,
+      "avg_return": -3.54,
+      "median_return": -7.42,
+      "win_rate": 37.7,
+      "avg_max_gain": 32.93,
+      "avg_max_drawdown": 25.22
+    },
+    "distribution": {
+      "count": 3266,
+      "avg_return": 2.84,
+      "median_return": -0.24,
+      "win_rate": 49.0,
+      "avg_max_gain": 20.5,
+      "avg_max_drawdown": 12.97
+    },
+    "accumulation": {
+      "count": 2077,
+      "avg_return": -0.49,
+      "median_return": -1.99,
+      "win_rate": 44.1,
+      "avg_max_gain": 17.03,
+      "avg_max_drawdown": 13.43
+    }
+  },
+  "direction_stats": {
+    "空仓观望": {
+      "count": 272236,
+      "avg_return": 3.3,
+      "win_rate": 48.2
+    },
+    "持有观察": {
+      "count": 51109,
+      "avg_return": -3.54,
+      "win_rate": 37.7
+    },
+    "观察等待": {
+      "count": 1344,
+      "avg_return": -0.58,
+      "win_rate": 43.5
+    },
+    "轻仓试探": {
+      "count": 188,
+      "avg_return": -2.76,
+      "win_rate": 43.1
+    },
+    "做多": {
+      "count": 53,
+      "avg_return": -8.92,
+      "win_rate": 30.2
+    }
+  },
+  "confidence_stats": {
+    "C": {
+      "count": 66831,
+      "avg_return": -1.43,
+      "win_rate": 41.0
+    },
+    "D": {
+      "count": 253704,
+      "avg_return": 3.2,
+      "win_rate": 48.1
+    },
+    "B": {
+      "count": 4388,
+      "avg_return": -0.05,
+      "win_rate": 42.0
+    },
+    "A": {
+      "count": 7,
+      "avg_return": -11.19,
+      "win_rate": 14.3
+    }
+  },
+  "cycle_stats": {
+    "1": {
+      "year": 2012,
+      "as_of": "2012-07-12",
+      "count": 2125,
+      "avg_return": -9.95,
+      "win_rate": 17.4
+    },
+    "2": {
+      "year": 2012,
+      "as_of": "2012-05-17",
+      "count": 2103,
+      "avg_return": -15.97,
+      "win_rate": 14.6
+    },
+    "3": {
+      "year": 2012,
+      "as_of": "2012-05-24",
+      "count": 2106,
+      "avg_return": -13.08,
+      "win_rate": 17.3
+    },
+    "4": {
+      "year": 2012,
+      "as_of": "2012-09-18",
+      "count": 2175,
+      "avg_return": 9.46,
+      "win_rate": 65.9
+    },
+    "5": {
+      "year": 2012,
+      "as_of": "2012-11-17",
+      "count": 2208,
+      "avg_return": 14.37,
+      "win_rate": 78.0
+    },
+    "6": {
+      "year": 2012,
+      "as_of": "2012-08-11",
+      "count": 2145,
+      "avg_return": -4.84,
+      "win_rate": 26.6
+    },
+    "7": {
+      "year": 2012,
+      "as_of": "2012-06-11",
+      "count": 2115,
+      "avg_return": -8.72,
+      "win_rate": 21.8
+    },
+    "8": {
+      "year": 2013,
+      "as_of": "2013-08-22",
+      "count": 2257,
+      "avg_return": 9.07,
+      "win_rate": 58.5
+    },
+    "9": {
+      "year": 2013,
+      "as_of": "2013-07-12",
+      "count": 2257,
+      "avg_return": 20.63,
+      "win_rate": 80.3
+    },
+    "10": {
+      "year": 2013,
+      "as_of": "2013-06-20",
+      "count": 2257,
+      "avg_return": 10.62,
+      "win_rate": 60.1
+    },
+    "11": {
+      "year": 2013,
+      "as_of": "2013-06-25",
+      "count": 2257,
+      "avg_return": 18.78,
+      "win_rate": 78.4
+    },
+    "12": {
+      "year": 2013,
+      "as_of": "2013-09-24",
+      "count": 2257,
+      "avg_return": 11.86,
+      "win_rate": 57.7
+    },
+    "13": {
+      "year": 2013,
+      "as_of": "2013-05-18",
+      "count": 2257,
+      "avg_return": 3.09,
+      "win_rate": 43.7
+    },
+    "14": {
+      "year": 2013,
+      "as_of": "2013-05-17",
+      "count": 2257,
+      "avg_return": 3.09,
+      "win_rate": 43.7
+    },
+    "15": {
+      "year": 2013,
+      "as_of": "2013-11-18",
+      "count": 2257,
+      "avg_return": 6.9,
+      "win_rate": 52.7
+    },
+    "16": {
+      "year": 2013,
+      "as_of": "2013-09-22",
+      "count": 2257,
+      "avg_return": 12.99,
+      "win_rate": 59.1
+    },
+    "17": {
+      "year": 2013,
+      "as_of": "2013-08-17",
+      "count": 2257,
+      "avg_return": 14.25,
+      "win_rate": 68.9
+    },
+    "18": {
+      "year": 2013,
+      "as_of": "2013-05-25",
+      "count": 2257,
+      "avg_return": 5.01,
+      "win_rate": 47.4
+    },
+    "19": {
+      "year": 2013,
+      "as_of": "2013-04-11",
+      "count": 2257,
+      "avg_return": 4.11,
+      "win_rate": 43.8
+    },
+    "20": {
+      "year": 2014,
+      "as_of": "2014-04-14",
+      "count": 2258,
+      "avg_return": 12.79,
+      "win_rate": 69.9
+    },
+    "21": {
+      "year": 2014,
+      "as_of": "2014-05-23",
+      "count": 2259,
+      "avg_return": 35.08,
+      "win_rate": 89.7
+    },
+    "22": {
+      "year": 2014,
+      "as_of": "2014-04-22",
+      "count": 2258,
+      "avg_return": 15.6,
+      "win_rate": 75.1
+    },
+    "23": {
+      "year": 2014,
+      "as_of": "2014-09-24",
+      "count": 2298,
+      "avg_return": 27.43,
+      "win_rate": 70.3
+    },
+    "24": {
+      "year": 2015,
+      "as_of": "2015-11-18",
+      "count": 2531,
+      "avg_return": -12.05,
+      "win_rate": 21.1
+    },
+    "25": {
+      "year": 2015,
+      "as_of": "2015-11-10",
+      "count": 2529,
+      "avg_return": -12.84,
+      "win_rate": 19.6
+    },
+    "26": {
+      "year": 2015,
+      "as_of": "2015-04-18",
+      "count": 2352,
+      "avg_return": -24.2,
+      "win_rate": 14.5
+    },
+    "27": {
+      "year": 2015,
+      "as_of": "2015-08-13",
+      "count": 2419,
+      "avg_return": -7.51,
+      "win_rate": 34.8
+    },
+    "28": {
+      "year": 2015,
+      "as_of": "2015-07-23",
+      "count": 2405,
+      "avg_return": -6.95,
+      "win_rate": 32.1
+    },
+    "29": {
+      "year": 2015,
+      "as_of": "2015-05-24",
+      "count": 2362,
+      "avg_return": -33.68,
+      "win_rate": 7.4
+    },
+    "30": {
+      "year": 2015,
+      "as_of": "2015-03-18",
+      "count": 2341,
+      "avg_return": 0.91,
+      "win_rate": 44.8
+    },
+    "31": {
+      "year": 2015,
+      "as_of": "2015-11-15",
+      "count": 2530,
+      "avg_return": -13.64,
+      "win_rate": 18.5
+    },
+    "32": {
+      "year": 2015,
+      "as_of": "2015-11-13",
+      "count": 2530,
+      "avg_return": -13.64,
+      "win_rate": 18.5
+    },
+    "33": {
+      "year": 2015,
+      "as_of": "2015-07-16",
+      "count": 2397,
+      "avg_return": 6.19,
+      "win_rate": 54.2
+    },
+    "34": {
+      "year": 2015,
+      "as_of": "2015-05-21",
+      "count": 2362,
+      "avg_return": -33.23,
+      "win_rate": 7.8
+    },
+    "35": {
+      "year": 2016,
+      "as_of": "2016-05-10",
+      "count": 2574,
+      "avg_return": 5.46,
+      "win_rate": 68.8
+    },
+    "36": {
+      "year": 2016,
+      "as_of": "2016-08-25",
+      "count": 2612,
+      "avg_return": 1.09,
+      "win_rate": 48.1
+    },
+    "37": {
+      "year": 2016,
+      "as_of": "2016-03-13",
+      "count": 2561,
+      "avg_return": 12.16,
+      "win_rate": 71.7
+    },
+    "38": {
+      "year": 2016,
+      "as_of": "2016-08-19",
+      "count": 2610,
+      "avg_return": 0.44,
+      "win_rate": 45.5
+    },
+    "39": {
+      "year": 2016,
+      "as_of": "2016-06-11",
+      "count": 2590,
+      "avg_return": 7.19,
+      "win_rate": 68.0
+    },
+    "40": {
+      "year": 2016,
+      "as_of": "2016-06-12",
+      "count": 2590,
+      "avg_return": 7.19,
+      "win_rate": 68.0
+    },
+    "41": {
+      "year": 2016,
+      "as_of": "2016-04-25",
+      "count": 2564,
+      "avg_return": 0.03,
+      "win_rate": 55.8
+    },
+    "42": {
+      "year": 2017,
+      "as_of": "2017-04-14",
+      "count": 2747,
+      "avg_return": -14.33,
+      "win_rate": 19.8
+    },
+    "43": {
+      "year": 2017,
+      "as_of": "2017-05-25",
+      "count": 2801,
+      "avg_return": 3.67,
+      "win_rate": 59.9
+    },
+    "44": {
+      "year": 2017,
+      "as_of": "2017-11-15",
+      "count": 3046,
+      "avg_return": -14.3,
+      "win_rate": 15.8
+    },
+    "45": {
+      "year": 2017,
+      "as_of": "2017-07-23",
+      "count": 2897,
+      "avg_return": -2.85,
+      "win_rate": 35.6
+    },
+    "46": {
+      "year": 2017,
+      "as_of": "2017-06-16",
+      "count": 2839,
+      "avg_return": 0.67,
+      "win_rate": 48.9
+    },
+    "47": {
+      "year": 2017,
+      "as_of": "2017-07-22",
+      "count": 2897,
+      "avg_return": -2.85,
+      "win_rate": 35.6
+    },
+    "48": {
+      "year": 2017,
+      "as_of": "2017-08-24",
+      "count": 2940,
+      "avg_return": -6.08,
+      "win_rate": 28.5
+    },
+    "49": {
+      "year": 2017,
+      "as_of": "2017-11-24",
+      "count": 3057,
+      "avg_return": -7.72,
+      "win_rate": 26.5
+    },
+    "50": {
+      "year": 2018,
+      "as_of": "2018-04-17",
+      "count": 3211,
+      "avg_return": -23.85,
+      "win_rate": 7.7
+    },
+    "51": {
+      "year": 2018,
+      "as_of": "2018-06-12",
+      "count": 3251,
+      "avg_return": -27.64,
+      "win_rate": 4.7
+    },
+    "52": {
+      "year": 2018,
+      "as_of": "2018-08-10",
+      "count": 3279,
+      "avg_return": -11.09,
+      "win_rate": 18.1
+    },
+    "53": {
+      "year": 2018,
+      "as_of": "2018-11-17",
+      "count": 3307,
+      "avg_return": 24.8,
+      "win_rate": 91.8
+    },
+    "54": {
+      "year": 2018,
+      "as_of": "2018-06-10",
+      "count": 3251,
+      "avg_return": -27.56,
+      "win_rate": 4.9
+    },
+    "55": {
+      "year": 2018,
+      "as_of": "2018-04-11",
+      "count": 3203,
+      "avg_return": -26.89,
+      "win_rate": 5.6
+    },
+    "56": {
+      "year": 2019,
+      "as_of": "2019-06-12",
+      "count": 3355,
+      "avg_return": -0.24,
+      "win_rate": 40.2
+    },
+    "57": {
+      "year": 2019,
+      "as_of": "2019-03-20",
+      "count": 3338,
+      "avg_return": -13.07,
+      "win_rate": 17.3
+    },
+    "58": {
+      "year": 2019,
+      "as_of": "2019-04-17",
+      "count": 3343,
+      "avg_return": -17.48,
+      "win_rate": 13.0
+    },
+    "59": {
+      "year": 2020,
+      "as_of": "2020-07-25",
+      "count": 3591,
+      "avg_return": 5.17,
+      "win_rate": 50.2
+    },
+    "60": {
+      "year": 2020,
+      "as_of": "2020-06-14",
+      "count": 3559,
+      "avg_return": 15.15,
+      "win_rate": 67.9
+    },
+    "61": {
+      "year": 2020,
+      "as_of": "2020-10-17",
+      "count": 3639,
+      "avg_return": -5.8,
+      "win_rate": 27.5
+    },
+    "62": {
+      "year": 2020,
+      "as_of": "2020-10-23",
+      "count": 3644,
+      "avg_return": -4.47,
+      "win_rate": 30.6
+    },
+    "63": {
+      "year": 2020,
+      "as_of": "2020-06-13",
+      "count": 3559,
+      "avg_return": 15.15,
+      "win_rate": 67.9
+    },
+    "64": {
+      "year": 2020,
+      "as_of": "2020-04-23",
+      "count": 3525,
+      "avg_return": 21.15,
+      "win_rate": 78.4
+    },
+    "65": {
+      "year": 2021,
+      "as_of": "2021-08-23",
+      "count": 4046,
+      "avg_return": 9.57,
+      "win_rate": 62.9
+    },
+    "66": {
+      "year": 2021,
+      "as_of": "2021-09-24",
+      "count": 4103,
+      "avg_return": -0.47,
+      "win_rate": 41.0
+    },
+    "67": {
+      "year": 2021,
+      "as_of": "2021-03-13",
+      "count": 3854,
+      "avg_return": 12.15,
+      "win_rate": 56.0
+    },
+    "68": {
+      "year": 2021,
+      "as_of": "2021-03-22",
+      "count": 3865,
+      "avg_return": 8.9,
+      "win_rate": 49.8
+    },
+    "69": {
+      "year": 2021,
+      "as_of": "2021-08-13",
+      "count": 4032,
+      "avg_return": 7.69,
+      "win_rate": 58.1
+    },
+    "70": {
+      "year": 2021,
+      "as_of": "2021-06-16",
+      "count": 3958,
+      "avg_return": 5.64,
+      "win_rate": 42.1
+    },
+    "71": {
+      "year": 2022,
+      "as_of": "2022-06-24",
+      "count": 4449,
+      "avg_return": 0.13,
+      "win_rate": 40.0
+    },
+    "72": {
+      "year": 2022,
+      "as_of": "2022-05-23",
+      "count": 4411,
+      "avg_return": -2.99,
+      "win_rate": 32.8
+    },
+    "73": {
+      "year": 2022,
+      "as_of": "2022-05-18",
+      "count": 4406,
+      "avg_return": 2.09,
+      "win_rate": 46.3
+    },
+    "74": {
+      "year": 2022,
+      "as_of": "2022-10-17",
+      "count": 4553,
+      "avg_return": 11.39,
+      "win_rate": 75.5
+    },
+    "75": {
+      "year": 2022,
+      "as_of": "2022-04-24",
+      "count": 4381,
+      "avg_return": 8.11,
+      "win_rate": 58.7
+    },
+    "76": {
+      "year": 2022,
+      "as_of": "2022-11-13",
+      "count": 4571,
+      "avg_return": 7.21,
+      "win_rate": 64.1
+    },
+    "77": {
+      "year": 2023,
+      "as_of": "2023-03-10",
+      "count": 4707,
+      "avg_return": -4.55,
+      "win_rate": 34.2
+    },
+    "78": {
+      "year": 2023,
+      "as_of": "2023-04-17",
+      "count": 4742,
+      "avg_return": -10.88,
+      "win_rate": 24.2
+    },
+    "79": {
+      "year": 2023,
+      "as_of": "2023-05-23",
+      "count": 4763,
+      "avg_return": -3.85,
+      "win_rate": 36.4
+    },
+    "80": {
+      "year": 2023,
+      "as_of": "2023-10-25",
+      "count": 4873,
+      "avg_return": -9.4,
+      "win_rate": 22.3
+    },
+    "81": {
+      "year": 2023,
+      "as_of": "2023-06-22",
+      "count": 4780,
+      "avg_return": -0.75,
+      "win_rate": 44.4
+    },
+    "82": {
+      "year": 2023,
+      "as_of": "2023-03-15",
+      "count": 4713,
+      "avg_return": -4.16,
+      "win_rate": 36.2
+    },
+    "83": {
+      "year": 2023,
+      "as_of": "2023-09-10",
+      "count": 4840,
+      "avg_return": -13.1,
+      "win_rate": 13.5
+    },
+    "84": {
+      "year": 2023,
+      "as_of": "2023-09-18",
+      "count": 4850,
+      "avg_return": -18.4,
+      "win_rate": 9.0
+    },
+    "85": {
+      "year": 2024,
+      "as_of": "2024-10-19",
+      "count": 5040,
+      "avg_return": 15.32,
+      "win_rate": 69.6
+    },
+    "86": {
+      "year": 2024,
+      "as_of": "2024-09-25",
+      "count": 5038,
+      "avg_return": 34.35,
+      "win_rate": 94.5
+    },
+    "87": {
+      "year": 2024,
+      "as_of": "2024-05-16",
+      "count": 5003,
+      "avg_return": -14.74,
+      "win_rate": 11.7
+    },
+    "88": {
+      "year": 2024,
+      "as_of": "2024-07-16",
+      "count": 5026,
+      "avg_return": 33.6,
+      "win_rate": 90.9
+    },
+    "89": {
+      "year": 2024,
+      "as_of": "2024-03-11",
+      "count": 4982,
+      "avg_return": -15.25,
+      "win_rate": 15.7
+    },
+    "90": {
+      "year": 2024,
+      "as_of": "2024-08-11",
+      "count": 5030,
+      "avg_return": 33.71,
+      "win_rate": 94.8
+    },
+    "91": {
+      "year": 2025,
+      "as_of": "2025-03-25",
+      "count": 5072,
+      "avg_return": 13.47,
+      "win_rate": 68.0
+    },
+    "92": {
+      "year": 2025,
+      "as_of": "2025-11-15",
+      "count": 5131,
+      "avg_return": 2.61,
+      "win_rate": 38.3
+    },
+    "93": {
+      "year": 2025,
+      "as_of": "2025-03-12",
+      "count": 5068,
+      "avg_return": 7.06,
+      "win_rate": 57.1
+    },
+    "94": {
+      "year": 2025,
+      "as_of": "2025-05-12",
+      "count": 5083,
+      "avg_return": 21.9,
+      "win_rate": 82.5
+    },
+    "95": {
+      "year": 2025,
+      "as_of": "2025-04-17",
+      "count": 5077,
+      "avg_return": 27.77,
+      "win_rate": 86.4
+    },
+    "96": {
+      "year": 2025,
+      "as_of": "2025-09-13",
+      "count": 5120,
+      "avg_return": 12.76,
+      "win_rate": 59.6
+    },
+    "97": {
+      "year": 2025,
+      "as_of": "2025-06-11",
+      "count": 5091,
+      "avg_return": 17.78,
+      "win_rate": 75.0
+    }
+  },
+  "signal_accuracy": {
+    "markdown": {
+      "count": 23230,
+      "avg_return": 4.31,
+      "win_rate": 49.8
+    },
+    "no_signal": {
+      "count": 245047,
+      "avg_return": 3.22,
+      "win_rate": 48.1
+    },
+    "markup": {
+      "count": 51323,
+      "avg_return": -3.54,
+      "win_rate": 37.7
+    },
+    "distribution": {
+      "count": 3253,
+      "avg_return": 2.87,
+      "win_rate": 49.1
+    },
+    "spring": {
+      "count": 1371,
+      "avg_return": -0.73,
+      "win_rate": 43.3
+    },
+    "accumulation": {
+      "count": 324,
+      "avg_return": -1.52,
+      "win_rate": 42.3
+    },
+    "sos_candidate": {
+      "count": 382,
+      "avg_return": 1.28,
+      "win_rate": 48.4
+    }
+  },
+  "mtf_stats": {
+    "higher_timeframe_aligned": {
+      "count": 90091,
+      "avg_return": 2.39,
+      "win_rate": 47.0
+    },
+    "weekly_daily_aligned": {
+      "count": 71878,
+      "avg_return": 2.53,
+      "win_rate": 46.8
+    },
+    "fully_aligned": {
+      "count": 60203,
+      "avg_return": -0.0,
+      "win_rate": 43.5
+    },
+    "mixed": {
+      "count": 102758,
+      "avg_return": 3.11,
+      "win_rate": 47.7
+    }
+  },
+  "fit_analysis": {
+    "phase_fit": {
+      "accumulation": {
+        "count": 2077,
+        "expected_positive": true,
+        "actual_positive_rate": 44.1,
+        "fit_rate": 44.1,
+        "avg_return": -0.49
+      },
+      "markup": {
+        "count": 51323,
+        "expected_positive": true,
+        "actual_positive_rate": 37.7,
+        "fit_rate": 37.7,
+        "avg_return": -3.54
+      },
+      "distribution": {
+        "count": 3266,
+        "expected_positive": false,
+        "actual_positive_rate": 49.0,
+        "fit_rate": 51.0,
+        "avg_return": 2.84
+      },
+      "markdown": {
+        "count": 223326,
+        "expected_positive": false,
+        "actual_positive_rate": 48.9,
+        "fit_rate": 51.1,
+        "avg_return": 3.82
+      }
+    },
+    "confidence_fit": {
+      "A": {
+        "count": 7,
+        "expected_rank": 4,
+        "avg_return": -11.19,
+        "win_rate": 14.3
+      },
+      "B": {
+        "count": 4388,
+        "expected_rank": 3,
+        "avg_return": -0.05,
+        "win_rate": 42.0
+      },
+      "C": {
+        "count": 66831,
+        "expected_rank": 2,
+        "avg_return": -1.43,
+        "win_rate": 41.0
+      },
+      "D": {
+        "count": 253704,
+        "expected_rank": 1,
+        "avg_return": 3.2,
+        "win_rate": 48.1
+      }
+    },
+    "mtf_fit": {
+      "fully_aligned": {
+        "count": 60203,
+        "expected_rank": 4,
+        "avg_return": -0.0,
+        "win_rate": 43.5
+      },
+      "weekly_daily_aligned": {
+        "count": 71878,
+        "expected_rank": 3,
+        "avg_return": 2.53,
+        "win_rate": 46.8
+      },
+      "higher_timeframe_aligned": {
+        "count": 90091,
+        "expected_rank": 2,
+        "avg_return": 2.39,
+        "win_rate": 47.0
+      },
+      "mixed": {
+        "count": 102758,
+        "expected_rank": 1,
+        "avg_return": 3.11,
+        "win_rate": 47.7
+      }
+    },
+    "overall_fit_score": 54.2,
+    "phase_fit_score": 46.0,
+    "confidence_fit_score": 62.5,
+    "mtf_fit_score": 62.5
+  }
+}

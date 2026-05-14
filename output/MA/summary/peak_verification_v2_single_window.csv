@@ -1,0 +1,10 @@
+peak_idx,peak_date,peak_price,total_scans,danger_count,danger_before_peak,first_danger_days,first_danger_r2,first_danger_m,first_danger_w,best_trend_days,best_trend_score,best_trend_r2,detected,mode,symbol,name,drop_pct,param_source,step,ma_window,optimizer,window_count,window_min,window_max,r2_threshold,consensus_threshold,danger_days
+5709,2015-06-12,5166.35,2,0,0,,,,,,,,False,single_window,000001.SH,上证综指,0.4333930144105607,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20
+687,1994-09-13,1033.47,2,0,0,,,,,,,,False,single_window,000001.SH,上证综指,0.4036208114410675,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20
+3908,2008-01-14,5497.9,2,0,0,,,,,,,,False,single_window,000001.SH,上证综指,0.4003765073937321,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20
+559,1994-03-16,793.87,2,1,1,-120.0,0.5292239306493126,0.6930845792942429,8.00306660071134,-120.0,0.10584478612986253,0.5292239306493126,True,single_window,000001.SH,上证综指,0.34120196001864284,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20
+967,1995-10-25,760.41,2,0,0,,,,,,,,False,single_window,000001.SH,上证综指,0.3208137715179968,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20
+5838,2015-12-22,3651.77,2,0,0,,,,,,,,False,single_window,000001.SH,上证综指,0.27277457233067803,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20
+1327,1997-05-12,1500.39,2,0,0,,,,,,,,False,single_window,000001.SH,上证综指,0.26898339764994444,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20
+4456,2010-04-14,3166.18,2,0,0,,,,,,,,False,single_window,000001.SH,上证综指,0.25337472916890386,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20
+1586,1998-06-03,1420.0,2,0,0,,,,,,,,False,single_window,000001.SH,上证综指,0.24619014084507038,optimal_yaml,120,5,lbfgsb,9,40,120,0.5,0.2,20

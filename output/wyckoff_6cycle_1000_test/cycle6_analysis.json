@@ -1,0 +1,168 @@
+{
+  "total_samples": 5376,
+  "overall_avg_return": 3.86,
+  "overall_median_return": -0.3,
+  "overall_win_rate": 49.3,
+  "phase_stats": {
+    "markdown": {
+      "count": 3915,
+      "avg_return": 5.03,
+      "median_return": 1.17,
+      "win_rate": 51.9,
+      "avg_max_gain": 32.0,
+      "avg_max_drawdown": 14.28
+    },
+    "unknown": {
+      "count": 839,
+      "avg_return": 1.02,
+      "median_return": -3.8,
+      "win_rate": 42.8,
+      "avg_max_gain": 31.02,
+      "avg_max_drawdown": 18.47
+    },
+    "markup": {
+      "count": 534,
+      "avg_return": -0.85,
+      "median_return": -6.02,
+      "win_rate": 39.5,
+      "avg_max_gain": 31.99,
+      "avg_max_drawdown": 22.43
+    },
+    "accumulation": {
+      "count": 59,
+      "avg_return": 10.32,
+      "median_return": 6.3,
+      "win_rate": 59.3,
+      "avg_max_gain": 30.97,
+      "avg_max_drawdown": 10.53
+    },
+    "distribution": {
+      "count": 29,
+      "avg_return": 0.98,
+      "median_return": 1.36,
+      "win_rate": 51.7,
+      "avg_max_gain": 19.51,
+      "avg_max_drawdown": 13.55
+    }
+  },
+  "direction_stats": {
+    "空仓观望": {
+      "count": 4816,
+      "avg_return": 4.36,
+      "win_rate": 50.4
+    },
+    "持有观察": {
+      "count": 522,
+      "avg_return": -0.93,
+      "win_rate": 39.5
+    },
+    "观察等待": {
+      "count": 25,
+      "avg_return": 7.46,
+      "win_rate": 52.0
+    },
+    "做多": {
+      "count": 2,
+      "avg_return": -6.2,
+      "win_rate": 0.0
+    },
+    "轻仓试探": {
+      "count": 11,
+      "avg_return": 3.5,
+      "win_rate": 45.5
+    }
+  },
+  "confidence_stats": {
+    "D": {
+      "count": 4383,
+      "avg_return": 4.64,
+      "win_rate": 50.5
+    },
+    "C": {
+      "count": 993,
+      "avg_return": 0.43,
+      "win_rate": 43.9
+    }
+  },
+  "cycle_stats": {
+    "1": {
+      "year": 2012,
+      "as_of": "2012-05-13",
+      "count": 830,
+      "avg_return": -14.98,
+      "win_rate": 13.9
+    },
+    "2": {
+      "year": 2013,
+      "as_of": "2013-11-12",
+      "count": 848,
+      "avg_return": 5.84,
+      "win_rate": 46.2
+    },
+    "3": {
+      "year": 2015,
+      "as_of": "2015-09-11",
+      "count": 872,
+      "avg_return": -4.72,
+      "win_rate": 37.2
+    },
+    "4": {
+      "year": 2016,
+      "as_of": "2016-03-12",
+      "count": 878,
+      "avg_return": 11.73,
+      "win_rate": 73.1
+    },
+    "5": {
+      "year": 2021,
+      "as_of": "2021-06-17",
+      "count": 965,
+      "avg_return": 13.3,
+      "win_rate": 59.1
+    },
+    "6": {
+      "year": 2022,
+      "as_of": "2022-11-10",
+      "count": 983,
+      "avg_return": 9.37,
+      "win_rate": 61.7
+    }
+  },
+  "signal_accuracy": {
+    "no_signal": {
+      "count": 3918,
+      "avg_return": 5.13,
+      "win_rate": 51.4
+    },
+    "markdown": {
+      "count": 836,
+      "avg_return": 0.56,
+      "win_rate": 44.9
+    },
+    "markup": {
+      "count": 534,
+      "avg_return": -0.85,
+      "win_rate": 39.5
+    },
+    "spring": {
+      "count": 26,
+      "avg_return": 6.94,
+      "win_rate": 50.0
+    },
+    "sos_candidate": {
+      "count": 8,
+      "avg_return": 2.19,
+      "win_rate": 50.0
+    },
+    "accumulation": {
+      "count": 25,
+      "avg_return": 16.43,
+      "win_rate": 72.0
+    },
+    "distribution": {
+      "count": 29,
+      "avg_return": 0.98,
+      "win_rate": 51.7
+    }
+  }
+}

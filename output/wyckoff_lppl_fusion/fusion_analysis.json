@@ -1,0 +1,174 @@
+{
+  "total_samples": 28970,
+  "overall_avg_return": 5.84,
+  "overall_win_rate": 50.1,
+  "comparison": {
+    "A_wyckoff_markdown": {
+      "n_signals": 13568,
+      "signal_rate": 0.4683,
+      "precision": 0.4258,
+      "recall": 0.4014,
+      "f1": 0.4132,
+      "signal_return": 10.42,
+      "non_signal_return": 1.8,
+      "return_spread": 8.61,
+      "signal_win_rate": 57.1,
+      "signal_median": 4.42
+    },
+    "B_lppl_multifit": {
+      "n_signals": 2571,
+      "signal_rate": 0.0887,
+      "precision": 0.394,
+      "recall": 0.0704,
+      "f1": 0.1194,
+      "signal_return": 10.22,
+      "non_signal_return": 5.41,
+      "return_spread": 4.81,
+      "signal_win_rate": 60.3,
+      "signal_median": 6.41
+    },
+    "C_fusion": {
+      "n_signals": 8712,
+      "signal_rate": 0.3007,
+      "precision": 0.3791,
+      "recall": 0.2295,
+      "f1": 0.2859,
+      "signal_return": 12.72,
+      "non_signal_return": 2.88,
+      "return_spread": 9.84,
+      "signal_win_rate": 61.9,
+      "signal_median": 7.37
+    },
+    "D_fusion_regime": {
+      "n_signals": 8712,
+      "signal_rate": 0.3007,
+      "precision": 0.3791,
+      "recall": 0.2295,
+      "f1": 0.2859,
+      "signal_return": 12.72,
+      "non_signal_return": 2.88,
+      "return_spread": 9.84,
+      "signal_win_rate": 61.9,
+      "signal_median": 7.37
+    }
+  },
+  "yearly_stats": {
+    "2012": {
+      "n_samples": 1716,
+      "avg_return": -13.74,
+      "win_rate": 18.5,
+      "d_signals": 420,
+      "d_signal_return": -9.66,
+      "d_signal_win_rate": 20.2
+    },
+    "2013": {
+      "n_samples": 2084,
+      "avg_return": 18.83,
+      "win_rate": 69.2,
+      "d_signals": 524,
+      "d_signal_return": 20.38,
+      "d_signal_win_rate": 75.8
+    },
+    "2015": {
+      "n_samples": 2283,
+      "avg_return": -21.34,
+      "win_rate": 14.1,
+      "d_signals": 62,
+      "d_signal_return": -0.89,
+      "d_signal_win_rate": 38.7
+    },
+    "2016": {
+      "n_samples": 2338,
+      "avg_return": 7.12,
+      "win_rate": 61.8,
+      "d_signals": 736,
+      "d_signal_return": 14.35,
+      "d_signal_win_rate": 76.0
+    },
+    "2017": {
+      "n_samples": 2543,
+      "avg_return": -6.57,
+      "win_rate": 30.0,
+      "d_signals": 422,
+      "d_signal_return": -8.25,
+      "d_signal_win_rate": 28.4
+    },
+    "2018": {
+      "n_samples": 2732,
+      "avg_return": -11.52,
+      "win_rate": 22.2,
+      "d_signals": 1176,
+      "d_signal_return": -9.66,
+      "d_signal_win_rate": 25.3
+    },
+    "2020": {
+      "n_samples": 3325,
+      "avg_return": 17.81,
+      "win_rate": 67.2,
+      "d_signals": 623,
+      "d_signal_return": 18.15,
+      "d_signal_win_rate": 70.1
+    },
+    "2021": {
+      "n_samples": 3464,
+      "avg_return": 11.81,
+      "win_rate": 52.9,
+      "d_signals": 547,
+      "d_signal_return": 13.33,
+      "d_signal_win_rate": 54.7
+    },
+    "2022": {
+      "n_samples": 3751,
+      "avg_return": -0.46,
+      "win_rate": 38.1,
+      "d_signals": 1543,
+      "d_signal_return": 4.96,
+      "d_signal_win_rate": 47.8
+    },
+    "2024": {
+      "n_samples": 4734,
+      "avg_return": 28.59,
+      "win_rate": 87.0,
+      "d_signals": 2659,
+      "d_signal_return": 30.94,
+      "d_signal_win_rate": 91.5
+    }
+  },
+  "phase_stats": {
+    "markdown": {
+      "count": 13568,
+      "avg_return": 10.42,
+      "n_lppl_signals": 1128,
+      "lppl_signal_return": 16.78,
+      "lppl_signal_win_rate": 70.4
+    },
+    "markup": {
+      "count": 5406,
+      "avg_return": -4.3,
+      "n_lppl_signals": 323,
+      "lppl_signal_return": -7.65,
+      "lppl_signal_win_rate": 28.5
+    },
+    "accumulation": {
+      "count": 859,
+      "avg_return": 2.34,
+      "n_lppl_signals": 112,
+      "lppl_signal_return": 7.52,
+      "lppl_signal_win_rate": 63.4
+    },
+    "distribution": {
+      "count": 277,
+      "avg_return": 4.16,
+      "n_lppl_signals": 54,
+      "lppl_signal_return": 11.85,
+      "lppl_signal_win_rate": 68.5
+    },
+    "unknown": {
+      "count": 8860,
+      "avg_return": 5.41,
+      "n_lppl_signals": 954,
+      "lppl_signal_return": 8.73,
+      "lppl_signal_win_rate": 58.4
+    }
+  }
+}
