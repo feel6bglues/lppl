@@ -1,0 +1,95 @@
+{
+  "config": {
+    "n_stocks": 5199,
+    "n_windows": 20,
+    "min_year": 2018,
+    "max_year": 2026,
+    "mc_seed": 42,
+    "window_seed": 42,
+    "with_costs": false,
+    "cost_model": {
+      "buy_pct": 0.0,
+      "sell_pct": 0.0,
+      "round_trip_pct": 0.0
+    },
+    "strategies_used": [
+      "wyckoff",
+      "ma_cross",
+      "str_reversal"
+    ]
+  },
+  "strategies": {
+    "wyckoff": {
+      "n": 3973,
+      "mean_ret": 3.17,
+      "median_ret": 4.2,
+      "std": 10.05,
+      "win_rate": 64.4,
+      "avg_days": 22.2,
+      "sharpe": 1.065
+    },
+    "ma_cross": {
+      "n": 6838,
+      "mean_ret": 0.61,
+      "median_ret": -0.94,
+      "std": 14.05,
+      "win_rate": 44.2,
+      "avg_days": 13.7,
+      "sharpe": 0.185
+    },
+    "str_reversal": {
+      "n": 13118,
+      "mean_ret": 0.3,
+      "median_ret": 1.08,
+      "std": 3.72,
+      "win_rate": 53.2,
+      "avg_days": 2.9,
+      "sharpe": 0.754
+    }
+  },
+  "correlations": {
+    "wyckoff_vs_ma_cross": {
+      "corr": 0.6,
+      "n": 299
+    },
+    "wyckoff_vs_str_reversal": {
+      "corr": 0.458,
+      "n": 139
+    },
+    "ma_cross_vs_str_reversal": {
+      "corr": 0.44,
+      "n": 145
+    }
+  },
+  "portfolio": {
+    "multi_strat_sharpe": 0.818,
+    "method": "estimated_from_correlation",
+    "formula": "avg(sharpe) * sqrt(n / (1 + (n-1) * avg(corr)))"
+  },
+  "monte_carlo": {
+    "wyckoff": {
+      "mean": 1.065,
+      "ci_5": 0.972,
+      "ci_95": 1.158,
+      "p_pos": 100.0
+    },
+    "ma_cross": {
+      "mean": 0.184,
+      "ci_5": 0.107,
+      "ci_95": 0.258,
+      "p_pos": 100.0
+    },
+    "str_reversal": {
+      "mean": 0.753,
+      "ci_5": 0.619,
+      "ci_95": 0.886,
+      "p_pos": 100.0
+    }
+  },
+  "reproducibility": {
+    "mc_seeded": true,
+    "mc_seed": 42,
+    "window_seeded": true,
+    "window_seed": 42
+  }
+}
