@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+# DEPRECATED: 请使用 scripts/run_backtest.py 替代。本文件将在下个迭代移除。
+
 三策略组合验证 v6 — Wyckoff + MA5/20 + Short-term Reversal
 ====================================================
 策略1: Wyckoff v2+P3 (22天持有, 结构分析)      Sharpe 0.74
