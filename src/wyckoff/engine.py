@@ -1346,13 +1346,13 @@ class WyckoffEngine:
                     move_type = LimitMoveType.LIMIT_DOWN
                     is_broken = False
 
-            volume_level = self._classify_volume(row["volume"], df["volume"])
+            volume_level = self._classify_volume(row.volume, df["volume"])
 
             limit_moves.append(
                 LimitMove(
-                    date=str(row["date"]),
+                    date=str(row.date),
                     move_type=move_type,
-                    price=float(row["close"]),
+                    price=float(row.close),
                     volume_level=volume_level,
                     is_broken=is_broken,
                 )
