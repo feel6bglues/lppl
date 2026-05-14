@@ -22,7 +22,12 @@ env/
 unused/
 
 # Build and runtime artifacts
-output/
+output/*
+!output/*/results.json
+!output/*/dual_results.json
+!output/*/v6_results.json
+!output/*/signals_*.json
+!output/*/signals_*.csv
 
 # Runtime logs
 wyckoff_analysis.log*

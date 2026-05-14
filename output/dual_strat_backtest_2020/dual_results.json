@@ -1,0 +1,84 @@
+{
+  "config": {
+    "n_stocks": 5199,
+    "n_windows": 20,
+    "mc_sims": 10000,
+    "mc_seed": 42,
+    "window_seed": 42,
+    "min_year": 2020,
+    "max_year": 2025,
+    "with_costs": true,
+    "cost_model": {
+      "buy_pct": 0.075,
+      "sell_pct": 0.175,
+      "round_trip_pct": 0.25,
+      "description": "佣金万2.5+印花税千1+滑点万5"
+    },
+    "strategies_used": [
+      "wyckoff",
+      "ma_cross"
+    ]
+  },
+  "strategies": {
+    "wyckoff": {
+      "n": 1549,
+      "mean_ret": 5.07,
+      "median_ret": 4.7,
+      "std": 9.97,
+      "win_rate": 70.4,
+      "avg_days": 16.8,
+      "sharpe": 1.97
+    },
+    "ma_cross": {
+      "n": 13408,
+      "mean_ret": 7.06,
+      "median_ret": 3.14,
+      "std": 19.16,
+      "win_rate": 67.8,
+      "avg_days": 12.8,
+      "sharpe": 1.637
+    }
+  },
+  "correlations": {
+    "wyckoff_vs_ma_cross": {
+      "corr": 0.686,
+      "n": 224
+    }
+  },
+  "portfolio": {
+    "dual_strat_sharpe": 1.964,
+    "method": "estimated_from_correlation",
+    "formula": "avg(sharpe) * sqrt(n / (1 + (n-1) * avg(corr)))",
+    "limitation": "基于各策略独立夏普和平均相关性估算, 非真实组合净值序列"
+  },
+  "monte_carlo": {
+    "wyckoff": {
+      "mean": 1.975,
+      "ci_5": 1.814,
+      "ci_95": 2.141,
+      "p_pos": 100.0
+    },
+    "ma_cross": {
+      "mean": 1.64,
+      "ci_5": 1.564,
+      "ci_95": 1.72,
+      "p_pos": 100.0
+    }
+  },
+  "reproducibility": {
+    "mc_seeded": true,
+    "mc_seed": 42,
+    "window_seeded": true,
+    "window_seed": 42,
+    "requires_data_snapshot": "TDX .day as of run date"
+  },
+  "comparable_with": [
+    {
+      "script": "run_dual_strat_wyckoff_ma.py",
+      "same_period": false,
+      "same_windows": false,
+      "same_costs": false,
+      "note": "策略逻辑相同但窗口数(30vs20)和成本模型不同"
+    }
+  ]
+}
