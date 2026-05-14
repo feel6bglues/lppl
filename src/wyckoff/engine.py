@@ -726,21 +726,12 @@ class WyckoffEngine:
         else:
             rr_ratio = 0.0
 
-        # 判定 - 按阶段差异化阈值
-        if step1.phase == WyckoffPhase.MARKUP:
-            excellent_threshold = 1.5
-            pass_threshold = 1.2
-            marginal_threshold = 1.0
-        else:
-            excellent_threshold = 2.5
-            pass_threshold = 2.0
-            marginal_threshold = 1.5
-
-        if rr_ratio >= excellent_threshold:
+        # 判定 - 统一严格阈值 (v3.0要求盈亏比 >= 1:2.5)
+        if rr_ratio >= 2.5:
             rr_verdict = "excellent"
-        elif rr_ratio >= pass_threshold:
+        elif rr_ratio >= 2.0:
             rr_verdict = "pass"
-        elif rr_ratio >= marginal_threshold:
+        elif rr_ratio >= 1.5:
             rr_verdict = "marginal"
         else:
             rr_verdict = "fail"
@@ -766,75 +757,31 @@ class WyckoffEngine:
         rr: RiskRewardResult,
         multiframe: bool,
     ) -> ConfidenceResult:
-        """规则8: 置信度矩阵 - 按阶段差异化标准"""
+        """规则8: 置信度矩阵 - 统一5条件 (原始标准)"""
+        bc_located = rule0.bc_found
+        spring_lps_verified = step3.spring_detected and step3.lps_confirmed
         counterfactual_passed = not cf.conclusion_overturned
-        multiframe_aligned = multiframe or True  # 单周期不扣分，报告声明即可
+        rr_qualified = rr.rr_ratio >= 2.5
+        multiframe_aligned = multiframe
 
-        if step1.phase == WyckoffPhase.MARKUP:
-            # MARKUP阶段: 不使用BC/Spring条件
-            # 替代条件: 趋势确认 + 盈亏比 + 反事实
-            trend_confirmed = (
-                step1.short_trend_pct >= 0.03 and
-                step1.relative_position >= 0.60
-            )
-            conditions = [
-                trend_confirmed,           # ① 趋势确认
-                rr.rr_ratio >= 2.0,       # ② 盈亏比达标(MARKUP宽松标准)
-                counterfactual_passed,     # ③ 反事实通过
-                multiframe_aligned,       # ④ 多周期(单周期视为通过)
-            ]
-            met = sum(conditions)
-            if met >= 4:
-                level, pos, rsn = "A", "标准仓位", f"{met}/4项达标(MARKUP)"
-            elif met >= 3:
-                level, pos, rsn = "B", "半仓", f"{met}/4项达标(MARKUP)"
-            elif met >= 2:
-                level, pos, rsn = "C", "试探仓", f"{met}/4项达标(MARKUP)"
-            else:
-                level, pos, rsn = "D", "空仓", f"仅{met}/4项达标(MARKUP)"
+        if step3.spring_detected and not step3.lps_confirmed:
             return ConfidenceResult(
-                level=level,
-                bc_located=rule0.bc_found,
-                spring_lps_verified=False,
-                counterfactual_passed=counterfactual_passed,
-                rr_qualified=rr.rr_ratio >= 2.5,
-                multiframe_aligned=multiframe_aligned,
-                position_size=pos,
-                reason=rsn,
+                level="C", bc_located=bc_located, spring_lps_verified=False,
+                counterfactual_passed=counterfactual_passed, rr_qualified=rr_qualified,
+                multiframe_aligned=multiframe_aligned, position_size="试仓",
+                reason="Spring已检测但LPS未验证，降级到C",
             )
-
-        elif step1.phase == WyckoffPhase.ACCUMULATION:
-            # ACCUMULATION阶段: 使用Spring/LPS标准
-            bc_located = rule0.bc_found
-            spring_lps_verified = step3.spring_detected and step3.lps_confirmed
-            conditions = [
-                bc_located,
-                spring_lps_verified,
-                counterfactual_passed,
-                rr.rr_ratio >= 2.5,
-                multiframe_aligned,
-            ]
-            met = sum(conditions)
-            if step3.spring_detected and not step3.lps_confirmed:
-                return ConfidenceResult(
-                    level="C", bc_located=bc_located, spring_lps_verified=False,
-                    counterfactual_passed=counterfactual_passed, rr_qualified=rr.rr_ratio >= 2.5,
-                    multiframe_aligned=multiframe_aligned, position_size="观察",
-                    reason="Spring已检测但LPS未验证，降级到C",
-                )
-            return self.rules.rule8_confidence_matrix(
-                bc_located, spring_lps_verified, counterfactual_passed,
-                rr.rr_ratio >= 2.5, multiframe_aligned
+        if rr_qualified and not bc_located:
+            return ConfidenceResult(
+                level="C", bc_located=False, spring_lps_verified=spring_lps_verified,
+                counterfactual_passed=counterfactual_passed, rr_qualified=True,
+                multiframe_aligned=multiframe_aligned, position_size="试仓",
+                reason="盈亏比达标但BC未定位，降级到C",
             )
-
-        else:
-            # UNKNOWN/DISTRIBUTION/MARKDOWN阶段: 使用原始标准
-            bc_located = rule0.bc_found
-            spring_lps_verified = step3.spring_detected and step3.lps_confirmed
-            return self.rules.rule8_confidence_matrix(
-                bc_located, spring_lps_verified, counterfactual_passed,
-                rr.rr_ratio >= 2.5, multiframe_aligned
-            )
+        return self.rules.rule8_confidence_matrix(
+            bc_located, spring_lps_verified, counterfactual_passed,
+            rr_qualified, multiframe_aligned
+        )
 
     def _step5_trading_plan(
         self,
@@ -888,6 +835,9 @@ class WyckoffEngine:
         key_low = step3.spring_low_price if step3.spring_low_price else step1.boundary_lower
         limit_moves = self._detect_limit_moves(df if df is not None else pd.DataFrame())
         limit_moves_data = [{"price": lm.price, "type": lm.move_type.value} for lm in limit_moves]
+        # 涨跌停风控: 近20日有涨跌停记录的股票跳过
+        if limit_moves:
+            direction = "空仓观望"
         stop_loss_result = self.rules.rule10_stop_loss(key_low, limit_moves_data)
 
         # 多周期一致性声明
