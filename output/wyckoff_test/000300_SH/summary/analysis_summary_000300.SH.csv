@@ -1,2 +1,0 @@
-﻿symbol,asset_type,analysis_date,phase,micro_action,decision,confidence,bc_found,spring_detected,rr_assessment,t1_risk_assessment,trigger,invalidation,target_1,abandon_reason
-000300.SH,index,2026-04-01,no_trade_zone,BC 未找到，bc_not_found,abandon,D,False,False,fail,unknown,,,,unfavorable_rr

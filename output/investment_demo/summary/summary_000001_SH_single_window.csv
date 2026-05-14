@@ -1,2 +1,0 @@
-final_nav,total_return,benchmark_return,annualized_return,max_drawdown,trade_count,signal_count,average_position,latest_action,latest_signal,start_date,end_date,symbol,name,mode,param_source,step
-1.1076932705310731,0.10769327053107314,0.07548507785952885,0.05469653024898502,-0.19453655041376539,18,5,0.9844859970225485,hold,none,2023-01-03,2024-12-31,000001.SH,上证综指,single_window,default_cli,5

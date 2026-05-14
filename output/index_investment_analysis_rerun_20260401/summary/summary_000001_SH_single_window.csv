@@ -1,2 +1,0 @@
-final_nav,total_return,benchmark_return,annualized_return,annualized_excess_return,calmar_ratio,max_drawdown,trade_count,signal_count,average_position,turnover_rate,whipsaw_rate,latest_action,latest_signal,start_date,end_date,symbol,name,mode,param_source,step
-1.0,0.0,0.2685466096201219,0.0,-0.040523680039289856,0.0,0.0,0,0,0.0,0.0,0.0,hold,none,2020-01-02,2026-03-27,000001.SH,上证综指,single_window,optimal_yaml,120

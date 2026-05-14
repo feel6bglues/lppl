@@ -1,2 +1,0 @@
-final_nav,total_return,benchmark_return,annualized_return,max_drawdown,trade_count,signal_count,average_position,latest_action,latest_signal,start_date,end_date,symbol,name,mode,param_source,step
-1.0084292527240843,0.008429252724084346,0.08422006199944043,0.013308208105960118,-0.0882969643211503,3,3,0.8718769947827208,hold,negative_bubble,2025-07-29,2026-03-27,000001.SH,上证综指,single_window,default_cli,5
