@@ -505,7 +505,7 @@ class DataManager:
         file_path = self._get_file_path(symbol)
 
         if not os.path.exists(file_path):
-            logger.warning(f"No data found for {symbol}")
+            logger.debug(f"No data found for {symbol}")
             return None
 
         try:
@@ -534,7 +534,7 @@ class DataManager:
         try:
             df = self.tdx_reader.daily(symbol)
             if df is None or df.empty:
-                logger.warning(f"No data from TDX for {symbol}")
+                logger.debug(f"No data from TDX for {symbol}")
                 return self._read_from_parquet(symbol)
 
             is_valid, msg = validate_dataframe(df, symbol)
@@ -553,7 +553,7 @@ class DataManager:
         file_path = self._get_file_path(symbol)
 
         if not os.path.exists(file_path):
-            logger.warning(f"No parquet file found for {symbol}")
+            logger.debug(f"No parquet file found for {symbol}")
             return None
 
         try:

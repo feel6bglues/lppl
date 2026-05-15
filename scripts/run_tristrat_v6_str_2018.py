@@ -13,7 +13,7 @@ ret = subprocess.call([sys.executable, "scripts/run_backtest.py",
     "--windows", "20",
     "--min-year", "2018", "--max-year", "2026",
     "--name", NAME,
-])
+] + sys.argv[1:])
 
 old = PROJECT_ROOT / "output" / NAME / "results.json"
 new = PROJECT_ROOT / "output" / NAME / "v6_results.json"
