@@ -15,7 +15,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-from scripts.backtest_core import run_backtest
+from scripts.backtest_core import run_backtest as core_run
 
 VALID_STRATEGIES = {"wyckoff", "ma_cross", "str_reversal"}
 
@@ -38,6 +38,17 @@ def validate_args(strategies: list[str], windows: int, min_year: int,
     return errors
 
 
+def run(strategies: list[str], windows: int, min_year: int,
+        max_year: int, with_costs: bool, output_dir: str, limit: int) -> dict:
+    """执行回测并返回结果字典。可被 Web/UI/批处理复用。"""
+    return core_run(
+        strategies=strategies, n_windows=windows,
+        min_year=min_year, max_year=max_year,
+        with_costs=with_costs,
+        output_dir=output_dir, n_stocks_limit=limit,
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="统一回测框架")
     parser.add_argument("--strategies", default="wyckoff,ma_cross",
@@ -56,28 +67,20 @@ def main():
     if errs:
         parser.error("; ".join(errs))
 
-    output_dir = PROJECT_ROOT / "output" / args.name
+    output_dir = str(PROJECT_ROOT / "output" / args.name)
 
     print(f"strategy={args.strategies} windows={args.windows} period={args.min_year}-{args.max_year}")
     print(f"costs={args.costs} limit={args.limit}")
 
     t0 = time.time()
-    result = run_backtest(
-        strategies=strategies,
-        n_windows=args.windows,
-        min_year=args.min_year,
-        max_year=args.max_year,
-        with_costs=args.costs,
-        output_dir=str(output_dir),
-        n_stocks_limit=args.limit,
-    )
+    result = run(strategies, args.windows, args.min_year, args.max_year,
+                 args.costs, output_dir, args.limit)
     elapsed = time.time() - t0
 
     if not result.get("strategies"):
         print("无交易")
         return
 
-    # 输出
     print(f"\n{'=' * 70}")
     print("策略表现:")
     header = f"{'策略':15s} {'样本':>8s} {'收益均':>8s} {'中位':>8s} {'标准差':>8s} {'胜率':>6s} {'持有':>6s} {'夏普':>8s}"
@@ -94,9 +97,9 @@ def main():
     for sn, m in result.get("monte_carlo", {}).items():
         print(f"  {sn:13s}: 均值={m['mean']:.3f} 90%CI=[{m['ci_5']:.3f},{m['ci_95']:.3f}] 正值={m['p_pos']:.1f}%")
 
-    # 保存
-    output_dir.mkdir(parents=True, exist_ok=True)
-    jp = output_dir / "results.json"
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    jp = output_path / "results.json"
     with jp.open("w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2, default=str)
     print(f"\n结果: {jp} (耗时 {elapsed:.1f}s)")

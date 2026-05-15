@@ -65,3 +65,14 @@ def test_valid_strategies_constant():
     assert "wyckoff" in VALID_STRATEGIES
     assert "ma_cross" in VALID_STRATEGIES
     assert "str_reversal" in VALID_STRATEGIES
+
+
+@pytest.mark.slow
+def test_run_function_importable():
+    """验证 run() 可作为 API 导入（非 subprocess）"""
+    from scripts.run_backtest import run
+    result = run(["ma_cross"], 3, 2020, 2025, False, "", 200)
+    assert isinstance(result, dict)
+    assert "config" in result
+    # limit=200 应有足够交易产生 strategies 字段
+    assert "strategies" in result, f"no strategies with limit=200: {result.get('config')}"
