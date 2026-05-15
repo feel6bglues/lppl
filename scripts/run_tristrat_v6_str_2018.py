@@ -1,27 +1,22 @@
 #!/usr/bin/env python3
 # DEPRECATED: 请使用 scripts/run_backtest.py 替代。本文件将在下个迭代移除。
-# 薄封装: 委托到 backtest_core.run_backtest
+# CLI 参数透传 — 100% 同一代码路径
 
-import sys
+import sys, subprocess, shutil
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scripts.backtest_core import run_backtest
 
-N_WINDOWS = 20
-N_STOCKS = 99999
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+NAME = "tristrat_v6_str_2018"
 
-result = run_backtest(
-    strategies=["wyckoff", "ma_cross", "str_reversal"],
-    n_windows=N_WINDOWS,
-    min_year=2018,
-    max_year=2026,
-    with_costs=False,
-    n_stocks_limit=N_STOCKS,
-)
+ret = subprocess.call([sys.executable, "scripts/run_backtest.py",
+    "--strategies", "wyckoff,ma_cross,str_reversal",
+    "--windows", "20",
+    "--min-year", "2018", "--max-year", "2026",
+    "--name", NAME,
+])
 
-if not result.get("strategies"):
-    print("无交易")
-else:
-    for sn, st in result["strategies"].items():
-        print(f"  {sn}: n={st['n']} sharpe={st['sharpe']} ret={st['mean_ret']}%")
-    print(f"  组合夏普: {result['portfolio']['multi_strat_sharpe']:.3f}")
+old = PROJECT_ROOT / "output" / NAME / "results.json"
+new = PROJECT_ROOT / "output" / NAME / "v6_results.json"
+if old.exists():
+    shutil.move(str(old), str(new))
+sys.exit(ret)
