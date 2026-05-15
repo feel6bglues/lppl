@@ -20,6 +20,22 @@ from scripts.backtest_core import run_backtest as core_run
 VALID_STRATEGIES = {"wyckoff", "ma_cross", "str_reversal"}
 
 
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """参数绑定。返回 Namespace: strategies, windows, min_year, max_year, costs, name, limit"""
+    parser = argparse.ArgumentParser(description="统一回测框架")
+    parser.add_argument("--strategies", default="wyckoff,ma_cross",
+                        help="策略列表, 逗号分隔, 可选: wyckoff,ma_cross,str_reversal")
+    parser.add_argument("--windows", type=int, default=20, help="随机窗口数量")
+    parser.add_argument("--min-year", type=int, default=2020, help="最早采样年份")
+    parser.add_argument("--max-year", type=int, default=2026, help="最晚采样年份")
+    parser.add_argument("--costs", action="store_true", help="扣除交易成本")
+    parser.add_argument("--name", default="backtest", help="输出目录名")
+    parser.add_argument("--limit", type=int, default=99999, help="股票数量限制")
+    args = parser.parse_args(argv)
+    args.strategies_list = [s.strip() for s in args.strategies.split(",")]
+    return args
+
+
 def validate_args(strategies: list[str], windows: int, min_year: int,
                   max_year: int, limit: int, name: str) -> list[str]:
     """参数校验纯函数。返回错误信息列表，空列表 = 合法。"""
@@ -50,21 +66,11 @@ def run(strategies: list[str], windows: int, min_year: int,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="统一回测框架")
-    parser.add_argument("--strategies", default="wyckoff,ma_cross",
-                        help="策略列表, 逗号分隔, 可选: wyckoff,ma_cross,str_reversal")
-    parser.add_argument("--windows", type=int, default=20, help="随机窗口数量")
-    parser.add_argument("--min-year", type=int, default=2020, help="最早采样年份")
-    parser.add_argument("--max-year", type=int, default=2026, help="最晚采样年份")
-    parser.add_argument("--costs", action="store_true", help="扣除交易成本")
-    parser.add_argument("--name", default="backtest", help="输出目录名")
-    parser.add_argument("--limit", type=int, default=99999, help="股票数量限制")
-    args = parser.parse_args()
-
-    strategies = [s.strip() for s in args.strategies.split(",")]
-    errs = validate_args(strategies, args.windows, args.min_year,
+    args = parse_args()
+    errs = validate_args(args.strategies_list, args.windows, args.min_year,
                          args.max_year, args.limit, args.name)
     if errs:
+        parser = argparse.ArgumentParser()
         parser.error("; ".join(errs))
 
     output_dir = str(PROJECT_ROOT / "output" / args.name)
@@ -73,7 +79,7 @@ def main():
     print(f"costs={args.costs} limit={args.limit}")
 
     t0 = time.time()
-    result = run(strategies, args.windows, args.min_year, args.max_year,
+    result = run(args.strategies_list, args.windows, args.min_year, args.max_year,
                  args.costs, output_dir, args.limit)
     elapsed = time.time() - t0
 

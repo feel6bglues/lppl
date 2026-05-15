@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from scripts.run_backtest import validate_args, VALID_STRATEGIES
+from scripts.run_backtest import parse_args, validate_args, VALID_STRATEGIES
 
 
 def test_valid_args_returns_empty():
@@ -59,6 +59,32 @@ def test_empty_name():
 def test_multiple_errors():
     errs = validate_args(["bogus"], 0, 2030, 2020, 0, "")
     assert len(errs) >= 4
+
+
+def test_parse_args_defaults():
+    """parse_args(argv=[]) 返回默认值"""
+    ns = parse_args([])
+    assert ns.strategies_list == ["wyckoff", "ma_cross"]
+    assert ns.windows == 20
+    assert ns.min_year == 2020
+    assert ns.max_year == 2026
+    assert ns.costs is False
+    assert ns.name == "backtest"
+    assert ns.limit == 99999
+
+
+def test_parse_args_explicit():
+    """parse_args(argv) 解析显式参数"""
+    ns = parse_args(["--strategies", "wyckoff", "--windows", "5",
+                     "--min-year", "2020", "--max-year", "2025",
+                     "--costs", "--name", "mytest", "--limit", "100"])
+    assert ns.strategies_list == ["wyckoff"]
+    assert ns.windows == 5
+    assert ns.min_year == 2020
+    assert ns.max_year == 2025
+    assert ns.costs is True
+    assert ns.name == "mytest"
+    assert ns.limit == 100
 
 
 def test_valid_strategies_constant():
