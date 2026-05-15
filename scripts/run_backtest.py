@@ -17,6 +17,27 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 from scripts.backtest_core import run_backtest
 
+VALID_STRATEGIES = {"wyckoff", "ma_cross", "str_reversal"}
+
+
+def validate_args(strategies: list[str], windows: int, min_year: int,
+                  max_year: int, limit: int, name: str) -> list[str]:
+    """参数校验纯函数。返回错误信息列表，空列表 = 合法。"""
+    errors = []
+    unknown = [s for s in strategies if s not in VALID_STRATEGIES]
+    if unknown:
+        errors.append(f"未知策略: {', '.join(unknown)} (可选: {', '.join(sorted(VALID_STRATEGIES))})")
+    if windows < 1:
+        errors.append("--windows 必须 >= 1")
+    if min_year > max_year:
+        errors.append(f"--min-year {min_year} > --max-year {max_year}")
+    if limit < 1:
+        errors.append("--limit 必须 >= 1")
+    if not name:
+        errors.append("--name 不能为空")
+    return errors
+
+
 def main():
     parser = argparse.ArgumentParser(description="统一回测框架")
     parser.add_argument("--strategies", default="wyckoff,ma_cross",
@@ -30,19 +51,10 @@ def main():
     args = parser.parse_args()
 
     strategies = [s.strip() for s in args.strategies.split(",")]
-
-    VALID_STRATEGIES = {"wyckoff", "ma_cross", "str_reversal"}
-    unknown = [s for s in strategies if s not in VALID_STRATEGIES]
-    if unknown:
-        parser.error(f"未知策略: {', '.join(unknown)} (可选: {', '.join(sorted(VALID_STRATEGIES))})")
-    if args.windows < 1:
-        parser.error("--windows 必须 >= 1")
-    if args.min_year > args.max_year:
-        parser.error(f"--min-year {args.min_year} > --max-year {args.max_year}")
-    if args.limit < 1:
-        parser.error("--limit 必须 >= 1")
-    if not args.name:
-        parser.error("--name 不能为空")
+    errs = validate_args(strategies, args.windows, args.min_year,
+                         args.max_year, args.limit, args.name)
+    if errs:
+        parser.error("; ".join(errs))
 
     output_dir = PROJECT_ROOT / "output" / args.name
 
