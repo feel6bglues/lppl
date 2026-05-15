@@ -30,6 +30,20 @@ def main():
     args = parser.parse_args()
 
     strategies = [s.strip() for s in args.strategies.split(",")]
+
+    VALID_STRATEGIES = {"wyckoff", "ma_cross", "str_reversal"}
+    unknown = [s for s in strategies if s not in VALID_STRATEGIES]
+    if unknown:
+        parser.error(f"未知策略: {', '.join(unknown)} (可选: {', '.join(sorted(VALID_STRATEGIES))})")
+    if args.windows < 1:
+        parser.error("--windows 必须 >= 1")
+    if args.min_year > args.max_year:
+        parser.error(f"--min-year {args.min_year} > --max-year {args.max_year}")
+    if args.limit < 1:
+        parser.error("--limit 必须 >= 1")
+    if not args.name:
+        parser.error("--name 不能为空")
+
     output_dir = PROJECT_ROOT / "output" / args.name
 
     print(f"strategy={args.strategies} windows={args.windows} period={args.min_year}-{args.max_year}")

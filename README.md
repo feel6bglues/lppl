@@ -44,6 +44,8 @@ lppl/
 │   ├── integration/        # 集成测试
 │   └── fixtures/           # 测试数据
 ├── scripts/                # 研究/实验脚本
+│   ├── run_backtest.py      # 统一回测入口 (推荐)
+│   ├── backtest_core.py     # 回测共享核心
 │   ├── ensemble_grid_search.py
 │   ├── lppl_backtest.py
 │   ├── verify_lppl.py
@@ -457,6 +459,34 @@ echo "=== 所有验证通过 ==="
    - 汇总统计图
 3. **reports/**: Markdown 和 HTML 报告
 4. **summary/**: 汇总 CSV 文件
+
+### 回测框架
+
+统一回测入口 `scripts/run_backtest.py`：
+
+- 支持多策略：`wyckoff`, `ma_cross`, `str_reversal`
+- 支持窗口采样、年份过滤、交易成本
+- 结果统一输出到 `output/<name>/results.json`
+
+```bash
+# 双策略回测（2020-2025，含佣金）
+.venv/bin/python scripts/run_backtest.py \
+  --strategies wyckoff,ma_cross \
+  --windows 20 \
+  --min-year 2020 --max-year 2025 \
+  --costs \
+  --name my_backtest
+
+# 小样本烟雾测试
+.venv/bin/python scripts/run_backtest.py \
+  --strategies wyckoff,ma_cross \
+  --windows 5 \
+  --min-year 2020 --max-year 2025 \
+  --limit 500 \
+  --name smoke_verify
+```
+
+共享核心：`scripts/backtest_core.py`（策略实现、统计计算、蒙特卡洛模拟）
 
 ## 版本历史
 
