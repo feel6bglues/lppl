@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 Wyckoff + LPPL 融合因子全市场验证回测

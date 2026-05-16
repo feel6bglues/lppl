@@ -78,7 +78,7 @@ class TestDataEngine:
         engine = DataEngine()
         result = engine.run(df, "000300.SH", "index")
         
-        assert result.bc_result.found == False
+        assert not result.bc_result.found
         assert result.confidence == "D"
         assert result.decision == "abandon"
         assert result.abandon_reason == "bc_not_found"

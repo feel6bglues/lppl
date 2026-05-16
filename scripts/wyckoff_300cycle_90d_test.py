@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 300组周期测试 - 最优参数组合 (d400_w120_m40) + 90天收益

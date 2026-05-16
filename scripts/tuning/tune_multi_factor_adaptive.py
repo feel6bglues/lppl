@@ -1,3 +1,4 @@
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """多因子动态自适应趋势跟踪策略参数调优"""
 from __future__ import annotations

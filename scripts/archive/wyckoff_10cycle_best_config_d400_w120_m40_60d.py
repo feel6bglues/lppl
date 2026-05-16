@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ARCHIVED — not production code
 # -*- coding: utf-8 -*-
 """
 10组周期测试 - 最佳参数组合 (d400_w120_m40)

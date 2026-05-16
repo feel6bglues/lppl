@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """
 多策略合成验证 v5 — 最终版
 ===========================

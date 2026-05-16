@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 最优策略组合验证脚本

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """
 指数级别趋势跟踪深度调优
 

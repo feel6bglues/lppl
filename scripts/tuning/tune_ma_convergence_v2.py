@@ -1,3 +1,4 @@
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """MA收敛 + ATR波动率策略V2参数调优 (MA金叉死叉为主信号)"""
 from __future__ import annotations

@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+import warnings
 from importlib import reload
 from io import StringIO
 from tempfile import TemporaryDirectory
@@ -26,12 +27,13 @@ class LPPLVerifyOutputTests(unittest.TestCase):
         self.assertEqual(ensemble.watch_days, 61)
 
     def test_cli_warning_filters_are_targeted(self) -> None:
-        module = reload(lppl_verify_v2)
-        filters = module.warnings.filters
+        filters_before = warnings.filters[:]
+        reload(lppl_verify_v2)
+        new_filters = warnings.filters[len(filters_before):]
         broad_ignore_rules = [
-            entry for entry in filters if entry[0] == "ignore" and entry[1] is None and entry[2] is Warning
+            entry for entry in new_filters
+            if entry[0] == "ignore" and entry[1] is None and entry[2] is Warning
         ]
-
         self.assertFalse(broad_ignore_rules)
 
     def test_save_results_writes_summary_and_raw_timeline(self) -> None:

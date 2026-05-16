@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 Wyckoff 多因子合成策略验证 (P2)

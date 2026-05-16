@@ -9,16 +9,15 @@ from typing import Any, Dict, Optional, Tuple
 import pandas as pd
 
 from src.constants import (
+    AKSHARE_INDICES,
+    DATA_COLUMNS,
+    DEFAULT_DATA_DIR,
+    ENABLE_INCREMENTAL_UPDATE,
     INDICES,
     LOCAL_DATA_INDICES,
-    AKSHARE_INDICES,
-    REQUIRED_COLUMNS,
-    MIN_DATA_ROWS,
     MAX_DATA_AGE_DAYS,
-    DATA_COLUMNS,
-    ENABLE_NUMBA_JIT,
-    ENABLE_INCREMENTAL_UPDATE,
-    DEFAULT_DATA_DIR,
+    MIN_DATA_ROWS,
+    REQUIRED_COLUMNS,
     require_tdx_data_dir,
 )
 from src.data.models import DataBundle, DataSourceMeta

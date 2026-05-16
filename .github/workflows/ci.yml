@@ -8,6 +8,25 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install -r requirements.txt pytest
-      - run: ruff check .
+      - run: ruff check src/ tests/ .github/
       - run: python -m compileall src/
       - run: python -m pytest tests/unit/ -v
+
+  contract-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt pytest
+      - run: python -m pytest tests/contract/ -v
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt pytest
+      - name: Run non-TDX integration tests
+        run: python -m pytest tests/integration/ -v -m "not tdx" --tb=short

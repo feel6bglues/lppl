@@ -2,19 +2,32 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.analyze_mtf_execution_semantics import build_mtf_execution_report
-from scripts.study_wyckoff_batch_gaps import build_gap_study
+import pytest
 
-from scripts.run_wyckoff_latest_stock_batch import (
-    analyze_latest_batch,
-    analyze_symbol_batch,
-    default_worker_count,
-    discover_stock_symbols,
-    load_symbols_from_csv,
-    write_outputs,
-)
+try:
+    from scripts.analyze_mtf_execution_semantics import build_mtf_execution_report
+    from scripts.study_wyckoff_batch_gaps import build_gap_study
+
+    from scripts.run_wyckoff_latest_stock_batch import (
+        analyze_latest_batch,
+        analyze_symbol_batch,
+        default_worker_count,
+        discover_stock_symbols,
+        load_symbols_from_csv,
+        write_outputs,
+    )
+except ImportError:
+    build_mtf_execution_report = build_gap_study = None
+    analyze_latest_batch = analyze_symbol_batch = None
+    default_worker_count = discover_stock_symbols = None
+    load_symbols_from_csv = write_outputs = None
 
 
+_scripts_unavailable = analyze_latest_batch is None
+
+
+@pytest.mark.tdx
+@pytest.mark.skipif(_scripts_unavailable, reason="scripts module not importable")
 class WyckoffLatestStockBatchIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

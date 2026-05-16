@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.tdx
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -40,6 +42,11 @@ def _check_schema(d: dict, label: str):
 
     # strategies not empty
     assert len(d.get("strategies", {})) >= 1
+
+    # survivorship bias
+    assert "survivorship_bias_warning" in d
+    assert isinstance(d["survivorship_bias_warning"], str)
+    assert len(d["survivorship_bias_warning"]) > 0
 
 
 @pytest.mark.slow

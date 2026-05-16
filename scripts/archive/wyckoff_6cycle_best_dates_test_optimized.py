@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ARCHIVED — not production code
 # -*- coding: utf-8 -*-
 """
 6周期测试 - 最佳版本日期 + 多进程优化版

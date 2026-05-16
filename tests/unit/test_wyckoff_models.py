@@ -100,7 +100,7 @@ class TestModels:
         )
         
         assert result.symbol == "600519.SH"
-        assert result.spring_detected == True
+        assert result.spring_detected
         assert result.decision == "watch_only"
     
     def test_chart_manifest_creation(self):
@@ -162,7 +162,7 @@ class TestModels:
             abandon_reason="",
         )
         
-        assert state.spring_detected == True
+        assert state.spring_detected
         assert state.watch_status == "cooling_down"
         assert state.freeze_until == "2026-04-11"
 

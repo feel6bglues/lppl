@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 5窗口对比测试 - 200/400/600/1000/1200天日线 + 周线月线多周期分析

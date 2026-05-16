@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 回放 docs/new 中的威科夫样本，并输出程序结论与样本基线的对照。

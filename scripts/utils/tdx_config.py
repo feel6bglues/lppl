@@ -1,3 +1,4 @@
+# RESEARCH ONLY — not production code
 """共用配置：TDX数据路径"""
 import os
 from pathlib import Path

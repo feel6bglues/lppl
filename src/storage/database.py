@@ -3,14 +3,13 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from uuid import uuid4
 
 import pandas as pd
 
 
 class Database:
     def __init__(self, db_path: Optional[str] = None):
-        self.db_path = db_path or f":memory:"
+        self.db_path = db_path or ":memory:"
         if self.db_path != ":memory:":
             Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._init_db()

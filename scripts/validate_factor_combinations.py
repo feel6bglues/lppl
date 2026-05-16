@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """
 因子组合验证脚本 v3 — 修复相位分类器, 优化策略执行
 

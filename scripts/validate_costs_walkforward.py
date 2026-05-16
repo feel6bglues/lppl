@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """
 交易成本 + Walk-forward 综合验证
 

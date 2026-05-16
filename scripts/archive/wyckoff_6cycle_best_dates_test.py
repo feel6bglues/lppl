@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ARCHIVED — not production code
 # -*- coding: utf-8 -*-
 """
 6周期测试 - 使用最佳版本(a438a32)的日期

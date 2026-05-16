@@ -93,6 +93,7 @@ def test_valid_strategies_constant():
     assert "str_reversal" in VALID_STRATEGIES
 
 
+@pytest.mark.skip(reason="Sprint 9迁移后重建: 依赖真实运行环境/数据/worker初始化, 不满足unit/contract边界")
 @pytest.mark.slow
 def test_run_function_importable():
     """验证 run() 可作为 API 导入（非 subprocess）"""

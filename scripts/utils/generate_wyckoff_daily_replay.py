@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 按交易日回放 docs/new 中的三只样本，生成逐日报告，并对连续性样本做验收。

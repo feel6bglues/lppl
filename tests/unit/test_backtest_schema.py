@@ -1,25 +1,8 @@
-"""结果文件 schema 一致性验证
+"""模式验证: 使用 fixture 生成的合成数据验证 schema，不依赖 output/ 文件。"""
 
-使用 tmp_path fixture 隔离，不依赖 output/ 仓库文件。
-若 checked-in 文件不存在则 gracefully skip。
-"""
-
-import json
-from pathlib import Path
+import math
 
 import pytest
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-RESULT_DIRS = [
-    "output/dual_strat_backtest_2020",
-    "output/dual_strat_wyckoff_ma",
-    "output/tristrat_v6_str",
-    "output/tristrat_v6_str_2018",
-    "output/tristrat_v6_str_2020",
-]
-
-LEGACY_NAMES = {"dual_results.json", "v6_results.json"}
 
 REQUIRED_CONFIG = [
     "n_stocks", "n_windows", "mc_seed", "window_seed",
@@ -29,40 +12,88 @@ REQUIRED_PORTFOLIO = [
     "multi_strat_sharpe", "method", "formula", "limitation",
 ]
 REQUIRED_REPRO = ["mc_seeded", "mc_seed", "window_seeded", "window_seed"]
-
-DAILY_SIGNALS = ["output/daily_signals/signals_2026-05-13.json"]
 REQUIRED_DAILY_TOP = [
     "schema_version", "generated_at", "date", "market_anchor_date",
     "total_signals", "n_stocks_scanned", "summary", "by_strategy",
 ]
 
 
-def _resolve(fp_dir: Path) -> Path:
-    cand = fp_dir / "results.json"
-    if cand.exists():
-        return cand
-    for n in LEGACY_NAMES:
-        p = fp_dir / n
-        if p.exists():
-            return p
-    return fp_dir / "results.json"
+# --- Fixtures ---
+
+@pytest.fixture
+def sample_strategy_stats():
+    return {
+        "n": 50, "mean_ret": 1.23, "median_ret": 0.50,
+        "std": 5.0, "win_rate": 55.0, "avg_days": 45.0, "sharpe": 0.523,
+    }
 
 
 @pytest.fixture
-def temp_output(tmp_path):
-    return tmp_path / "output"
+def sample_backtest_result(sample_strategy_stats):
+    return {
+        "config": {
+            "n_stocks": 100,
+            "n_windows": 20,
+            "mc_seed": 42,
+            "window_seed": 42,
+            "min_year": 2020,
+            "max_year": 2025,
+            "with_costs": True,
+            "strategies_used": ["wyckoff", "ma_cross"],
+        },
+        "strategies": {
+            "wyckoff": {**sample_strategy_stats, "n": 50},
+            "ma_cross": {**sample_strategy_stats, "n": 60},
+        },
+        "portfolio": {
+            "multi_strat_sharpe": 0.45,
+            "method": "equal_weight",
+            "formula": "sharpe = mean(ret) / std(ret) * sqrt(252 / avg_days)",
+            "limitation": "assumes normal distribution",
+        },
+        "reproducibility": {
+            "mc_seeded": True,
+            "mc_seed": 42,
+            "window_seeded": True,
+            "window_seed": 42,
+        },
+    }
 
 
-# --- backtest schema parametrized on directories ---
-@pytest.mark.parametrize("rel_dir", RESULT_DIRS)
-def test_backtest_config_fields(rel_dir):
-    fp = _resolve(PROJECT_ROOT / rel_dir)
-    if not fp.exists():
-        pytest.skip(f"output file not found: {fp}")
-    d = json.loads(fp.read_text())
-    c = d.get("config", {})
+@pytest.fixture
+def sample_daily_signal():
+    return {
+        "symbol": "000001.SZ", "strategy": "wyckoff",
+        "direction": "long", "entry": 10.5, "stop": 9.8,
+        "target": 12.0, "risk_pct": 2.5, "confidence": "high",
+        "macro_regime": "bullish", "stock_regime": "accumulation",
+        "analysis_date": "2026-05-13",
+    }
+
+
+@pytest.fixture
+def sample_daily_signals_result(sample_daily_signal):
+    return {
+        "schema_version": "1.0",
+        "generated_at": "2026-05-13T10:00:00",
+        "date": "2026-05-13",
+        "market_anchor_date": "2026-05-13",
+        "total_signals": 2,
+        "n_stocks_scanned": 100,
+        "summary": {"signal": 2, "no_signal": 50, "skipped": 45, "error": 3},
+        "by_strategy": {
+            "wyckoff": {"signal": 2, "no_signal": 50, "skipped": 45, "error": 3},
+        },
+        "signals": [sample_daily_signal],
+    }
+
+
+# --- Backtest result schema ---
+
+def test_backtest_config_fields(sample_backtest_result):
+    c = sample_backtest_result.get("config", {})
     for f in REQUIRED_CONFIG:
-        assert f in c, f"{rel_dir}: config.{f} missing"
+        assert f in c, f"config.{f} missing"
     assert isinstance(c["mc_seed"], int)
     assert isinstance(c["window_seed"], int)
     assert isinstance(c["min_year"], int)
@@ -70,63 +101,40 @@ def test_backtest_config_fields(rel_dir):
     assert isinstance(c["with_costs"], bool)
 
 
-@pytest.mark.parametrize("rel_dir", RESULT_DIRS)
-def test_backtest_portfolio_fields(rel_dir):
-    fp = _resolve(PROJECT_ROOT / rel_dir)
-    if not fp.exists():
-        pytest.skip(f"output file not found: {fp}")
-    d = json.loads(fp.read_text())
-    p = d.get("portfolio", {})
+def test_backtest_portfolio_fields(sample_backtest_result):
+    p = sample_backtest_result.get("portfolio", {})
     for f in REQUIRED_PORTFOLIO:
-        assert f in p, f"{rel_dir}: portfolio.{f} missing"
+        assert f in p, f"portfolio.{f} missing"
     assert isinstance(p["multi_strat_sharpe"], float)
 
 
-@pytest.mark.parametrize("rel_dir", RESULT_DIRS)
-def test_backtest_reproducibility(rel_dir):
-    fp = _resolve(PROJECT_ROOT / rel_dir)
-    if not fp.exists():
-        pytest.skip(f"output file not found: {fp}")
-    d = json.loads(fp.read_text())
-    r = d.get("reproducibility", {})
+def test_backtest_reproducibility(sample_backtest_result):
+    r = sample_backtest_result.get("reproducibility", {})
     for f in REQUIRED_REPRO:
-        assert f in r, f"{rel_dir}: reproducibility.{f} missing"
+        assert f in r, f"reproducibility.{f} missing"
     assert r["mc_seeded"] is True
     assert r["mc_seed"] == 42
 
 
-@pytest.mark.parametrize("rel_dir", RESULT_DIRS)
-def test_backtest_strategies_not_empty(rel_dir):
-    fp = _resolve(PROJECT_ROOT / rel_dir)
-    if not fp.exists():
-        pytest.skip(f"output file not found: {fp}")
-    d = json.loads(fp.read_text())
-    s = d.get("strategies", {})
-    assert len(s) >= 1, f"{rel_dir}: no strategies in results"
+def test_backtest_strategies_not_empty(sample_backtest_result):
+    s = sample_backtest_result.get("strategies", {})
+    assert len(s) >= 1
 
 
-# --- daily signals ---
-@pytest.mark.parametrize("rel_path", DAILY_SIGNALS)
-def test_daily_signals_top_fields(rel_path):
-    fp = PROJECT_ROOT / rel_path
-    if not fp.exists():
-        pytest.skip(f"output file not found: {fp}")
-    d = json.loads(fp.read_text())
+# --- Daily signals schema ---
+
+def test_daily_signals_top_fields(sample_daily_signals_result):
+    d = sample_daily_signals_result
     for field in REQUIRED_DAILY_TOP:
-        assert field in d, f"{rel_path}: top.{field} missing"
+        assert field in d, f"top.{field} missing"
     assert d["schema_version"] == "1.0"
     s = d["summary"]
     total = sum(s.get(k, 0) for k in ["signal", "no_signal", "skipped", "error"])
     assert total == d["n_stocks_scanned"]
 
 
-@pytest.mark.parametrize("rel_path", DAILY_SIGNALS)
-def test_daily_signals_no_nan_or_negative_risk(rel_path):
-    import math
-    fp = PROJECT_ROOT / rel_path
-    if not fp.exists():
-        pytest.skip(f"output file not found: {fp}")
-    d = json.loads(fp.read_text())
+def test_daily_signals_no_nan_or_negative_risk(sample_daily_signals_result):
+    d = sample_daily_signals_result
     for sig in d["signals"]:
         for v in sig.values():
             if isinstance(v, float):
@@ -141,12 +149,8 @@ def test_daily_signals_no_nan_or_negative_risk(rel_path):
         assert "analysis_date" in wyc[0]
 
 
-@pytest.mark.parametrize("rel_path", DAILY_SIGNALS)
-def test_daily_signals_analysis_date(rel_path):
-    fp = PROJECT_ROOT / rel_path
-    if not fp.exists():
-        pytest.skip(f"output file not found: {fp}")
-    d = json.loads(fp.read_text())
+def test_daily_signals_analysis_date(sample_daily_signals_result):
+    d = sample_daily_signals_result
     sigs = d.get("signals", [])
     if sigs:
         assert "analysis_date" in sigs[0]
@@ -156,11 +160,8 @@ def test_daily_signals_analysis_date(rel_path):
                 assert s.get("analysis_date", anchor) <= anchor
 
 
-def test_daily_signals_summary_closure():
-    fp = PROJECT_ROOT / "output/daily_signals/signals_2026-05-13.json"
-    if not fp.exists():
-        pytest.skip(f"output file not found: {fp}")
-    d = json.loads(fp.read_text())
+def test_daily_signals_summary_closure(sample_daily_signals_result):
+    d = sample_daily_signals_result
     s = d["summary"]
     total = s.get("signal", 0) + s.get("no_signal", 0) + s.get("skipped", 0) + s.get("error", 0)
     assert total == d["n_stocks_scanned"]

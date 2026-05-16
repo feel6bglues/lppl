@@ -1413,6 +1413,7 @@ class InvestmentBacktestTests(unittest.TestCase):
             buy_fee=0.01,
             sell_fee=0.01,
             slippage=0.0,
+            enable_limit_move_constraint=False,
         )
 
         equity_df, trades_df, summary = run_strategy_backtest(signal_df, config)
@@ -1425,7 +1426,7 @@ class InvestmentBacktestTests(unittest.TestCase):
         self.assertAlmostEqual(summary["final_nav"], equity_df.iloc[-1]["strategy_nav"], places=6)
         self.assertLess(summary["max_drawdown"], 0.0)
 
-    def test_run_strategy_backtest_does_not_rebalance_on_hold_days(self) -> None:
+    def test_run_strategy_backtest_rebalances_on_price_drift(self) -> None:
         signal_df = pd.DataFrame(
             {
                 "date": pd.date_range("2021-01-01", periods=3, freq="D"),
@@ -1438,20 +1439,26 @@ class InvestmentBacktestTests(unittest.TestCase):
                 "lppl_signal": ["negative_bubble", "none", "none"],
                 "signal_strength": [0.9, 0.0, 0.0],
                 "position_reason": ["买入", "无信号", "无信号"],
-                "action": ["buy", "buy", "hold"],
+                "action": ["hold", "hold", "hold"],
                 "target_position": [0.5, 0.5, 0.5],
             }
         )
 
         equity_df, trades_df, summary = run_strategy_backtest(
             signal_df,
-            BacktestConfig(initial_capital=1000.0, buy_fee=0.0, sell_fee=0.0, slippage=0.0),
+            BacktestConfig(initial_capital=1000.0, buy_fee=0.0, sell_fee=0.0, slippage=0.0,
+                           enable_limit_move_constraint=False),
         )
 
-        self.assertEqual(len(trades_df), 1)
+        # target=0.5 from day 1 onward (after shift(1)):
+        #   day 0: target=0 → no trade
+        #   day 1: target=0.5 → buy to target
+        #   day 2: price drift changes holdings → tiny sell-to-target
+        self.assertEqual(len(trades_df), 2)
         self.assertEqual(trades_df.iloc[0]["trade_type"], "buy")
-        self.assertEqual(list(equity_df["trade_flag"]), [False, True, False])
-        self.assertEqual(summary["trade_count"], 1)
+        self.assertEqual(trades_df.iloc[1]["trade_type"], "reduce")
+        self.assertEqual(list(equity_df["trade_flag"]), [False, True, True])
+        self.assertEqual(summary["trade_count"], 2)
 
     def test_calculate_drawdown_tracks_running_peak(self) -> None:
         drawdown_df = calculate_drawdown(pd.Series([1.0, 1.1, 1.05, 1.2, 0.9], name="strategy_nav"))
@@ -1481,6 +1488,7 @@ class InvestmentBacktestTests(unittest.TestCase):
             initial_capital=1000.0,
             start_date="2021-01-02",
             end_date="2021-01-05",
+            enable_limit_move_constraint=False,
         )
 
         equity_df, trades_df, _ = run_strategy_backtest(signal_df, config)

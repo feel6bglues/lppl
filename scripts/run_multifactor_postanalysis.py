@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """多因子后处理分析: 在v2+运行结果上叠加因子过滤"""
 import json
 from pathlib import Path

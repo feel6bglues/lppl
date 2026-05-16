@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """
 统一回测入口 — 替代 run_tristrat_v6*.py / run_dual_strat*.py
 
@@ -115,6 +116,13 @@ def main():
     jp = output_path / "results.json"
     with jp.open("w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2, default=str)
+    sb = result.get("survivorship_bias_warning", "")
+    if sb:
+        print(f"\n{'!' * 65}")
+        print("! ⚠️  存活者偏差警告")
+        print(f"! {sb}")
+        print(f"{'!' * 65}")
+
     print(f"\n结果: {jp} (耗时 {elapsed:.1f}s)")
 
 

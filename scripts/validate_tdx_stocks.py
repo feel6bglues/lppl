@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """
 大样本TDX股票数据验证 - 含交易成本 + Walk-forward
 

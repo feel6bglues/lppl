@@ -1,3 +1,4 @@
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 

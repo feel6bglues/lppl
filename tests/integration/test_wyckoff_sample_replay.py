@@ -1,10 +1,13 @@
 import unittest
 from pathlib import Path
 
+import pytest
+
 from src.data.manager import DataManager
 from src.wyckoff import WyckoffAnalyzer, WyckoffPhase
 
 
+@pytest.mark.tdx
 class WyckoffSampleReplayIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

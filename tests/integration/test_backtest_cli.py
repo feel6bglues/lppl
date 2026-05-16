@@ -1,17 +1,13 @@
 """CLI端到端 smoke 验证：run_backtest.py 实际落盘 + 产物 schema 检查"""
 
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    not os.environ.get("LPPL_TDX_DATA_DIR"),
-    reason="LPPL_TDX_DATA_DIR not set; requires local TDX data",
-)
+pytestmark = pytest.mark.tdx
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SMOKE_DIR = "output/smoke_cli_verify"

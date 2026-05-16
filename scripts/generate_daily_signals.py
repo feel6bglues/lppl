@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """
 每日交易信号生成 — Wyckoff + MA5/20 金叉
 ===========================================

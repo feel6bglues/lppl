@@ -1119,13 +1119,15 @@ def _check_trade_constraints_df(
     backtest_config: BacktestConfig,
     trade_type: str,
     current_units: float,
-) -> Tuple[bool, str]:
-    """从 DataFrame 检查成交约束"""
+) -> Tuple[bool, str, float]:
+    """从 DataFrame 检查成交约束，返回 (allowed, reason, max_allowed)
+
+    max_allowed 为 0 表示无参与率限制（约束未启用）。"""
     if (
         not backtest_config.enable_limit_move_constraint
         and not backtest_config.suspend_if_volume_zero
     ):
-        return True, ""
+        return True, "", 0.0
     row = df.iloc[row_idx]
     volume = float(row["volume"]) if "volume" in df.columns else 0
     high = float(row["high"]) if "high" in df.columns else 0
@@ -1139,7 +1141,7 @@ def _check_trade_constraints_df(
         prev_close = close
 
     if backtest_config.suspend_if_volume_zero and volume <= 0:
-        return False, "volume_zero"
+        return False, "volume_zero", 0.0
 
     if backtest_config.enable_limit_move_constraint:
         pct_change = (close - prev_close) / prev_close if prev_close > 0 else 0
@@ -1147,18 +1149,19 @@ def _check_trade_constraints_df(
         is_limit_down = pct_change < -0.095
 
         if trade_type in ("buy", "add") and is_limit_up:
-            return False, "limit_up_cannot_buy"
+            return False, "limit_up_cannot_buy", 0.0
         if trade_type in ("sell", "reduce") and is_limit_down:
-            return False, "limit_down_cannot_sell"
+            return False, "limit_down_cannot_sell", 0.0
 
         price_range = high - low if high > low else close * 0.01
         participation = volume * price_range
         if participation > 0:
             max_allowed = backtest_config.max_participation_rate * participation
             if max_allowed <= 0:
-                return False, "insufficient_liquidity"
+                return False, "insufficient_liquidity", 0.0
+            return True, "", max_allowed
 
-    return True, ""
+    return True, "", 0.0
 
 
 def run_strategy_backtest(
@@ -1207,11 +1210,8 @@ def run_strategy_backtest(
         trade_type = "hold"
         trade_rejected_reason = ""
 
-        # 如果 action 列为 "hold" 且目标位差在容忍范围内，不触发再平衡
-        skip_rebalance = getattr(row, "action", None) == "hold"
-
-        if not skip_rebalance and desired_holdings_value > current_holdings_value + 1e-8:
-            buy_allowed, buy_reason = _check_trade_constraints_df(
+        if desired_holdings_value > current_holdings_value + 1e-8:
+            buy_allowed, buy_reason, max_allowed = _check_trade_constraints_df(
                 equity_df,
                 row_idx,
                 backtest_config,
@@ -1226,6 +1226,10 @@ def run_strategy_backtest(
                 affordable_units = cash / (execution_buy_price * (1.0 + backtest_config.buy_fee))
                 desired_units = trade_value / execution_buy_price
                 units_to_buy = min(affordable_units, desired_units)
+                order_value = units_to_buy * execution_buy_price
+                if max_allowed > 0 and order_value > max_allowed:
+                    units_to_buy = int(max_allowed / execution_buy_price / 100) * 100
+                    order_value = units_to_buy * execution_buy_price
                 if units_to_buy > 1e-8:
                     gross_cost = units_to_buy * execution_buy_price
                     fee = gross_cost * backtest_config.buy_fee
@@ -1245,8 +1249,8 @@ def run_strategy_backtest(
                             "portfolio_value_after_trade": cash + units * execution_base_price,
                         }
                     )
-        elif not skip_rebalance and desired_holdings_value < current_holdings_value - 1e-8:
-            sell_allowed, sell_reason = _check_trade_constraints_df(
+        elif desired_holdings_value < current_holdings_value - 1e-8:
+            sell_allowed, sell_reason, max_allowed = _check_trade_constraints_df(
                 equity_df,
                 row_idx,
                 backtest_config,
@@ -1259,6 +1263,10 @@ def run_strategy_backtest(
             else:
                 trade_value = current_holdings_value - desired_holdings_value
                 units_to_sell = min(units, trade_value / execution_sell_price)
+                order_value = units_to_sell * execution_sell_price
+                if max_allowed > 0 and order_value > max_allowed:
+                    units_to_sell = int(max_allowed / execution_sell_price / 100) * 100
+                    order_value = units_to_sell * execution_sell_price
                 if units_to_sell > 1e-8:
                     gross_proceeds = units_to_sell * execution_sell_price
                     fee = gross_proceeds * backtest_config.sell_fee

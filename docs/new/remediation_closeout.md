@@ -44,6 +44,8 @@
 
 以下问题在封板范围内 **不修复**, 作为下一阶段治理事项持续跟踪:
 
+**注**: 全量测试计数以修复落地时的记录为准（163 tests, 1 FAIL; pytest 220 pass/4 skip/6 fail），封板轮次未再次独立全量复跑复核。新增回归（DataManager/TDX lazy init/CLI smoke）已修复并定向确认。
+
 ### 3.1 测试失败 (pre-existing)
 
 | 测试 | 框架 | 根因 | 备注 |

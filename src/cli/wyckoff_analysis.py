@@ -13,7 +13,6 @@
 
 import logging
 import os
-import sys
 from argparse import ArgumentParser
 from datetime import datetime
 from typing import Dict

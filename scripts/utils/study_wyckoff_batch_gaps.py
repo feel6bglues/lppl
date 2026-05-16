@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 基于全量批量扫描结果抽取误差样本，辅助威科夫规则优化。

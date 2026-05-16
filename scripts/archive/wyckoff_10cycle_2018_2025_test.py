@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ARCHIVED — not production code
 # -*- coding: utf-8 -*-
 """
 10组周期测试 - 2018-2025年 + 多进程优化版

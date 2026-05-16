@@ -1,3 +1,4 @@
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """
 MA + ATR 长持仓与暴跌逃顶策略调优脚本

@@ -2,12 +2,20 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.generate_wyckoff_daily_replay import (
-    BASELINE_EXPECTATIONS,
-    generate_daily_replay,
-)
+import pytest
+
+try:
+    from scripts.generate_wyckoff_daily_replay import (
+        BASELINE_EXPECTATIONS,
+        generate_daily_replay,
+    )
+except ImportError:
+    BASELINE_EXPECTATIONS = []
+    generate_daily_replay = None
 
 
+@pytest.mark.tdx
+@pytest.mark.skipif(generate_daily_replay is None, reason="scripts module not importable")
 class WyckoffDailyReplayIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

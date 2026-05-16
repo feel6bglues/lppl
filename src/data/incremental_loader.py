@@ -118,7 +118,8 @@ class IncrementalLoader:
             "details": results,
         }
 
-    def load_latest_data(self, symbol: str, lookback: int = 400) -> Optional[pd.DataFrame]:
+    def load_latest_data(self, symbol: str, lookback: int = 400,
+                         as_of: Optional[str] = None) -> Optional[pd.DataFrame]:
         status = self.db.get_data_status()
         row = status[status["symbol"] == symbol]
         if row.empty:
@@ -142,5 +143,9 @@ class IncrementalLoader:
                 return None
             df = self.load_file(fpath)
             if df is None:
+                return None
+        if as_of is not None:
+            df = df[df["date"] <= pd.Timestamp(as_of)]
+            if df.empty:
                 return None
         return df.tail(lookback).reset_index(drop=True) if len(df) > lookback else df

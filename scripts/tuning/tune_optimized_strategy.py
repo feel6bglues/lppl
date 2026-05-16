@@ -1,3 +1,4 @@
+# RESEARCH ONLY — not production code
 # -*- coding: utf-8 -*-
 """优化版多因子策略调优 - 基于有效因子提取与最佳实践"""
 from __future__ import annotations

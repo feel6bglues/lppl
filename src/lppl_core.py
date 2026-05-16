@@ -14,6 +14,8 @@ LPPL 底层数值核心
 import logging
 from typing import Any, Dict, Literal, Optional, Tuple
 
+import pandas as pd
+
 from src.constants import ENABLE_NUMBA_JIT, REQUIRED_COLUMNS
 from src.exceptions import DataValidationError
 
@@ -209,7 +211,7 @@ def fit_single_window_task(args: Tuple[int, pd.Series, np.ndarray]) -> Optional[
                 best_fun = result.fun
         result = best_result
 
-        if not result.success or not np.isfinite(result.fun):
+        if result is None or not result.success or not np.isfinite(result.fun):
             return None
 
         fitted_curve = lppl_func(t_data, *result.x)

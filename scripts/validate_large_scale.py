@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# RESEARCH ONLY — not production code
 """
 纯制度策略大范围验证 - 跨7指数 + 阈值敏感性分析
 

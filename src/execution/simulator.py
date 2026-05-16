@@ -38,7 +38,7 @@ class SimulatedBroker:
 
     def execute_buy(self, signal: Dict, date: str) -> Optional[Dict]:
         symbol = signal["symbol"]
-        df = self.loader.load_latest_data(symbol, lookback=60)
+        df = self.loader.load_latest_data(symbol, lookback=2000, as_of=date)
         if df is None or df.empty:
             return None
         # t+1 执行: 信号日期之后第一个可用的交易日
@@ -79,13 +79,16 @@ class SimulatedBroker:
         take_profit = signal.get("take_profit")
         strategy = signal.get("strategy", "")
 
-        self._cash -= total_cost
-        self.db.open_position(
+        # 先建仓，再扣现金（原子性: 建仓失败不扣钱）
+        if not self.db.open_position(
             symbol, entry_date, buy_price, quantity,
             strategy=strategy, stop_loss=stop_loss,
             take_profit=take_profit,
             entry_reason=signal.get("direction", ""),
-        )
+        ):
+            logger.warning("open_position failed for %s on %s (duplicate?)", symbol, entry_date)
+            return None
+        self._cash -= total_cost
         return {
             "symbol": symbol, "date": entry_date, "price": buy_price,
             "quantity": quantity, "cost": cost, "strategy": strategy,
@@ -97,7 +100,7 @@ class SimulatedBroker:
         target_date = pd.Timestamp(date)
         for pos in positions:
             symbol = pos["symbol"]
-            df = self.loader.load_latest_data(symbol, lookback=30)
+            df = self.loader.load_latest_data(symbol, lookback=2000, as_of=date)
             if df is None or df.empty:
                 continue
             day_data = df[df["date"] <= target_date].tail(1)
@@ -149,7 +152,7 @@ class SimulatedBroker:
         total_mv = 0.0
         for pos in positions:
             symbol = pos["symbol"]
-            df = self.loader.load_latest_data(symbol, lookback=30)
+            df = self.loader.load_latest_data(symbol, lookback=2000, as_of=date)
             if df is None or df.empty:
                 continue
             day_data = df[df["date"] <= pd.Timestamp(date)].tail(1)

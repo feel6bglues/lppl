@@ -228,7 +228,7 @@ class TestIntegration:
         
         # 验证加载正确
         assert loaded_state is not None
-        assert loaded_state.spring_detected == True
+        assert loaded_state.spring_detected
         assert loaded_state.freeze_until == "2026-04-11"
 
 

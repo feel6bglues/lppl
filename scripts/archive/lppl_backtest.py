@@ -1,3 +1,4 @@
+# ARCHIVED — not production code
 # -*- coding: utf-8 -*-
 """
 LPPL 回测分析程序 [LEGACY - 向后兼容]
