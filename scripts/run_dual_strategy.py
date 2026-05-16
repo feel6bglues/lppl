@@ -15,21 +15,25 @@ Wyckoff + MA Crossover 双策略组合验证
   - 组合夏普 = 等权 × 相关性调整
 """
 
-import csv, json, math, random, sys
+import csv
+import json
+import math
+import random
+import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
+from scripts.utils.tdx_config import CSI300_PATH
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 N_STOCKS = 1000
 N_WINDOWS = 20
@@ -281,16 +285,16 @@ def run():
 
     w_s = results.get("wyckoff",{}).get("sharpe_ann",0)
     m_s = results.get("ma_cross",{}).get("sharpe_ann",0)
-    print(f"\n相关性分析:")
+    print("\n相关性分析:")
     print(f"  共同样本: {len(corr_df)}")
     print(f"  相关系数: {corr_val:.3f}")
-    print(f"\n组合效果: Wyckoff + MA Crossover 等权")
+    print("\n组合效果: Wyckoff + MA Crossover 等权")
     print(f"  Wyckoff 夏普: {w_s:.3f}")
     print(f"  MA Cross 夏普: {m_s:.3f}")
     print(f"  相关系数: {corr_val:.3f}")
     print(f"  组合夏普: {combo_sharpe:.3f}")
     print(f"  夏普提升: {(combo_sharpe/max(w_s,0.01)-1)*100:.0f}% vs Wyckoff单独")
-    print(f"\n结论:")
+    print("\n结论:")
     print(f"  {'✅ 双策略组合有效提升夏普' if combo_sharpe > max(w_s, m_s) else '❌ 组合未提升夏普'}")
     print(f"  {'✅ 相关性低于0.5, 有真实分散效果' if corr_val < 0.5 else '⚠️ 相关性较高, 分散效果有限'}")
     print(f"  {'✅ MA Crossover作为第二策略可行' if m_s > 0.2 else '❌ MA Crossover需进一步优化'}")

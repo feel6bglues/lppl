@@ -1,9 +1,8 @@
 """失败路径测试：统一入口在非法输入下逐层失败"""
 
-import subprocess, sys
+import subprocess
+import sys
 from pathlib import Path
-
-import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ENTRY = "scripts/run_backtest.py"

@@ -388,7 +388,7 @@ def main():
     output_dir = Path(args.output)
     
     print(f"\n{'='*80}")
-    print(f"开始长持仓策略调优")
+    print("开始长持仓策略调优")
     print(f"测试指数: {len(symbols)} 个")
     print(f"时间范围: {args.start_date} ~ {args.end_date}")
     print(f"并行线程: {args.workers}")
@@ -471,7 +471,7 @@ def main():
         
         # 打印总体摘要
         print(f"\n{'='*60}")
-        print(f"总体测试摘要")
+        print("总体测试摘要")
         print(f"{'='*60}")
         print(f"测试指数: {len(symbols)} 个")
         print(f"测试组合: {len(combined_df)} 个")

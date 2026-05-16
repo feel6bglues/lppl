@@ -17,29 +17,22 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
-
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-from itertools import product
 
 import numpy as np
 import pandas as pd
-import psutil
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.parallel import get_optimal_workers, worker_init
 from src.wyckoff.trading import calculate_wyckoff_return
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
-
 
 # ============================================================================
 # 调优配置
@@ -774,7 +767,7 @@ def generate_tuning_report(grid_search: Dict, dimension_analysis: Dict,
             "### 最优组合",
             "",
             "```yaml",
-            f"最优配置:",
+            "最优配置:",
             f"  阶段: {best['phases']}",
             f"  市场状态: {best['regimes']}",
             f"  对齐: {best['alignments']}",
@@ -795,7 +788,7 @@ def generate_tuning_report(grid_search: Dict, dimension_analysis: Dict,
             "### 稳健组合（样本量≥1000）",
             "",
             "```yaml",
-            f"稳健配置:",
+            "稳健配置:",
             f"  阶段: {best_robust['phases']}",
             f"  市场状态: {best_robust['regimes']}",
             f"  对齐: {best_robust['alignments']}",
@@ -814,7 +807,7 @@ def generate_tuning_report(grid_search: Dict, dimension_analysis: Dict,
     
     (output_dir / "tuning_report.md").write_text("\n".join(md), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'tuning_analysis.json'}")
     print(f"  - {output_dir / 'tuning_report.md'}")
 
@@ -835,7 +828,7 @@ def main():
     print("大规模参数调优测试")
     print("=" * 70)
     print(f"测试规模: {config.n_seeds} seeds × {config.n_cycles} cycles")
-    print(f"股票数量: 全部A股")
+    print("股票数量: 全部A股")
     print("=" * 70)
 
     # 1. 加载数据
@@ -889,7 +882,7 @@ def main():
     
     if grid_search["top_20"]:
         best = grid_search["top_20"][0]
-        print(f"  最优组合:")
+        print("  最优组合:")
         print(f"    阶段: {best['phases']}")
         print(f"    市场状态: {best['regimes']}")
         print(f"    对齐: {best['alignments']}")

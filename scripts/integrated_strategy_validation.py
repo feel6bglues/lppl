@@ -20,7 +20,7 @@ import sys
 import time
 import warnings
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import pandas as pd
 
@@ -848,7 +848,7 @@ def run_validation_tests():
             all_results.append(df)
 
             # 打印配置汇总
-            print(f"\n  配置汇总:")
+            print("\n  配置汇总:")
             print(f"    eligible: {df['eligible'].sum()}/{len(results)}")
             print(f"    平均年化收益: {df['annualized_return'].mean():.2%}")
             print(f"    平均年化超额: {df['annualized_excess_return'].mean():.2%}")

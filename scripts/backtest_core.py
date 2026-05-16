@@ -4,10 +4,13 @@
 替代 run_tristrat_v6*.py 和 run_dual_strat*.py 中的重复实现
 """
 
-import csv, json, math, random, sys
+import csv
+import math
+import random
+import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -16,11 +19,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 _src_path = str(PROJECT_ROOT.parent)
 if _src_path not in sys.path:
     sys.path.insert(0, _src_path)
+from scripts.utils.tdx_config import CSI300_PATH
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH
+from src.wyckoff.engine import WyckoffEngine
 
 MC_SIMS = 10000
 COST_BUY = 0.00075
@@ -133,10 +136,8 @@ def trade_wyckoff(df: pd.DataFrame, as_of_date: str, csi: pd.DataFrame) -> Optio
     cc = float(av.iloc[-1]["close"])
     use_we = we and we > 0 and abs(we - cc) / cc > 0.001
     entry = we if use_we else cc
-    if use_we and len(f.head(10)) > 0 and we < float(f.head(10)["low"].min()):
-        return None
     hist = av.tail(60)
-    atr = calc_atr(pd.concat([hist, f.head(20)]), 20) if len(f) >= 20 else entry * 0.02
+    atr = calc_atr(hist, 20) if len(hist) >= 21 else entry * 0.02
     if atr <= 0:
         atr = entry * 0.02
     ss = sl if (sl and sl > 0) else entry * 0.93
@@ -158,7 +159,15 @@ def trade_wyckoff(df: pd.DataFrame, as_of_date: str, csi: pd.DataFrame) -> Optio
         hi = float(rw["high"])
         lo = float(rw["low"])
         peak = max(peak, hi)
-        if lo <= ss:
+        if hi < ss:
+            # 跳空跌破止损: 该 bar 最高价低于止损, 无法成交
+            # 最佳估计: 按该 bar 开盘价成交
+            ep = float(rw["open"])
+            er = "gap_stop_loss"
+            hs = True
+            break
+        if lo <= ss <= hi:
+            # 盘中触及止损
             ep = ss
             er = "stop_loss"
             hs = True
@@ -442,5 +451,10 @@ def run_backtest(strategies: List[str], n_windows: int = 20,
             "mc_seed": 42,
             "window_seeded": True,
             "window_seed": 42,
+            "windows": windows,
+            "universe_size": len(stocks),
+            "universe_source": str(PROJECT_ROOT.parent / "data" / "stock_list.csv"),
+            "universe_has_delisted_stocks": False,
+            "survivorship_bias_note": "universe is today's stock list, not historical; results may be optimistic",
         },
     }

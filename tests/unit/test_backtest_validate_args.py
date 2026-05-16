@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from scripts.run_backtest import parse_args, validate_args, VALID_STRATEGIES
+from scripts.run_backtest import VALID_STRATEGIES, parse_args, validate_args
 
 
 def test_valid_args_returns_empty():

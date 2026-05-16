@@ -17,10 +17,12 @@
 执行: timeout 600 .venv/bin/python3 optimize_index_strategy.py
 结果: output/optimize_index/
 """
-import sys, os, json, warnings
+import json
+import os
+import sys
+import warnings
+from datetime import datetime
 from pathlib import Path
-from datetime import datetime, timedelta
-from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -328,9 +330,9 @@ def main():
         for c in INDICES if c in all_results and all_results[c]["overall_best"]["ma"] == mp
     ]))
     print(f"  推荐统一MA周期: {best_ma}")
-    print(f"  默认阈值: 1%")
-    print(f"  默认仓位: Bull=85%, Range=50%, Bear=0%")
-    print(f"  Wyckoff增强: +10% (markup确认时)")
+    print("  默认阈值: 1%")
+    print("  默认仓位: Bull=85%, Range=50%, Bear=0%")
+    print("  Wyckoff增强: +10% (markup确认时)")
 
     # ── 全样本最终回测 ──
     print("\n[4/4] 全样本最终回测(最优参数)...")

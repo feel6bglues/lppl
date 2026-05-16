@@ -1,3 +1,15 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lppl"
+version = "0.1.0"
+description = "LPPL Quant Trading System"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

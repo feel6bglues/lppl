@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 
 from scripts.analyze_mtf_execution_semantics import build_mtf_execution_report
+from scripts.study_wyckoff_batch_gaps import build_gap_study
+
 from scripts.run_wyckoff_latest_stock_batch import (
     analyze_latest_batch,
     analyze_symbol_batch,
@@ -11,7 +13,6 @@ from scripts.run_wyckoff_latest_stock_batch import (
     load_symbols_from_csv,
     write_outputs,
 )
-from scripts.study_wyckoff_batch_gaps import build_gap_study
 
 
 class WyckoffLatestStockBatchIntegrationTests(unittest.TestCase):

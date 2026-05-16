@@ -11,10 +11,9 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 import pandas as pd
-import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -423,7 +422,7 @@ def write_factor_analysis_report(
     
     (output_dir / "factor_analysis_report.md").write_text("\n".join(md_lines), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'factor_analysis.json'}")
     print(f"  - {output_dir / 'factor_analysis_report.md'}")
 
@@ -437,11 +436,11 @@ def main():
     print("威科夫分析模块因子分析")
     print("=" * 60)
     
-    print(f"\n1. 加载数据...")
+    print("\n1. 加载数据...")
     df = load_effectiveness_data(data_path)
     print(f"   加载了 {len(df)} 条记录")
     
-    print(f"\n2. 分析因子...")
+    print("\n2. 分析因子...")
     
     # 单因子分析
     print("   - 阶段因子分析...")
@@ -464,7 +463,7 @@ def main():
     print("   - 时间因子分析...")
     time_analysis = analyze_time_factor(df)
     
-    print(f"\n3. 输出结果...")
+    print("\n3. 输出结果...")
     write_factor_analysis_report(
         df,
         phase_analysis,

@@ -1,9 +1,17 @@
 """CLI端到端 smoke 验证：run_backtest.py 实际落盘 + 产物 schema 检查"""
 
-import json, os, subprocess, sys
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("LPPL_TDX_DATA_DIR"),
+    reason="LPPL_TDX_DATA_DIR not set; requires local TDX data",
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SMOKE_DIR = "output/smoke_cli_verify"
@@ -57,7 +65,8 @@ def test_cli_smoke_produces_file():
         "--limit", "500",
     ], capture_output=True, text=True, cwd=str(PROJECT_ROOT), timeout=120)
 
-    assert fp.exists(), f"CLI failed to produce {SMOKE_FILE}\nstdout:{result.stdout[:500]}\nstderr:{result.stderr[:500]}"
+    assert result.returncode == 0, f"CLI failed:\nstdout:{result.stdout[:500]}\nstderr:{result.stderr[:500]}"
+    assert fp.exists(), f"CLI failed to produce {SMOKE_FILE}"
 
 
 @pytest.mark.smoke
@@ -75,7 +84,7 @@ def test_cli_smoke_with_costs():
     fp = PROJECT_ROOT / "output/smoke_cli_costs/results.json"
     if fp.exists():
         fp.unlink()
-    subprocess.run([
+    result = subprocess.run([
         sys.executable, "scripts/run_backtest.py",
         "--strategies", "ma_cross",
         "--windows", "3",
@@ -86,10 +95,11 @@ def test_cli_smoke_with_costs():
         "--limit", "200",
     ], capture_output=True, cwd=str(PROJECT_ROOT), timeout=120)
 
-    if fp.exists():
-        d = json.loads(fp.read_text())
-        assert d["config"]["with_costs"] is True
-        assert d["config"]["cost_model"]["round_trip_pct"] > 0
+    assert result.returncode == 0, f"CLI failed:\nstdout:{result.stdout[:500]}\nstderr:{result.stderr[:500]}"
+    assert fp.exists(), f"CLI failed to produce {fp}"
+    d = json.loads(fp.read_text())
+    assert d["config"]["with_costs"] is True
+    assert d["config"]["cost_model"]["round_trip_pct"] > 0
 
 
 @pytest.mark.smoke
@@ -98,7 +108,7 @@ def test_cli_smoke_tri_strategy():
     fp = PROJECT_ROOT / "output/smoke_cli_tri/results.json"
     if fp.exists():
         fp.unlink()
-    subprocess.run([
+    result = subprocess.run([
         sys.executable, "scripts/run_backtest.py",
         "--strategies", "wyckoff,ma_cross,str_reversal",
         "--windows", "3",
@@ -107,7 +117,8 @@ def test_cli_smoke_tri_strategy():
         "--name", "smoke_cli_tri",
         "--limit", "200",
     ], capture_output=True, cwd=str(PROJECT_ROOT), timeout=120)
-    if fp.exists():
-        d = json.loads(fp.read_text())
-        assert "wyckoff" in d["config"]["strategies_used"]
-        assert "str_reversal" in d["config"]["strategies_used"]
+    assert result.returncode == 0, f"CLI failed:\nstdout:{result.stdout[:500]}\nstderr:{result.stderr[:500]}"
+    assert fp.exists(), f"CLI failed to produce {fp}"
+    d = json.loads(fp.read_text())
+    assert "wyckoff" in d["config"]["strategies_used"]
+    assert "str_reversal" in d["config"]["strategies_used"]

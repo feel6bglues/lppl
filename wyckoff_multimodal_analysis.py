@@ -8,11 +8,12 @@
     python wyckoff_multimodal_analysis.py --symbol 600519.SH --chart-dir output/MA/plots
     python wyckoff_multimodal_analysis.py --chart-dir output/MA/plots
 """
-import sys
-import os
-
-# 添加项目根目录到 Python 路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import warnings
+warnings.warn(
+    "This entry point is deprecated. Use 'python main.py <subcommand>' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 from src.cli.wyckoff_multimodal_analysis import main
 

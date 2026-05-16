@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, List, Tuple
 
+import numpy as np
 import pandas as pd
 
 from src.lppl_engine import LPPLConfig, process_single_day_ensemble, scan_single_date
@@ -11,15 +12,22 @@ def evaluate_future_drawdown(
     idx: int,
     lookahead_days: int = 60,
     drop_threshold: float = 0.10,
-) -> Tuple[bool, float]:
+    predicted_days_to_crash: float = None,
+) -> Tuple[bool, float, float]:
     future_prices = close_prices[idx + 1 : idx + 1 + lookahead_days]
     if len(future_prices) == 0:
-        return False, 0.0
+        return False, 0.0, -1.0
 
     current_price = close_prices[idx]
     future_min = min(future_prices)
     realized_drop = (current_price - future_min) / current_price
-    return realized_drop >= drop_threshold, realized_drop
+
+    tc_error = -1.0
+    if predicted_days_to_crash is not None and len(future_prices) > 0:
+        actual_worst_day = int(np.argmin(future_prices))
+        tc_error = abs(predicted_days_to_crash - actual_worst_day)
+
+    return realized_drop >= drop_threshold, realized_drop, tc_error
 
 
 def summarize_walk_forward(records_df: pd.DataFrame) -> Dict[str, float]:
@@ -81,10 +89,6 @@ def run_walk_forward(
     records: List[Dict] = []
 
     for idx in range(start_idx, end_idx + 1, scan_step):
-        event_hit, realized_drop = evaluate_future_drawdown(
-            close_prices, idx, lookahead_days, drop_threshold
-        )
-
         if use_ensemble:
             signal_result = process_single_day_ensemble(
                 close_prices,
@@ -98,10 +102,20 @@ def run_walk_forward(
                 signal_result and signal_result["predicted_crash_days"] < config.danger_days
             )
             signal_type = "danger" if signal_detected else "none"
+            predicted_days = (
+                signal_result["predicted_crash_days"] if signal_result else None
+            )
         else:
             signal_result = scan_single_date(close_prices, idx, window_range, config)
             signal_detected = bool(signal_result and signal_result.get("is_danger"))
             signal_type = "danger" if signal_detected else "none"
+            predicted_days = (
+                signal_result.get("days_to_crash") if signal_result else None
+            )
+
+        event_hit, realized_drop, tc_error = evaluate_future_drawdown(
+            close_prices, idx, lookahead_days, drop_threshold, predicted_days
+        )
 
         records.append(
             {
@@ -112,6 +126,7 @@ def run_walk_forward(
                 "signal_type": signal_type,
                 "event_hit": event_hit,
                 "realized_drop": realized_drop,
+                "tc_error": tc_error,
                 "lookahead_days": lookahead_days,
                 "drop_threshold": drop_threshold,
                 "mode": "ensemble" if use_ensemble else "single_window",

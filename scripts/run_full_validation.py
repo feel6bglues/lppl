@@ -9,12 +9,10 @@ import os
 import random
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
-from datetime import date, datetime
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -99,8 +97,8 @@ def _worker_process_stock_all_dates(args: Tuple) -> List[Dict]:
     symbol, name, dates, wyckoff_cfg = args
     results: List[Dict] = []
     try:
-        from src.data.tdx_reader import TDXReader
         from scripts.utils.tdx_config import TDX_BASE
+        from src.data.tdx_reader import TDXReader
         reader = TDXReader(str(TDX_BASE))
         df = reader.daily(symbol)
         if df is None or df.empty or len(df) < 200:
@@ -121,8 +119,10 @@ def _worker_process_stock_all_dates(args: Tuple) -> List[Dict]:
         return results
 
     from src.engine.daily_signal_engine import (
-        generate_ma_signals, generate_reversal_signals,
-        score_wyckoff, score_maatr,
+        generate_ma_signals,
+        generate_reversal_signals,
+        score_maatr,
+        score_wyckoff,
     )
     ma_cfg = {"fast_period": 5, "slow_period": 20, "atr_period": 20}
     rev_cfg = {"lookback_days": 5, "threshold_pct": 5.0,
@@ -333,7 +333,7 @@ class FullValidator:
 
     def print_report(self, analysis: Dict):
         print(f"\n{'='*70}")
-        print(f"  全量验证分析报告 (v2 - 股票级并行)")
+        print("  全量验证分析报告 (v2 - 股票级并行)")
         print(f"{'='*70}")
         cfg = analysis.get("config", {})
         ov = analysis.get("overall", {})
@@ -343,22 +343,22 @@ class FullValidator:
         print(f"\n总体: {ov.get('total_signals')} 总信号量")
         print(f"     {ov.get('uniq_stocks')} 只股票产生过信号")
         print(f"     {ov.get('signals_per_date')} 信号/日 平均")
-        print(f"\n策略分布:")
+        print("\n策略分布:")
         for s in analysis.get("by_strategy", []):
             print(f"  {s['strategy']:12s}: {s['count']:6d}  "
                   f"均分={s['mean_score']:.3f}  最高={s['max_score']:.3f}")
-        print(f"\n市场状态分布:")
+        print("\n市场状态分布:")
         for r in analysis.get("by_regime", []):
             print(f"  {r['regime']:12s}: {r['count']:6d}")
         sc = analysis.get("score_stats", {})
         print(f"\n得分统计: 最小={sc.get('min'):.3f}  Q25={sc.get('q25'):.3f}  "
               f"中位={sc.get('q50'):.3f}  均值={sc.get('mean'):.3f}  "
               f"Q75={sc.get('q75'):.3f}  最大={sc.get('max'):.3f}")
-        print(f"\n每日信号:")
+        print("\n每日信号:")
         for r in analysis.get("date_results", []):
             print(f"  {r['date']} [{r['regime']:8s}]: {r['signals']:5d} signals" +
                   (" (cached)" if r.get("skipped") else ""))
-        print(f"\n高频股票 Top 10:")
+        print("\n高频股票 Top 10:")
         for s in analysis.get("top_stocks", [])[:10]:
             print(f"  {s['symbol']:12s}: {s['count']:3d}次  "
                   f"均分={s['mean_score']:.3f}  "

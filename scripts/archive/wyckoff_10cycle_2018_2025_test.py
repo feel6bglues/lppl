@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -20,8 +19,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import psutil
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -184,7 +183,7 @@ def process_single_stock(args: tuple) -> List[Dict]:
                 "future_entry_price": future_return["entry_price"],
                 "future_close": future_return["future_close"],
             })
-    except Exception as e:
+    except Exception:
         pass
 
     return results
@@ -205,8 +204,8 @@ def run_10cycle_test_multiprocess(
     print(f"开始测试: {len(symbols)} 只股票 × {len(cycle_specs)} 个周期 = {total_tests} 次分析")
     print(f"多进程: {max_workers} workers (ProcessPoolExecutor)")
     print(f"日线回看: {lookback_days} 天")
-    print(f"周线折合: 600天")
-    print(f"月线折合: 800天")
+    print("周线折合: 600天")
+    print("月线折合: 800天")
     
     memory = psutil.virtual_memory()
     print(f"系统内存: {memory.total / (1024**3):.1f}GB 总计, {memory.available / (1024**3):.1f}GB 可用")
@@ -228,7 +227,7 @@ def run_10cycle_test_multiprocess(
             try:
                 results = future.result(timeout=300)
                 all_results.extend(results)
-            except Exception as e:
+            except Exception:
                 pass
 
             if completed_stocks % 200 == 0:
@@ -433,11 +432,11 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None
         f"- 总样本数: {analysis.get('total_samples', 0)}",
         f"- 整体平均收益: {analysis.get('overall_avg_return', 0):.2f}%",
         f"- 整体胜率: {analysis.get('overall_win_rate', 0):.1f}%",
-        f"- 日线回看: 400天",
-        f"- 周线折合: 600天",
-        f"- 月线折合: 800天",
-        f"- 测试周期: 10周期（2018-2025随机日期）",
-        f"- 并行方式: ProcessPoolExecutor (多进程)",
+        "- 日线回看: 400天",
+        "- 周线折合: 600天",
+        "- 月线折合: 800天",
+        "- 测试周期: 10周期（2018-2025随机日期）",
+        "- 并行方式: ProcessPoolExecutor (多进程)",
         "",
         "## 拟合度分析",
         "",
@@ -527,7 +526,7 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None
 
     (output_dir / "cycle10_report.md").write_text("\n".join(md_lines), encoding="utf-8")
 
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'cycle10_raw_results.jsonl'}")
     print(f"  - {output_dir / 'cycle10_results.csv'}")
     print(f"  - {output_dir / 'cycle10_analysis.json'}")

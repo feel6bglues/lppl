@@ -25,7 +25,7 @@ import random
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -33,8 +33,6 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import psutil
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -195,7 +193,7 @@ def calculate_future_return(df: pd.DataFrame, current_idx: int, future_days: int
 
 
 def _fit_baseline(close_prices: np.ndarray, idx: int) -> Optional[Dict]:
-    from src.lppl_engine import fit_single_window_lbfgsb, LPPLConfig, classify_top_phase
+    from src.lppl_engine import LPPLConfig, classify_top_phase, fit_single_window_lbfgsb
 
     config = LPPLConfig(
         window_range=[120],
@@ -240,9 +238,8 @@ def process_single_stock(args: tuple) -> List[Dict]:
 
     try:
         from src.data.manager import DataManager
-        from src.lppl_multifit import fit_multi_window, calculate_multifit_score
+        from src.lppl_multifit import calculate_multifit_score, fit_multi_window
         from src.lppl_regime import MarketRegimeDetector
-        from src.lppl_engine import classify_top_phase, LPPLConfig
 
         dm = DataManager()
         df = dm.get_data(symbol)
@@ -655,7 +652,7 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict, bubble_
 
     (output_dir / "backtest_report.md").write_text("\n".join(lines), encoding="utf-8")
 
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     for f in sorted(output_dir.iterdir()):
         if f.is_file():
             size = f.stat().st_size

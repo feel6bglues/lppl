@@ -11,10 +11,13 @@ v3 改进:
 
 执行: .venv/bin/python3 validate_factor_combinations.py
 """
-import sys, os, json, warnings
-from pathlib import Path
-from datetime import datetime
+import json
+import os
+import sys
+import warnings
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -22,10 +25,13 @@ import pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 warnings.filterwarnings("ignore")
 
-from src.investment.indicators import compute_indicators
-from src.investment.config import InvestmentSignalConfig
+import importlib
+import importlib.machinery
+import types
 
-import importlib, importlib.machinery, types
+from src.investment.config import InvestmentSignalConfig
+from src.investment.indicators import compute_indicators
+
 _src = Path(__file__).resolve().parent / "src" / "investment" / "factor_combination.py"
 _loader = importlib.machinery.SourceFileLoader("_fce", str(_src))
 _mod = types.ModuleType(_loader.name)
@@ -499,7 +505,7 @@ def main():
 
     # 信号诊断: 各信号列的统计
     signal_cols = ["sig_raw", "sig_v2", "sig_v3", "sig_trend", "sig_markup", "sig_markdown", "sig_allpos"]
-    print(f"\n  信号列统计 (均值 > 0 占比):")
+    print("\n  信号列统计 (均值 > 0 占比):")
     for col in signal_cols:
         arr = df[col].values
         active = (arr > 0.01).mean() * 100
@@ -592,7 +598,7 @@ def main():
     }
     Path("output/validate_factor_combinations.json").write_text(
         json.dumps(output, ensure_ascii=False, indent=2))
-    print(f"\n  结果已保存: output/validate_factor_combinations.json")
+    print("\n  结果已保存: output/validate_factor_combinations.json")
 
 
 if __name__ == "__main__":

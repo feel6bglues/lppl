@@ -9,10 +9,10 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -179,7 +179,7 @@ def main():
     with (output_dir / "excess_returns_analysis.json").open("w", encoding="utf-8") as f:
         json.dump(convert_keys_to_str(analysis), f, ensure_ascii=False, indent=2)
     
-    print(f"\n摘要:")
+    print("\n摘要:")
     print(f"  总样本数: {analysis.get('total_samples', 0)}")
     print(f"  整体股票收益: {analysis.get('overall_avg_stock_return', 0):.2f}%")
     print(f"  整体基准收益: {analysis.get('overall_avg_benchmark_return', 0):.2f}%")

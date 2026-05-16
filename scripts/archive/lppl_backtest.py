@@ -11,6 +11,7 @@ LPPL 回测分析程序 [LEGACY - 向后兼容]
 """
 
 import warnings
+
 warnings.warn(
     "lppl_backtest.py is deprecated. Use src.cli.lppl_verify_v2 instead.",
     DeprecationWarning,
@@ -58,8 +59,9 @@ def run_backtest_parallel(symbol_lppl, symbol_name, start_date="2005-01-01",
     """
     使用 joblib 并行回测 - 支持多窗口
     """
-    from src.data.manager import DataManager
     from src.lppl_fit import fit_single_point
+
+    from src.data.manager import DataManager
     
     if window_sizes is None:
         window_sizes = WINDOW_RANGE

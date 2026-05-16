@@ -5,12 +5,12 @@ Wyckoff Analysis Entry Point
 威科夫 A 股实战分析入口
 """
 
-import sys
-from pathlib import Path
-
-PROJECT_ROOT = Path(__file__).resolve().parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+import warnings
+warnings.warn(
+    "This entry point is deprecated. Use 'python main.py <subcommand>' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 from src.cli.wyckoff_analysis import main
 

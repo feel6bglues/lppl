@@ -1,6 +1,9 @@
 """等参回归测试：import 路径 vs CLI 路径输出等价性"""
 
-import json, shutil, subprocess, sys
+import json
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest

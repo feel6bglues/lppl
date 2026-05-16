@@ -27,8 +27,7 @@ import random
 import sys
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -41,8 +40,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.manager import DataManager
-from src.wyckoff.engine import WyckoffEngine
 from src.lppl_engine import LPPLConfig, fit_single_window
+from src.wyckoff.engine import WyckoffEngine
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -458,8 +457,8 @@ def save_report(all_results: List[Dict], analysis: Dict, output_dir: Path):
         f"> 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         f"> 基准: 沪深300, 前瞻: {FORWARD_DAYS}天",
         f"> Wyckoff: {WYCKOFF_LOOKBACK}天",
-        f"> LPPL: 多窗口拟合 [50,80,130,180]",
-        f"> 约束: T+1 + 只能做多",
+        "> LPPL: 多窗口拟合 [50,80,130,180]",
+        "> 约束: T+1 + 只能做多",
         "",
     ]
 
@@ -511,7 +510,7 @@ def save_report(all_results: List[Dict], analysis: Dict, output_dir: Path):
         lines.extend(["## 六、效应量对比", ""])
         if bv:
             lines.extend([
-                f"### 纯Wyckoff BUY vs AVOID",
+                "### 纯Wyckoff BUY vs AVOID",
                 f"- BUY 超额: **{bv['buy_avg_excess']:+.2f}%**",
                 f"- AVOID 超额: **{bv['avoid_avg_excess']:+.2f}%**",
                 f"- 差值: **{bv['difference']:+.2f}%**, Cohen's d: **{bv['cohens_d']:+.3f}**",
@@ -519,7 +518,7 @@ def save_report(all_results: List[Dict], analysis: Dict, output_dir: Path):
             ])
         if fbv:
             lines.extend([
-                f"### 融合 BUY_LPPL vs 纯Wyckoff BUY",
+                "### 融合 BUY_LPPL vs 纯Wyckoff BUY",
                 f"- 融合超额: **{fbv['fusion_avg_excess']:+.2f}%**",
                 f"- 纯Wy超额: **{fbv['wy_avg_excess']:+.2f}%**",
                 f"- 差值: **{fbv['difference']:+.2f}%**, Cohen's d: **{fbv['cohens_d']:+.3f}**",
@@ -635,12 +634,12 @@ def main():
 
     bv = analysis.get("buy_vs_avoid", {})
     if bv:
-        print(f"\n--- 纯Wyckoff BUY vs AVOID ---")
+        print("\n--- 纯Wyckoff BUY vs AVOID ---")
         print(f"  超额差: {bv['difference']:+.2f}% | Cohen's d: {bv['cohens_d']:+.3f}")
 
     fbv = analysis.get("fusion_buy_vs_wy_buy", {})
     if fbv:
-        print(f"\n--- 融合BUY_LPPL vs 纯Wyckoff BUY ---")
+        print("\n--- 融合BUY_LPPL vs 纯Wyckoff BUY ---")
         print(f"  超额差: {fbv['difference']:+.2f}% | Cohen's d: {fbv['cohens_d']:+.3f}")
 
     print("\n完成!")

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """多因子后处理分析: 在v2+运行结果上叠加因子过滤"""
 import json
-import numpy as np
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -25,7 +24,7 @@ print("\n=== v2+市场状态分析 ===")
 for r, s in sorted(rg.items(), key=lambda x: -x[1]["mean"]):
     print(f"  {r:6s}: ret={s['mean']:6.2f}%  win={s['win']:5.1f}%  n={s['n']}")
 
-print(f"""
+print("""
 =================================================================
 多因子合成可行性(基于v2+已观测数据)
 =================================================================
@@ -72,5 +71,5 @@ n_br = sum(s["n"] for s in bull_range)
 ret_br = sum(s["mean"] * s["n"] for s in bull_range) / n_br
 sharpe_br = ret_br / d["overall"]["std_return"] * (252/90)**0.5
 print(f"\n  bull+range加权: 收益={ret_br:.2f}%  夏普≈{sharpe_br:.3f}  样本={n_br}")
-print(f"  相比v2+全部:    收益=+1.69%  夏普=0.168")
+print("  相比v2+全部:    收益=+1.69%  夏普=0.168")
 print(f"  改善:           收益+{ret_br-1.69:.2f}pp  夏普+{sharpe_br-0.168:.3f}")

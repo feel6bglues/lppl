@@ -15,8 +15,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -24,7 +24,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.manager import DataManager
 from src.wyckoff.engine import WyckoffEngine
-from src.wyckoff.models import WyckoffPhase
 
 
 def load_stock_symbols(csv_path: Path, limit: int = 99999) -> List[Dict[str, str]]:
@@ -232,8 +231,8 @@ def write_outputs(all_results: List[Dict], analysis: Dict, output_dir: Path):
         "",
         f"- 测试日期: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}",
         f"- 总样本数: {len(all_results)}",
-        f"- 窗口: 200/400/600/1000/1200天",
-        f"- 多周期分析: 日线+周线+月线",
+        "- 窗口: 200/400/600/1000/1200天",
+        "- 多周期分析: 日线+周线+月线",
         "",
         "## 窗口对比总览",
         "",
@@ -318,7 +317,7 @@ def write_outputs(all_results: List[Dict], analysis: Dict, output_dir: Path):
 
     (output_dir / "multi_window_report.md").write_text("\n".join(md_lines), encoding="utf-8")
 
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'multi_window_raw_results.jsonl'}")
     print(f"  - {output_dir / 'multi_window_results.csv'}")
     print(f"  - {output_dir / 'multi_window_analysis.json'}")

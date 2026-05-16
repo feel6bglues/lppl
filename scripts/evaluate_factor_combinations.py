@@ -11,9 +11,9 @@
 """
 import importlib
 import importlib.machinery
+import sys
 import types
 
-import sys
 _mod_name = "src.investment.factor_combination"
 _mod_path = "/home/james/Documents/Project/lppl/src/investment/factor_combination.py"
 loader = importlib.machinery.SourceFileLoader(_mod_name, _mod_path)

@@ -18,10 +18,9 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import pandas as pd
-import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -29,7 +28,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.manager import DataManager
 from src.wyckoff.engine import WyckoffEngine
-from src.wyckoff.models import WyckoffPhase
 
 # 创建全局引擎实例用于数据合成
 _engine = WyckoffEngine()
@@ -264,7 +262,7 @@ def write_outputs(all_results: List[Dict], output_dir: Path):
         "# 威科夫全量最新分析报告",
         "",
         f"- 分析日期: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}",
-        f"- 回看窗口: 1200天",
+        "- 回看窗口: 1200天",
         f"- 总股票数: {len(all_results)}",
         f"- 成功分析: {len(success_df)}",
         f"- 失败分析: {len(failed_df)}",
@@ -371,7 +369,7 @@ def write_outputs(all_results: List[Dict], output_dir: Path):
     
     (output_dir / "latest_analysis_report.md").write_text("\n".join(md_lines), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'latest_analysis_results.csv'}")
     print(f"  - {output_dir / 'latest_analysis_results.json'}")
     print(f"  - {output_dir / 'latest_analysis_report.md'}")
@@ -493,7 +491,7 @@ def main():
     symbols = load_stock_symbols(csv_path, limit=args.limit)
     print(f"   加载了 {len(symbols)} 只股票")
 
-    print(f"\n2. 运行全量分析...")
+    print("\n2. 运行全量分析...")
     print(f"   回看窗口: {lookback_days}天")
     print(f"   并行进程: {max_workers}")
     print(f"   批次大小: {batch_size}")

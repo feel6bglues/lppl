@@ -1,6 +1,6 @@
 """Smoke run 验证：小规模跑生成结果，验证schema一致性"""
 
-import json, sys, math
+import sys
 from pathlib import Path
 
 import pytest

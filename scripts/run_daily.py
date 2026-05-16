@@ -5,24 +5,23 @@ import argparse
 import json
 import logging
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional
 
-import yaml
 import pandas as pd
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.data.tdx_loader import load_tdx_data
+from scripts.utils.tdx_config import CSI300_PATH, TDX_SH_DIR, TDX_SZ_DIR
 from src.data.incremental_loader import IncrementalLoader
-from src.storage.database import Database
+from src.data.tdx_loader import load_tdx_data
 from src.engine.daily_signal_engine import DailySignalEngine
 from src.execution.simulator import SimulatedBroker
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.storage.database import Database
 
 logging.basicConfig(
     level=logging.INFO,
@@ -153,7 +152,7 @@ def cmd_signals(args):
     print(f"Total signals: {len(merged)}")
     if not merged.empty:
         print(f"By strategy: {merged['strategy'].value_counts().to_dict()}")
-        print(f"Top signals:")
+        print("Top signals:")
         for _, r in merged.head(10).iterrows():
             print(f"  {r['symbol']:12s} {r['strategy']:12s} "
                   f"score={r['score']:.3f} entry={r.get('entry_price',''):>8}")

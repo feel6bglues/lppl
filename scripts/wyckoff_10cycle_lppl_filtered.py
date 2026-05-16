@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -24,11 +23,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import psutil
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -312,7 +309,7 @@ def process_single_stock(args: tuple) -> List[Dict]:
                 "future_entry_price": future_return["entry_price"],
                 "future_close": future_return["future_close"],
             })
-    except Exception as e:
+    except Exception:
         pass
 
     return results
@@ -334,9 +331,9 @@ def run_10cycle_test_multiprocess(
     print(f"开始测试: {len(symbols)} 只股票 × {len(cycle_specs)} 个周期 = {total_tests} 次分析")
     print(f"多进程: {max_workers} workers (ProcessPoolExecutor)")
     print(f"日线回看: {lookback_days} 天")
-    print(f"周线回看: 120周 (日历周W-FRI合成)")
-    print(f"月线回看: 40月 (日历月ME合成)")
-    print(f"验证周期: 60天")
+    print("周线回看: 120周 (日历周W-FRI合成)")
+    print("月线回看: 40月 (日历月ME合成)")
+    print("验证周期: 60天")
     print(f"泡沫阶段: {len(bubble_periods)} 个")
     
     memory = psutil.virtual_memory()
@@ -359,7 +356,7 @@ def run_10cycle_test_multiprocess(
             try:
                 results = future.result(timeout=300)
                 all_results.extend(results)
-            except Exception as e:
+            except Exception:
                 pass
 
             if completed_stocks % 200 == 0:
@@ -568,13 +565,13 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict, bubble_
         f"- 总样本数: {analysis.get('total_samples', 0)}",
         f"- 整体平均收益: {analysis.get('overall_avg_return', 0):.2f}%",
         f"- 整体胜率: {analysis.get('overall_win_rate', 0):.1f}%",
-        f"- 日线回看: 400天",
-        f"- 周线回看: 120周 (日历周W-FRI合成)",
-        f"- 月线回看: 40月 (日历月ME合成)",
-        f"- 验证周期: 60天",
-        f"- 测试周期: 10周期（2012-2025随机日期）",
+        "- 日线回看: 400天",
+        "- 周线回看: 120周 (日历周W-FRI合成)",
+        "- 月线回看: 40月 (日历月ME合成)",
+        "- 验证周期: 60天",
+        "- 测试周期: 10周期（2012-2025随机日期）",
         f"- 泡沫过滤: 已启用 ({len(bubble_periods)} 个泡沫阶段)",
-        f"- 并行方式: ProcessPoolExecutor (多进程)",
+        "- 并行方式: ProcessPoolExecutor (多进程)",
         "",
         "## 泡沫阶段",
         "",
@@ -675,7 +672,7 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict, bubble_
 
     (output_dir / "cycle10_report.md").write_text("\n".join(md_lines), encoding="utf-8")
 
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'cycle10_raw_results.jsonl'}")
     print(f"  - {output_dir / 'cycle10_results.csv'}")
     print(f"  - {output_dir / 'cycle10_analysis.json'}")

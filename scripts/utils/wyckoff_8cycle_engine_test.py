@@ -21,8 +21,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -30,7 +30,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.manager import DataManager
 from src.wyckoff.engine import WyckoffEngine
-from src.wyckoff.models import WyckoffPhase
 
 
 @dataclass(frozen=True)
@@ -183,7 +182,7 @@ def process_single_stock(
             result = analyze_single_cycle(engine, df, symbol, name, spec)
             if result:
                 results.append(result)
-    except Exception as e:
+    except Exception:
         pass
 
     return results
@@ -340,8 +339,8 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None
         f"- 总样本数: {analysis.get('total_samples', 0)}",
         f"- 整体平均收益: {analysis.get('overall_avg_return', 0):.2f}%",
         f"- 整体胜率: {analysis.get('overall_win_rate', 0):.1f}%",
-        f"- 日线回看: 600天",
-        f"- 多周期分析: 日线+周线+月线",
+        "- 日线回看: 600天",
+        "- 多周期分析: 日线+周线+月线",
         "",
         "## 阶段分布与未来收益",
         "",
@@ -395,7 +394,7 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None
 
     (output_dir / "cycle8_report.md").write_text("\n".join(md_lines), encoding="utf-8")
 
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'cycle8_raw_results.jsonl'}")
     print(f"  - {output_dir / 'cycle8_results.csv'}")
     print(f"  - {output_dir / 'cycle8_analysis.json'}")

@@ -17,10 +17,13 @@ P2: 原始Wyckoff系统增量测试
 执行: .venv/bin/python3 validate_p1_p2.py
 结果: output/validate_large_scale/
 """
-import sys, os, json, warnings
-from pathlib import Path
-from datetime import datetime
+import json
+import os
+import sys
+import warnings
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -28,8 +31,6 @@ import pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 warnings.filterwarnings("ignore")
 
-from src.investment.indicators import compute_indicators
-from src.investment.config import InvestmentSignalConfig
 
 OUT = Path("output/validate_large_scale"); OUT.mkdir(parents=True, exist_ok=True)
 
@@ -181,7 +182,7 @@ def print_grid_results(all_grid, index_order):
             print()
 
         # 边际分析: 固定MA, 最优阈值
-        print(f"\n  固定MA最优:", end="")
+        print("\n  固定MA最优:", end="")
         for mp in ma_periods:
             best_for_ma = max([(th, grid[(mp, th)]) for th in thresholds if (mp, th) in grid],
                              key=lambda x: x[1]["calmar"])
@@ -324,7 +325,7 @@ def bt(closes, signals):
 # ═══════════════════════════════════════════════════════════════
 
 def main():
-    print_h(f"P1+P2 综合大范围验证")
+    print_h("P1+P2 综合大范围验证")
     print(f"  执行: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
     aligned, common_dates = fetch_and_align()

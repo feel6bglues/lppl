@@ -12,22 +12,25 @@ Wyckoff 多策略合成最终验证 (P3)
   F5: LPPL泡沫风险  (权重0.10)
 """
 
-import csv, json, random, sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
+import csv
+import json
+import random
+import sys
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+from scripts.utils.tdx_config import CSI300_PATH
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 N_STOCKS = 99999; N_WINDOWS = 20; MAX_HOLD = 180; SEED = 42; N_BOOT = 2000
 CSI300_PATH = CSI300_PATH
@@ -319,7 +322,7 @@ def run():
     print(f"  胜率={o['win']}% 标准差={o['std']}% 夏普={o['sharpe']}")
     bc = analysis.get("benchmark",{})
     if bc: print(f"  策略={bc['strat']}% vs 基准={bc['bm']}% 超额={bc['excess']}% 超额胜率={bc['ex_win']}%")
-    print(f"\n  退出原因:")
+    print("\n  退出原因:")
     for r,s in sorted(analysis.get("exit",{}).items(), key=lambda x: -x[1]["pct"]):
         print(f"    {r:35s}: {s['pct']:5.1f}%  ret={s['m']:6.2f}%  win={s['w']:5.1f}%")
     print(f"\n{'='*70}")

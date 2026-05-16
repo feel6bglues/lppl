@@ -643,8 +643,8 @@ class WyckoffAnalyzer:
             if not is_limit_up and not is_limit_down:
                 continue
 
-            high_change = (row["high"] - row["open"]) / row["open"]
-            low_change = (row["low"] - row["open"]) / row["open"]
+            high_change = (row.high - row.open) / row.open
+            low_change = (row.low - row.open) / row.open
 
             if is_limit_up:
                 if high_change < 0.095:
@@ -661,13 +661,13 @@ class WyckoffAnalyzer:
                     move_type = LimitMoveType.LIMIT_DOWN
                     is_broken = False
 
-            volume_level = self._classify_volume(row["volume"], df["volume"])
+            volume_level = self._classify_volume(row.volume, df["volume"])
 
             limit_moves.append(
                 LimitMove(
-                    date=str(row["date"]),
+                    date=str(row.date),
                     move_type=move_type,
-                    price=float(row["close"]),
+                    price=float(row.close),
                     volume_level=volume_level,
                     is_broken=is_broken,
                 )

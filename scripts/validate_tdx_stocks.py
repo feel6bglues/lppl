@@ -12,15 +12,17 @@
 执行: .venv/bin/python3 validate_tdx_stocks.py
 结果: output/validate_tdx_stocks/
 """
-import sys, os, json, struct, warnings, re
-from pathlib import Path
-from datetime import datetime
+import json
+import os
+import struct
+import sys
+import warnings
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 warnings.filterwarnings("ignore")
@@ -201,7 +203,7 @@ def main():
     print(f"\n[1/4] 股票列表: {len(all_stocks)}只")
 
     # ─── 3b. 逐只股票处理 ───
-    print(f"\n[2/4] 读取数据 & 回测...")
+    print("\n[2/4] 读取数据 & 回测...")
     results = []
     skipped = 0
 

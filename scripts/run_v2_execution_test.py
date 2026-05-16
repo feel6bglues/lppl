@@ -20,7 +20,7 @@ import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -30,10 +30,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 # ============================================================================
 # 配置
@@ -527,11 +525,11 @@ def run():
         print(f"\n  策略: {bc['strategy_mean']:.2f}% vs 沪深300: {bc['benchmark_mean']:.2f}%")
         print(f"  超额: {bc['excess_mean']:.2f}%  超额胜率: {bc['excess_win_rate']:.1f}%")
 
-    print(f"\n  退出原因分析:")
+    print("\n  退出原因分析:")
     for r, s in sorted(analysis["exit_reason_analysis"].items(), key=lambda x: -x[1]["mean_return"]):
         print(f"    {r:40s}: ret={s['mean_return']:6.2f}%  win={s['win_rate']:5.1f}%  {s['pct_of_total']:5.1f}%")
 
-    print(f"\n  执行机制分析:")
+    print("\n  执行机制分析:")
     for r, s in sorted(analysis["execution_analysis"].items(), key=lambda x: -x[1]["mean_return"]):
         print(f"    {r:20s}: ret={s['mean_return']:6.2f}%  median={s['median_return']:5.2f}%  win={s['win_rate']:5.1f}%  n={s['n_samples']}")
 

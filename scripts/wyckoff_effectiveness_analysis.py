@@ -19,9 +19,8 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
-import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +29,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.manager import DataManager
 from src.wyckoff.engine import WyckoffEngine
-from src.wyckoff.models import WyckoffPhase
 
 # 创建全局引擎实例用于数据合成
 _engine = WyckoffEngine()
@@ -207,11 +205,11 @@ def analyze_single_stock(args) -> List[Dict]:
                         "rr_ratio": round(report.risk_reward.reward_risk_ratio, 3),
                     })
                     
-                except Exception as e:
+                except Exception:
                     # 分析失败，跳过
                     continue
         
-    except Exception as e:
+    except Exception:
         pass
     
     return results
@@ -319,9 +317,9 @@ def write_outputs(all_results: List[Dict], analysis: Dict, output_dir: Path):
         "",
         f"- 测试日期: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}",
         f"- 总样本数: {len(all_results)}",
-        f"- 测试时点: 2012-2025年随机20轮",
-        f"- 回看窗口: 200/400/600/800/1200天",
-        f"- 验证周期: 120天后真实走势",
+        "- 测试时点: 2012-2025年随机20轮",
+        "- 回看窗口: 200/400/600/800/1200天",
+        "- 验证周期: 120天后真实走势",
         "",
         "## 窗口对比总览",
         "",
@@ -402,7 +400,7 @@ def write_outputs(all_results: List[Dict], analysis: Dict, output_dir: Path):
     
     (output_dir / "effectiveness_report.md").write_text("\n".join(md_lines), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'effectiveness_raw_results.csv'}")
     print(f"  - {output_dir / 'effectiveness_analysis.json'}")
     print(f"  - {output_dir / 'effectiveness_report.md'}")
@@ -545,7 +543,7 @@ def main():
     )
     print(f"   时点: {time_points}")
 
-    print(f"\n3. 运行有效性验证...")
+    print("\n3. 运行有效性验证...")
     print(f"   窗口: {windows}")
     print(f"   并行进程: {max_workers}")
     print(f"   批次大小: {batch_size}")

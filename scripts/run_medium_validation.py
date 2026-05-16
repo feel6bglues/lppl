@@ -25,11 +25,9 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
+from src.parallel import get_optimal_workers, worker_init
 from src.wyckoff.engine import WyckoffEngine
 from src.wyckoff.trading import calculate_wyckoff_return
-from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
 
 OUTPUT_DIR = PROJECT_ROOT / "output" / "wyckoff_full_validation_90d"
 N_STOCKS = 99999  # 全量A股
@@ -183,7 +181,7 @@ def run():
     print("=" * 70)
     print("Wyckoff 策略全量验证测试")
     print(f"  全量A股 | 时间窗口: {N_WINDOWS} | 持有期: {HOLD_DAYS}天")
-    print(f"  基准: 沪深300 | 数据: 本地通达信日线 2012-2025")
+    print("  基准: 沪深300 | 数据: 本地通达信日线 2012-2025")
     print("=" * 70)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -386,20 +384,20 @@ def run():
         print(f"\n  [基准对比] 策略: {bc['strategy_mean_return']:.2f}% vs 沪深300: {bc['benchmark_mean_return']:.2f}%")
         print(f"  超额收益: {bc['excess_return_mean']:.2f}%  超额胜率: {bc['excess_return_win_rate']:.1f}%")
 
-    print(f"\n  阶段分析:")
+    print("\n  阶段分析:")
     for p, s in sorted(analysis["phase_analysis"].items(), key=lambda x: -x[1]["mean_return"]):
         print(f"    {p:15s}: 收益={s['mean_return']:6.2f}%  胜率={s['win_rate']:5.1f}%  n={s['n_samples']}")
 
-    print(f"\n  市场状态分析:")
+    print("\n  市场状态分析:")
     for r, s in sorted(analysis["regime_analysis"].items(), key=lambda x: -x[1]["mean_return"]):
         print(f"    {r:6s}: 收益={s['mean_return']:6.2f}%  胜率={s['win_rate']:5.1f}%  n={s['n_samples']}")
 
-    print(f"\n  退出原因分析:")
+    print("\n  退出原因分析:")
     for r, s in sorted(analysis["exit_reason_analysis"].items(), key=lambda x: -x[1]["mean_return"]):
         print(f"    {r:15s}: 收益={s['mean_return']:6.2f}%  胜率={s['win_rate']:5.1f}%  占比={s['pct_of_total']:5.1f}%")
 
     if "phase_regime_cross" in analysis:
-        print(f"\n  Phase×Regime交叉分析:")
+        print("\n  Phase×Regime交叉分析:")
         cross_sorted = sorted(analysis["phase_regime_cross"].items(), key=lambda x: -x[1]["mean_return"])
         for k, s in cross_sorted[:8]:
             print(f"    {k:25s}: 收益={s['mean_return']:6.2f}%  胜率={s['win_rate']:5.1f}%  n={s['n_samples']}")

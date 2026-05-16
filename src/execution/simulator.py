@@ -14,15 +14,18 @@ logger = logging.getLogger(__name__)
 class SimulatedBroker:
     def __init__(self, db: Optional[Database] = None,
                  initial_capital: float = 100000.0,
-                 slippage_pct: float = 0.001):
+                 slippage_pct: float = 0.001,
+                 buy_fee_pct: float = 0.00025,
+                 sell_fee_pct: float = 0.00025,
+                 stamp_tax_pct: float = 0.001):
         self.db = db or Database()
         self.initial_capital = initial_capital
         self.slippage = slippage_pct
+        self.buy_fee_pct = buy_fee_pct
+        self.sell_fee_pct = sell_fee_pct
+        self.stamp_tax_pct = stamp_tax_pct
         self._cash = initial_capital
         self.loader = IncrementalLoader(self.db)
-        port = self.db.get_portfolio(limit=1)
-        if not port.empty:
-            self._cash = float(port.iloc[0]["cash"])
 
     def get_cash(self) -> float:
         return self._cash
@@ -38,14 +41,19 @@ class SimulatedBroker:
         df = self.loader.load_latest_data(symbol, lookback=60)
         if df is None or df.empty:
             return None
-        target_date = pd.Timestamp(date)
-        day_data = df[df["date"] == target_date]
-        if day_data.empty:
-            day_data = df.tail(1)
+        # t+1 执行: 信号日期之后第一个可用的交易日
+        signal_date = pd.Timestamp(date)
+        all_dates = df["date"].dropna().sort_values()
+        exec_idx = all_dates.searchsorted(signal_date, side="right")
+        if exec_idx >= len(all_dates):
+            logger.warning("No available execution date after %s for %s", date, symbol)
+            return None
+        exec_date = all_dates.iloc[exec_idx]
+        day_data = df[df["date"] == exec_date]
         if day_data.empty:
             return None
         row = day_data.iloc[-1]
-        price = float(row["open"])  # 以开盘价成交
+        price = float(row["open"])
         buy_price = price * (1 + self.slippage)
 
         cash = self.get_cash()
@@ -60,12 +68,18 @@ class SimulatedBroker:
                 return None
             cost = quantity * buy_price
 
-        entry_date = str(row["date"].date())
+        # 买入费用: 佣金
+        fee = cost * self.buy_fee_pct
+        total_cost = cost + fee
+        if total_cost > cash:
+            return None
+
+        entry_date = str(exec_date.date())
         stop_loss = signal.get("stop_loss")
         take_profit = signal.get("take_profit")
         strategy = signal.get("strategy", "")
 
-        self._cash -= cost
+        self._cash -= total_cost
         self.db.open_position(
             symbol, entry_date, buy_price, quantity,
             strategy=strategy, stop_loss=stop_loss,
@@ -113,7 +127,10 @@ class SimulatedBroker:
                 self.db.close_position(symbol, str(target_date.date()), exit_price, exit_reason)
                 qty = pos["quantity"]
                 proceeds = qty * exit_price
-                self._cash += proceeds
+                # 卖出费用: 佣金 + 印花税 (A 股卖出单边)
+                fee = proceeds * self.sell_fee_pct
+                stamp_tax = proceeds * self.stamp_tax_pct
+                self._cash += (proceeds - fee - stamp_tax)
                 pnl = (exit_price - pos["entry_price"]) * qty
                 self.db.record_trade(
                     symbol, pos["entry_date"], str(target_date.date()),

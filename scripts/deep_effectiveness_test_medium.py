@@ -8,27 +8,21 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field
 from datetime import datetime
-
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-import psutil
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.parallel import get_optimal_workers, worker_init
 from src.wyckoff.trading import calculate_wyckoff_return
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
 
 
 def load_stock_symbols(csv_path: Path, limit: int = 500) -> List[Dict[str, str]]:
@@ -725,7 +719,7 @@ def generate_report(analysis: Dict, output_dir: Path) -> None:
     
     (output_dir / "medium_test_report.md").write_text("\n".join(md), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'medium_test_analysis.json'}")
     print(f"  - {output_dir / 'medium_test_report.md'}")
 

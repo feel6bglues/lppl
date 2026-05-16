@@ -8,15 +8,14 @@
 3. fusion
 """
 import os
-import pytest
-import tempfile
 import shutil
-from pathlib import Path
+import tempfile
 
-from src.cli.wyckoff_multimodal_analysis import main
+import pytest
+
 from src.wyckoff.data_engine import DataEngine
-from src.wyckoff.image_engine import ImageEngine
 from src.wyckoff.fusion_engine import FusionEngine
+from src.wyckoff.image_engine import ImageEngine
 from src.wyckoff.models import AnalysisState
 
 
@@ -72,10 +71,18 @@ class TestIntegration:
     def test_fusion_engine_conflict_matrix(self):
         """测试融合引擎冲突矩阵"""
         from src.wyckoff.models import (
-            DailyRuleResult, PreprocessingResult, BCResult, PhaseResult,
-            EffortResult, PhaseCTestResult, CounterfactualResult,
-            RiskAssessment, TradingPlan, ImageEvidenceBundle,
-            ChartManifest, VisualEvidence,
+            BCResult,
+            ChartManifest,
+            CounterfactualResult,
+            DailyRuleResult,
+            EffortResult,
+            ImageEvidenceBundle,
+            PhaseCTestResult,
+            PhaseResult,
+            PreprocessingResult,
+            RiskAssessment,
+            TradingPlan,
+            VisualEvidence,
         )
         
         # 创建数据结果 (Distribution)
@@ -184,7 +191,6 @@ class TestIntegration:
     def test_state_manager_persistence(self, temp_output_dir):
         """测试状态管理持久化"""
         from src.wyckoff.fusion_engine import StateManager
-        from src.wyckoff.models import AnalysisResult
         
         state_manager = StateManager(temp_output_dir)
         

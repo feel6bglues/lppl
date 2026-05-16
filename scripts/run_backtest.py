@@ -10,7 +10,10 @@
   python scripts/run_backtest.py --strategies wyckoff,ma_cross --windows 20 --min-year 2020 --max-year 2025 --costs --name dual_with_costs
 """
 
-import argparse, json, sys, time
+import argparse
+import json
+import sys
+import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -103,7 +106,7 @@ def main():
     p = result["portfolio"]
     print(f"\n组合夏普: {p['multi_strat_sharpe']:.3f} ({p['method']})")
 
-    print(f"\n蒙特卡洛:")
+    print("\n蒙特卡洛:")
     for sn, m in result.get("monte_carlo", {}).items():
         print(f"  {sn:13s}: 均值={m['mean']:.3f} 90%CI=[{m['ci_5']:.3f},{m['ci_95']:.3f}] 正值={m['p_pos']:.1f}%")
 

@@ -3,21 +3,24 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 import pandas as pd
 
 
 class Database:
-    def __init__(self, db_path: str = "data/trading.db"):
-        self.db_path = db_path
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, db_path: Optional[str] = None):
+        self.db_path = db_path or f":memory:"
+        if self.db_path != ":memory:":
+            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=OFF")
+        if self.db_path != ":memory:":
+            conn.execute("PRAGMA journal_mode=WAL")
+            conn.execute("PRAGMA synchronous=OFF")
         return conn
 
     def _init_db(self):
@@ -98,8 +101,8 @@ class Database:
                     total_value REAL DEFAULT 0,
                     daily_pnl REAL DEFAULT 0,
                     daily_pnl_pct REAL DEFAULT 0,
-                    total_pnl REAL DEFAULT 0,
-                    total_pnl_pct REAL DEFAULT 0,
+                    snapshot_pnl REAL DEFAULT 0,
+                    snapshot_pnl_pct REAL DEFAULT 0,
                     n_positions INTEGER DEFAULT 0,
                     n_signals INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -258,22 +261,22 @@ class Database:
             prev = conn.execute(
                 "SELECT total_value FROM portfolio_snapshots ORDER BY date DESC LIMIT 1"
             ).fetchone()
-            total_pnl = total_value - (prev["total_value"] if prev else total_value)
+            snapshot_pnl = total_value - (prev["total_value"] if prev else total_value)
             prev_total = prev["total_value"] if prev else total_value
-            total_pnl_pct_val = (total_value / prev_total - 1) * 100 if prev_total > 0 else 0
+            snapshot_pnl_pct_val = (total_value / prev_total - 1) * 100 if prev_total > 0 else 0
             conn.execute("""
                 INSERT INTO portfolio_snapshots(date, cash, market_value, total_value,
-                    daily_pnl, daily_pnl_pct, total_pnl, total_pnl_pct,
+                    daily_pnl, daily_pnl_pct, snapshot_pnl, snapshot_pnl_pct,
                     n_positions, n_signals)
                 VALUES(?,?,?,?,?,?,?,?,?,?)
                 ON CONFLICT(date) DO UPDATE SET
                     cash=excluded.cash, market_value=excluded.market_value,
                     total_value=excluded.total_value, daily_pnl=excluded.daily_pnl,
-                    daily_pnl_pct=excluded.daily_pnl_pct, total_pnl=excluded.total_pnl,
-                    total_pnl_pct=excluded.total_pnl_pct,
+                    daily_pnl_pct=excluded.daily_pnl_pct, snapshot_pnl=excluded.snapshot_pnl,
+                    snapshot_pnl_pct=excluded.snapshot_pnl_pct,
                     n_positions=excluded.n_positions, n_signals=excluded.n_signals
             """, (date, cash, market_value, total_value,
-                  daily_pnl, daily_pnl_pct, total_pnl, total_pnl_pct_val,
+                  daily_pnl, daily_pnl_pct, snapshot_pnl, snapshot_pnl_pct_val,
                   n_positions, n_signals))
 
     def get_portfolio(self, limit: int = 30) -> pd.DataFrame:

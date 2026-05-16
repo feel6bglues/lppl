@@ -21,8 +21,10 @@ def test_lppl_multifit():
     """测试多窗口拟合模块"""
     print("=== test_lppl_multifit ===")
     from src.lppl_multifit import (
-        fit_multi_window, calculate_multifit_score,
-        fit_single_layer, MULTI_WINDOW_CONFIGS, WindowConfig,
+        MULTI_WINDOW_CONFIGS,
+        calculate_multifit_score,
+        fit_multi_window,
+        fit_single_layer,
     )
 
     rng = np.random.default_rng(42)

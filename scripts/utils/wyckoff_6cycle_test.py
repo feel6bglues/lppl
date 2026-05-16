@@ -14,9 +14,8 @@ import json
 import random
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Iterable
 
 import pandas as pd
 
@@ -24,9 +23,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.generate_wyckoff_daily_replay import evaluate_design_completeness
+
 from src.data.manager import DataManager
 from src.wyckoff import WyckoffAnalyzer, WyckoffReport
-from scripts.generate_wyckoff_daily_replay import evaluate_design_completeness
 
 
 @dataclass(frozen=True)

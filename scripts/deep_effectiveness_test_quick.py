@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import random
 import sys
 from pathlib import Path
@@ -20,19 +19,15 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field
 from datetime import datetime
-
-from src.parallel import get_optimal_workers, worker_init
-from src.wyckoff.trading import calculate_wyckoff_return, calculate_wyckoff_decay_returns
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-import psutil
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
 
+from src.parallel import get_optimal_workers, worker_init
+from src.wyckoff.trading import calculate_wyckoff_return
 
 
 def load_stock_symbols(csv_path: Path, limit: int = 100) -> List[Dict[str, str]]:
@@ -267,7 +262,7 @@ def process_single_stock(args: tuple) -> List[Dict]:
                 "future_60d_max_drawdown": future_return["max_drawdown_pct"],
                 **decay_returns,
             })
-    except Exception as e:
+    except Exception:
         pass
 
     return results
@@ -492,7 +487,7 @@ def generate_report(analysis: Dict, output_dir: Path) -> None:
     
     (output_dir / "quick_test_report.md").write_text("\n".join(md), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'quick_test_analysis.json'}")
     print(f"  - {output_dir / 'quick_test_report.md'}")
 

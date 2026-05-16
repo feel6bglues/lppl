@@ -2,8 +2,9 @@
 """
 威科夫模型单元测试
 """
-import pytest
 from datetime import datetime
+
+import pytest
 
 from src.wyckoff.models import (
     AnalysisResult,
@@ -12,7 +13,6 @@ from src.wyckoff.models import (
     ChartManifest,
     ChartManifestItem,
     DailyRuleResult,
-    ImageEvidenceBundle,
     PhaseResult,
     PreprocessingResult,
     VisualEvidence,

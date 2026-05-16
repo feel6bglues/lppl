@@ -18,10 +18,12 @@
 执行: .venv/bin/python3 validate_costs_walkforward.py
 结果: output/validate_large_scale/
 """
-import sys, os, json, warnings
-from pathlib import Path
+import json
+import os
+import sys
+import warnings
 from datetime import datetime
-from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -339,7 +341,7 @@ def main():
             "walk_forward": wf,
         }
 
-        print(f"  Walk-forward 3折:")
+        print("  Walk-forward 3折:")
         for f in wf:
             print(f"    {f['fold']}: 参数={f['best_params']} "
                   f"无成本={f['regime_no_cost']['ar']}%/Calmar={f['regime_no_cost']['calmar']} "

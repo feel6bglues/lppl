@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from itertools import product
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
 

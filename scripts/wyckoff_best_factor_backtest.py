@@ -29,7 +29,7 @@ import random
 import sys
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -430,7 +430,7 @@ def save_report(all_results: List[Dict], analysis: Dict, output_dir: Path):
         f"> 生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         f"> 基准: 沪深300, 前瞻窗口: {FORWARD_DAYS} 个交易日",
         f"> Wyckoff窗口: {WYCKOFF_LOOKBACK}天",
-        f"> 约束: T+1 + 只能做多",
+        "> 约束: T+1 + 只能做多",
         "",
     ]
 
@@ -523,17 +523,17 @@ def main():
     print("=" * 70)
     print("Wyckoff 最佳因子验证回测")
     print("=" * 70)
-    print(f"约束: T+1 + 只能做多")
+    print("约束: T+1 + 只能做多")
     print(f"股票: {args.limit}只随机 (种子={args.seed})")
     print(f"窗口: {len(TIME_WINDOWS)}个 (2012-2023)")
     print(f"前瞻: {FORWARD_DAYS}天")
     print(f"基准: {BENCHMARK}")
     print(f"Wyckoff: {WYCKOFF_LOOKBACK}天")
     print(f"线程: {args.workers}")
-    print(f"信号规则:")
-    print(f"  BUY   = 观察等待 (accumulation + spring)")
-    print(f"  AVOID = 持有观察 (markup)")
-    print(f"  HOLD  = 空仓观望 (其余)")
+    print("信号规则:")
+    print("  BUY   = 观察等待 (accumulation + spring)")
+    print("  AVOID = 持有观察 (markup)")
+    print("  HOLD  = 空仓观望 (其余)")
     print("=" * 70)
 
     # 股票列表
@@ -610,7 +610,7 @@ def main():
 
     bv = analysis.get("buy_vs_avoid", {})
     if bv:
-        print(f"\n【BUY vs AVOID】")
+        print("\n【BUY vs AVOID】")
         print(f"  超额差: {bv['difference']:+.2f}%")
         print(f"  Cohen's d: {bv['cohens_d']:+.3f}")
 

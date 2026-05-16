@@ -15,10 +15,13 @@
 执行: .venv/bin/python3 validate_large_scale.py
 结果: output/validate_large_scale/
 """
-import sys, os, json, warnings
-from pathlib import Path
-from datetime import datetime
+import json
+import os
+import sys
+import warnings
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -26,10 +29,13 @@ import pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 warnings.filterwarnings("ignore")
 
-from src.investment.indicators import compute_indicators
-from src.investment.config import InvestmentSignalConfig
+import importlib
+import importlib.machinery
+import types
 
-import importlib, importlib.machinery, types
+from src.investment.config import InvestmentSignalConfig
+from src.investment.indicators import compute_indicators
+
 _src = Path(__file__).resolve().parent / "src" / "investment" / "factor_combination.py"
 _loader = importlib.machinery.SourceFileLoader("_fce", str(_src))
 _mod = types.ModuleType(_loader.name)

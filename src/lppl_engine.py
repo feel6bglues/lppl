@@ -18,11 +18,15 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import differential_evolution, minimize
 
-from src.lppl_core import precheck_fit_input, track_fit_failure
+from src.lppl_core import (
+    cost_function,
+    lppl_func,
+    precheck_fit_input,
+    track_fit_failure,
+)
 
 logger = logging.getLogger(__name__)
 
-from src.lppl_core import NUMBA_AVAILABLE
 
 try:
     from numba import njit
@@ -34,7 +38,8 @@ except ImportError:
         return decorator
 
 
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("once", category=RuntimeWarning, module="numba")
+logging.captureWarnings(True)
 
 
 # ============================================================================
@@ -68,7 +73,7 @@ class LPPLConfig:
     watch_days: int = 25
 
     # Ensemble配置
-    consensus_threshold: float = 0.15
+    consensus_threshold: float = 0.5
 
     # 并行配置
     n_workers: int = -1
@@ -110,75 +115,6 @@ def classify_top_phase(days_left: float, r2: float, config: LPPLConfig) -> str:
     if days_left < config.watch_days and r2 >= watch_r2_threshold(config):
         return "watch"
     return "none"
-
-
-# ============================================================================
-# Numba加速底层算子
-# ============================================================================
-
-
-@njit(cache=True)
-def _lppl_func_numba(
-    t: np.ndarray, tc: float, m: float, w: float, a: float, b: float, c: float, phi: float
-) -> np.ndarray:
-    """LPPL模型函数 - Numba加速"""
-    n = len(t)
-    result = np.empty(n)
-    for i in range(n):
-        tau = tc - t[i]
-        if tau < 1e-8:
-            tau = 1e-8
-        power = tau**m
-        result[i] = a + b * power + c * power * np.cos(w * np.log(tau) + phi)
-    return result
-
-
-def lppl_func(
-    t: np.ndarray, tc: float, m: float, w: float, a: float, b: float, c: float, phi: float
-) -> np.ndarray:
-    """
-    LPPL模型函数 - 委托到 src.lppl_core
-
-    保持函数签名以备向后兼容，内部委托到 lppl_core 统一实现。
-    """
-    from src.lppl_core import lppl_func as _core_lppl
-
-    return _core_lppl(t, tc, m, w, a, b, c, phi)
-
-
-@njit(cache=True)
-def _cost_function_numba(params: np.ndarray, t: np.ndarray, log_prices: np.ndarray) -> float:
-    """代价函数 - Numba加速"""
-    tc = params[0]
-    m = params[1]
-    w = params[2]
-    a = params[3]
-    b = params[4]
-    c = params[5]
-    phi = params[6]
-
-    n = len(t)
-    total = 0.0
-    for i in range(n):
-        tau = tc - t[i]
-        if tau < 1e-8:
-            tau = 1e-8
-        power = tau**m
-        pred = a + b * power + c * power * np.cos(w * np.log(tau) + phi)
-        diff = pred - log_prices[i]
-        total += diff * diff
-    return total
-
-
-def cost_function(params: Tuple, t: np.ndarray, log_prices: np.ndarray) -> float:
-    """
-    代价函数 - 委托到 src.lppl_core
-
-    保持函数签名以备向后兼容，内部委托到 lppl_core 统一实现。
-    """
-    from src.lppl_core import cost_function as _core_cost
-
-    return _core_cost(params, t, log_prices)
 
 
 # ============================================================================
@@ -256,7 +192,7 @@ def fit_single_window(
         # 计算R²
         ss_res = np.sum((log_price_data - fitted_curve) ** 2)
         ss_tot = np.sum((log_price_data - np.mean(log_price_data)) ** 2)
-        r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+        r_squared = max(0.0, 1 - (ss_res / ss_tot)) if ss_tot > 0 else 0.0
 
         rmse = np.sqrt(np.mean((fitted_curve - log_price_data) ** 2))
 
@@ -363,7 +299,7 @@ def fit_single_window_lbfgsb(
 
         ss_res = np.sum((log_price_data - fitted_curve) ** 2)
         ss_tot = np.sum((log_price_data - log_mean) ** 2)
-        r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+        r_squared = max(0.0, 1 - (ss_res / ss_tot)) if ss_tot > 0 else 0.0
 
         rmse = np.sqrt(best_cost / len(log_price_data))
 
@@ -552,25 +488,28 @@ def find_local_highs(
     close = df["close"].values
     dates = df["date"].values
 
-    for i in range(window, len(close) - window):
-        local_max = np.max(close[i - window : i + window + 1])
-        if close[i] == local_max:
-            future_window = min(60, len(close) - i - 1)
-            if future_window > 0:
-                future_min = np.min(close[i + 1 : i + 1 + future_window])
-                drop_pct = (close[i] - future_min) / close[i]
+    rolling_max = pd.Series(close).rolling(window * 2 + 1, center=True).max().values
+    is_peak = close == rolling_max
+    peak_candidates = np.where(is_peak)[0]
 
-                if drop_pct >= min_drop_pct:
-                    too_close = False
-                    for h in highs:
-                        if abs(i - h["idx"]) < min_gap:
-                            too_close = True
-                            break
+    for i in peak_candidates:
+        future_window = min(60, len(close) - i - 1)
+        if i < window or i >= len(close) - window or future_window <= 0:
+            continue
+        future_min = np.min(close[i + 1 : i + 1 + future_window])
+        drop_pct = (close[i] - future_min) / close[i]
 
-                    if not too_close:
-                        highs.append(
-                            {"idx": i, "date": dates[i], "price": close[i], "drop_pct": drop_pct}
-                        )
+        if drop_pct >= min_drop_pct:
+            too_close = False
+            for h in highs:
+                if abs(i - h["idx"]) < min_gap:
+                    too_close = True
+                    break
+
+            if not too_close:
+                highs.append(
+                    {"idx": i, "date": dates[i], "price": close[i], "drop_pct": drop_pct}
+                )
 
     return highs
 
@@ -835,6 +774,17 @@ def analyze_peak_ensemble(
 # ============================================================================
 
 
+def _is_valid_bubble(m, w, b, c):
+    if any(v is None for v in (m, w, b, c)):
+        return False
+    return (
+        0.1 < m < 0.9
+        and 6 < w < 13
+        and b < 0
+        and abs(c) > 0.01
+    )
+
+
 def process_single_day_ensemble(
     close_prices: np.ndarray,
     idx: int,
@@ -898,12 +848,14 @@ def process_single_day_ensemble(
     tc_array = np.array([fit["days_to_crash"] for fit in valid_fits])
     tc_std = np.std(tc_array)
 
-    positive_fits = [
-        fit for fit in valid_fits if fit.get("params", (None, None, None, None, 0))[4] <= 0
-    ]
-    negative_fits = [
-        fit for fit in valid_fits if fit.get("params", (None, None, None, None, 0))[4] > 0
-    ]
+    positive_fits = []
+    negative_fits = []
+    for fit in valid_fits:
+        p = fit.get("params", (None, None, None, None, None, None, None))
+        if len(p) >= 6 and _is_valid_bubble(fit.get("m", 0), fit.get("w", 0), p[4], p[5]):
+            positive_fits.append(fit)
+        else:
+            negative_fits.append(fit)
 
     # consensus_rate = valid_n / total_windows（有效拟合占总窗口比例）
     # 方向共识以有效拟合为分母，避免被无效窗口稀释

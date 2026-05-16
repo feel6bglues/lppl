@@ -14,12 +14,12 @@
 """
 from __future__ import annotations
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import argparse
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -42,7 +42,6 @@ from src.investment.group_rescan import (
     candidate_key,
 )
 from src.investment.tuning import score_signal_tuning_results
-from src.lppl_engine import LPPLConfig
 
 TRAIN_START = "2012-01-01"
 TRAIN_END = "2019-12-31"
@@ -434,7 +433,7 @@ def main():
                 train_raw.to_csv(output_dir / "train_raw_results.csv", index=False)
             if not train_summary.empty:
                 train_summary.to_csv(output_dir / "train_summary.csv", index=False)
-                print(f"\n[TRAIN] Top 3:")
+                print("\n[TRAIN] Top 3:")
                 for _, row in train_summary.head(3).iterrows():
                     print(f"  {row['candidate_key']} -> eligible={int(row['eligible_count'])}/{int(row['symbol_count'])}, "
                           f"excess={float(row['annualized_excess_return']):.2%}, "

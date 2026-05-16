@@ -9,17 +9,19 @@ from typing import Any, Dict, Optional, Tuple
 import pandas as pd
 
 from src.constants import (
-    AKSHARE_INDICES,
-    DATA_COLUMNS,
-    DEFAULT_DATA_DIR,
-    ENABLE_INCREMENTAL_UPDATE,
     INDICES,
     LOCAL_DATA_INDICES,
-    MAX_DATA_AGE_DAYS,
-    MIN_DATA_ROWS,
+    AKSHARE_INDICES,
     REQUIRED_COLUMNS,
-    TDX_DATA_DIR,
+    MIN_DATA_ROWS,
+    MAX_DATA_AGE_DAYS,
+    DATA_COLUMNS,
+    ENABLE_NUMBA_JIT,
+    ENABLE_INCREMENTAL_UPDATE,
+    DEFAULT_DATA_DIR,
+    require_tdx_data_dir,
 )
+from src.data.models import DataBundle, DataSourceMeta
 from src.exceptions import DataFetchError, DataValidationError, InvalidInputDataError
 
 logger = logging.getLogger(__name__)
@@ -117,10 +119,19 @@ class DataManager:
             raise FileNotFoundError(f"Data directory not found: {self.data_dir}")
         logger.info(f"DataManager initialized with data_dir: {self.data_dir}")
 
-        from src.data.tdx_reader import TDXReader
+        self._tdx_reader = None
 
-        self.tdx_reader = TDXReader(TDX_DATA_DIR)
-        logger.info(f"TDX Reader initialized with tdxdir: {TDX_DATA_DIR}")
+    @property
+    def tdx_reader(self):  # lazy init
+        if self._tdx_reader is None:
+            from src.data.tdx_reader import TDXReader
+            self._tdx_reader = TDXReader(require_tdx_data_dir())
+            logger.info("TDX Reader initialized via lazy init")
+        return self._tdx_reader
+
+    @tdx_reader.setter
+    def tdx_reader(self, value):
+        self._tdx_reader = value
 
     def _get_file_path(self, symbol: str) -> str:
         if not validate_symbol(symbol):
@@ -465,18 +476,45 @@ class DataManager:
             logger.error(f"Error checking data timeliness for {symbol}: {type(e).__name__}: {e}")
             return False, None, file_path
 
-    def get_data(self, symbol: str) -> Optional[pd.DataFrame]:
+    @staticmethod
+    def _build_data_meta(
+        symbol: str, source: str, df: pd.DataFrame, file_path: Optional[str] = None,
+    ) -> DataSourceMeta:
+        mtime = None
+        fsize = None
+        if file_path and os.path.exists(file_path):
+            mtime = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
+            fsize = os.path.getsize(file_path)
+        rows = len(df) if df is not None else 0
+        date_range = ""
+        if df is not None and not df.empty:
+            date_range = f"{df['date'].min()} ~ {df['date'].max()}"
+        return DataSourceMeta(
+            symbol=symbol,
+            source=source,
+            file_path=file_path,
+            file_mtime=mtime,
+            file_size=fsize,
+            rows=rows,
+            date_range=date_range,
+        )
+
+    def _get_data_with_source(
+        self, symbol: str,
+    ) -> Optional[Tuple[pd.DataFrame, str, Optional[str]]]:
         if not validate_symbol(symbol):
             logger.error(f"Invalid symbol requested: {symbol}")
             return None
 
         if symbol in LOCAL_DATA_INDICES:
-            return self._read_from_tdx(symbol)
+            df = self._read_from_tdx(symbol)
+            if df is not None and not df.empty:
+                return (df, "tdx_local", None)
+            return None
 
-        # 个股优先从本地通达信读取，失败后再回退到缓存 parquet
         tdx_df = self._read_from_tdx(symbol)
         if tdx_df is not None and not tdx_df.empty:
-            return tdx_df
+            return (tdx_df, "tdx_local", None)
 
         if self._is_akshare_index(symbol):
             file_path = self._get_file_path(symbol)
@@ -488,7 +526,7 @@ class DataManager:
 
                     is_valid, msg = validate_dataframe(df, symbol)
                     if is_valid:
-                        return df
+                        return (df, "parquet_cache", file_path)
                     else:
                         logger.warning(
                             f"Cached data validation failed for {symbol}: {msg}, will refetch"
@@ -500,7 +538,10 @@ class DataManager:
                 except Exception as e:
                     logger.error(f"Error reading local data for {symbol}: {type(e).__name__}: {e}")
 
-            return self._fetch_akshare_data(symbol)
+            df = self._fetch_akshare_data(symbol)
+            if df is not None and not df.empty:
+                return (df, "akshare", None)
+            return None
 
         file_path = self._get_file_path(symbol)
 
@@ -518,7 +559,7 @@ class DataManager:
                 logger.error(f"Data validation failed for {symbol}: {msg}")
                 return None
 
-            return df
+            return (df, "parquet_cache", file_path)
         except ValueError as e:
             logger.error(f"Data format error reading data for {e}")
             return None
@@ -528,6 +569,19 @@ class DataManager:
         except Exception as e:
             logger.error(f"Error reading data for {type(e).__name__}: {e}")
             return None
+
+    def get_data(
+        self, symbol: str, return_bundle: bool = False,
+    ) -> Optional[pd.DataFrame | DataBundle]:
+        result = self._get_data_with_source(symbol)
+        if result is None:
+            return None
+        df, source, file_path = result
+        if return_bundle:
+            return DataBundle(
+                df=df, meta=self._build_data_meta(symbol, source, df, file_path),
+            )
+        return df
 
     def _read_from_tdx(self, symbol: str) -> Optional[pd.DataFrame]:
         """从通达信本地读取数据"""

@@ -41,9 +41,17 @@ AKSHARE_INDICES: List[str] = [
     "932000.SH",
 ]
 
-TDX_DATA_DIR: str = os.environ.get(
-    "LPPL_TDX_DATA_DIR", "/home/james/.local/share/tdxcfv/drive_c/tc/vipdoc"
-)
+TDX_DATA_DIR: str | None = os.environ.get("LPPL_TDX_DATA_DIR")
+
+
+def require_tdx_data_dir() -> str:
+    if not TDX_DATA_DIR:
+        raise RuntimeError(
+            "LPPL_TDX_DATA_DIR environment variable is required.\n"
+            "Set it to your TDX vipdoc root, e.g.:\n"
+            "  export LPPL_TDX_DATA_DIR=/path/to/vipdoc"
+        )
+    return TDX_DATA_DIR
 
 REQUIRED_COLUMNS: List[str] = ["date", "open", "close", "high", "low", "volume"]
 

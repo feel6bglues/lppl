@@ -42,3 +42,4 @@ data/*.parquet
 # Backup files
 *.tar.gz
 *.zip
+*.egg-info/

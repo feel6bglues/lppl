@@ -21,11 +21,9 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
-
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -39,10 +37,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.parallel import get_optimal_workers, worker_init
-from src.wyckoff.trading import calculate_wyckoff_return, calculate_wyckoff_decay_returns
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
-
+from src.wyckoff.trading import calculate_wyckoff_decay_returns, calculate_wyckoff_return
 
 # ============================================================================
 # 配置
@@ -365,7 +360,7 @@ def process_single_stock_paired(args: tuple) -> List[Dict]:
                 "future_20d_return": monthly_return["return_pct"] if monthly_return else None,
                 **decay_returns,
             })
-    except Exception as e:
+    except Exception:
         pass
 
     return results
@@ -1042,7 +1037,7 @@ def write_deep_test_report(output_dir: Path, analysis: Dict, config: DeepTestCon
     
     (output_dir / "deep_test_report.md").write_text("\n".join(md_lines), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'deep_test_analysis.json'}")
     print(f"  - {output_dir / 'deep_test_report.md'}")
 

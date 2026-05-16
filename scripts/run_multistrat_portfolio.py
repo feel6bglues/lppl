@@ -14,22 +14,26 @@
   - 等权组合 → 分散风险
 """
 
-import csv, json, random, sys, math
+import csv
+import json
+import math
+import random
+import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+from scripts.utils.tdx_config import CSI300_PATH
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 N_STOCKS = 1000; N_WINDOWS = 20; SEED = 42; N_BOOT = 2000
 CSI300_PATH = CSI300_PATH
@@ -294,7 +298,7 @@ def run():
         r = results.get(s)
         if r: print(f"  {s:<10} {r['n']:>6} {r['ret']:>7.2f}% {r['std']:>7.2f}% {r['sharpe']:>7.3f} {r['win']:>5.1f}% {r['avg_days']:>7.1f}d")
     # 相关性
-    print(f"\n策略相关性矩阵:")
+    print("\n策略相关性矩阵:")
     types = [t for t in ["wyckoff", "rsi", "ma"] if t in results]
     if len(types) >= 2:
         corr_matrix = {}

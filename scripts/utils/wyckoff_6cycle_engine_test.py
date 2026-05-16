@@ -15,12 +15,12 @@ import json
 import random
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -28,7 +28,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.manager import DataManager
 from src.wyckoff.engine import WyckoffEngine
-from src.wyckoff.models import WyckoffPhase
 
 
 @dataclass(frozen=True)
@@ -416,7 +415,7 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None
     
     (output_dir / "cycle6_report.md").write_text("\n".join(md_lines), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'cycle6_raw_results.jsonl'}")
     print(f"  - {output_dir / 'cycle6_results.csv'}")
     print(f"  - {output_dir / 'cycle6_analysis.json'}")

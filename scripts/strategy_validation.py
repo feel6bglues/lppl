@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -37,17 +36,12 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
-import psutil
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.parallel import get_optimal_workers, worker_init
 from src.wyckoff.trading import calculate_wyckoff_return
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
-
 
 # ============================================================================
 # 配置
@@ -981,7 +975,7 @@ def generate_report(analysis: Dict, config: StrategyConfig, output_dir: Path) ->
     
     (output_dir / "strategy_validation_report.md").write_text("\n".join(md), encoding="utf-8")
     
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'strategy_validation_analysis.json'}")
     print(f"  - {output_dir / 'strategy_validation_report.md'}")
 
@@ -1054,7 +1048,7 @@ def main():
     # 过滤效果
     fe = analysis["filter_effect"]
     print(f"  过滤率: {fe['filter_rate']}%")
-    if f"improvement_60d" in fe:
+    if "improvement_60d" in fe:
         print(f"  60天改进: {fe['improvement_60d']:+.2f}%")
     
     # 基准对比

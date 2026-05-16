@@ -13,22 +13,26 @@
   - 可叠加资金管理 (等权/凯利)
 """
 
-import csv, json, math, random, sys
+import csv
+import json
+import math
+import random
+import sys
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
+
 import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
+from scripts.utils.tdx_config import CSI300_PATH
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 N_STOCKS = 1000; N_WINDOWS = 20; SEED = 42
 CSI300_PATH = CSI300_PATH

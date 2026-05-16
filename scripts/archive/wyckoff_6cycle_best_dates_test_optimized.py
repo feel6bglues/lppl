@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -17,8 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import psutil
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -178,7 +177,7 @@ def process_single_stock(args: tuple) -> List[Dict]:
                 "future_entry_price": future_return["entry_price"],
                 "future_close": future_return["future_close"],
             })
-    except Exception as e:
+    except Exception:
         pass
 
     return results
@@ -222,7 +221,7 @@ def run_6cycle_test_multiprocess(
             try:
                 results = future.result(timeout=300)
                 all_results.extend(results)
-            except Exception as e:
+            except Exception:
                 pass
 
             if completed_stocks % 200 == 0:
@@ -348,10 +347,10 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None
         f"- 总样本数: {analysis.get('total_samples', 0)}",
         f"- 整体平均收益: {analysis.get('overall_avg_return', 0):.2f}%",
         f"- 整体胜率: {analysis.get('overall_win_rate', 0):.1f}%",
-        f"- 日线回看: 300天",
-        f"- 多周期分析: 日线+周线+月线（周线/月线折合600天）",
-        f"- 测试周期: 6周期（复刻最佳版本a438a32日期）",
-        f"- 并行方式: ProcessPoolExecutor (多进程)",
+        "- 日线回看: 300天",
+        "- 多周期分析: 日线+周线+月线（周线/月线折合600天）",
+        "- 测试周期: 6周期（复刻最佳版本a438a32日期）",
+        "- 并行方式: ProcessPoolExecutor (多进程)",
         "",
         "## 阶段分布与未来收益",
         "",
@@ -405,7 +404,7 @@ def write_outputs(output_dir: Path, results: List[Dict], analysis: Dict) -> None
 
     (output_dir / "cycle6_report.md").write_text("\n".join(md_lines), encoding="utf-8")
 
-    print(f"\n输出文件:")
+    print("\n输出文件:")
     print(f"  - {output_dir / 'cycle6_raw_results.jsonl'}")
     print(f"  - {output_dir / 'cycle6_results.csv'}")
     print(f"  - {output_dir / 'cycle6_analysis.json'}")

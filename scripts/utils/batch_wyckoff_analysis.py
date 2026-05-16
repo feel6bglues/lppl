@@ -5,11 +5,11 @@ Wyckoff 批量分析工具
 对 8 个主要指数进行威科夫分析并生成报告
 """
 
+import logging
 import os
 import sys
-import logging
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # 添加项目根路径
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -18,9 +18,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.manager import DataManager
 from src.wyckoff.analyzer import WyckoffAnalyzer
-from src.wyckoff.image_engine import ImageEngine
-from src.wyckoff.fusion_engine import FusionEngine
-from src.wyckoff.state import StateManager
 
 logging.basicConfig(
     level=logging.INFO,
@@ -135,7 +132,7 @@ def generate_summary(results: list, output_dir: str):
     sc_found_count = sum(1 for r in results if r['sc_found'])
     long_setups = sum(1 for r in results if '做多' in r['decision'])
     
-    print(f"\n统计信息:")
+    print("\n统计信息:")
     print(f"  - 分析指数数量：{total}")
     print(f"  - 找到 BC 点：{bc_found_count} ({bc_found_count/total*100:.1f}%)")
     print(f"  - 找到 SC 点：{sc_found_count} ({sc_found_count/total*100:.1f}%)")

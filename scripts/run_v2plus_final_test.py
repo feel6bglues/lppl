@@ -29,7 +29,7 @@ import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -39,10 +39,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 # === 配置 ===
 N_STOCKS = 99999
@@ -342,7 +340,7 @@ def run():
     print("=" * 70)
     print("Wyckoff v2+ P3 最终定型")
     print("  NTZ过滤 + 结构止损 + 50%阶梯止盈 + ATR自适应移动止损 + 时间止损 + BEAR跳过")
-    print(f"  ATR乘数: range=1.5/bear=2.5/bull=3.0")
+    print("  ATR乘数: range=1.5/bear=2.5/bull=3.0")
     print(f"  全量A股 | 窗口:{N_WINDOWS} | 持有:90-180d自适应")
     print("=" * 70)
 
@@ -444,11 +442,11 @@ def run():
         print(f"  策略: {bc['strategy']:.2f}% vs 沪深300: {bc['benchmark']:.2f}%")
         print(f"  超额: {bc['excess_mean']:.2f}%  超额胜率: {bc['excess_win']:.1f}%")
 
-    print(f"\n  退出原因:")
+    print("\n  退出原因:")
     for r, s in sorted(analysis["exit_reason"].items(), key=lambda x: -x[1]["pct"]):
         print(f"    {r:30s}: {s['pct']:5.1f}%  ret={s['mean']:6.2f}%  win={s['win']:5.1f}%")
 
-    print(f"\n  Regime分析:")
+    print("\n  Regime分析:")
     for r, s in sorted(analysis["regime"].items(), key=lambda x: -x[1]["mean"]):
         print(f"    {r:6s}: ret={s['mean']:6.2f}%  win={s['win']:5.1f}%  n={s['n']}")
 

@@ -16,21 +16,24 @@
   数据: 2012-2025 TDX日线
 """
 
-import csv, json, math, random, sys
-from collections import defaultdict
+import csv
+import json
+import math
+import random
+import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
+from scripts.utils.tdx_config import CSI300_PATH
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 N_STOCKS = 99999; N_WINDOWS = 20; SEED = 42; MC_SIMS = 10000
 CSI300_PATH = CSI300_PATH

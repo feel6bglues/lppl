@@ -18,7 +18,7 @@ import random
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -28,10 +28,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 # === 配置 ===
 N_STOCKS = 99999
@@ -457,12 +455,12 @@ def run():
         print(f"  策略: {bc['strategy']:.2f}% vs 基准: {bc['benchmark']:.2f}%")
         print(f"  超额: {bc['excess_mean']:.2f}%  超额胜率: {bc['excess_win']:.1f}%")
 
-    print(f"\n  退出原因:")
+    print("\n  退出原因:")
     for r, s in sorted(analysis["exit_reason"].items(), key=lambda x: -x[1]["pct"], reverse=True):
         print(f"    {r:35s}: {s['pct']:5.1f}%  ret={s['mean']:6.2f}%  win={s['win']:5.1f}%")
 
-    print(f"\n  vs v2+对比:")
-    print(f"    v2+:      收益=+1.69%  夏普=0.168  超额=+5.52%")
+    print("\n  vs v2+对比:")
+    print("    v2+:      收益=+1.69%  夏普=0.168  超额=+5.52%")
     print(f"    多因子:   收益={o['mean_return']:+.2f}%  夏普={o['sharpe']:.3f}  超额={bc.get('excess_mean',0):+.2f}%")
 
     print(f"\n{'='*70}")

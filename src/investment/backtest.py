@@ -123,10 +123,10 @@ class BacktestConfig:
     end_date: Optional[str] = None
     execution_price: str = "open"
 
-    # 成交约束（默认关闭，保持向后兼容）
-    enable_limit_move_constraint: bool = False
+    # 成交约束（默认开启）
+    enable_limit_move_constraint: bool = True
     max_participation_rate: float = 0.25
-    suspend_if_volume_zero: bool = False
+    suspend_if_volume_zero: bool = True
 
 
 def _normalize_price_frame(df: pd.DataFrame) -> pd.DataFrame:
@@ -1167,6 +1167,11 @@ def run_strategy_backtest(
 ) -> Tuple[pd.DataFrame, pd.DataFrame, Dict[str, Any]]:
     backtest_config = backtest_config or BacktestConfig()
     equity_df = _normalize_price_frame(signal_df)
+
+    # t+1 执行: 将信号向后偏移一个交易日
+    # 当前 bar 的信号基于截至昨日的数据生成, 在下个 bar 的开盘执行
+    if "target_position" in equity_df.columns:
+        equity_df["target_position"] = equity_df["target_position"].shift(1).fillna(0.0)
 
     if backtest_config.start_date:
         equity_df = equity_df[equity_df["date"] >= pd.to_datetime(backtest_config.start_date)]

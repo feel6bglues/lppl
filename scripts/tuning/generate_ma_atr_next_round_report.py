@@ -8,7 +8,6 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 
-
 EXPECTED_SECTIONS: List[Tuple[str, str]] = [
     ("Template A 样本内", "a_is"),
     ("Template B 样本内", "b_is"),

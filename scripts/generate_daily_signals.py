@@ -10,12 +10,17 @@
   - output/daily_signals/signals_{date}.csv: CSV格式
 """
 
-import csv, json, sys, time, math, logging
+import csv
+import json
+import logging
+import math
+import sys
+import time
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -25,12 +30,11 @@ logger = logging.getLogger("daily_signals")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
+from scripts.utils.tdx_config import CSI300_PATH
 from src.data.manager import DataManager
 from src.data.tdx_loader import load_tdx_data
-from src.wyckoff.engine import WyckoffEngine
 from src.parallel import get_optimal_workers, worker_init
-from scripts.utils.tdx_config import CSI300_PATH, TDX_BASE, TDX_SH_DIR, TDX_SZ_DIR
-
+from src.wyckoff.engine import WyckoffEngine
 
 CSI300_PATH = CSI300_PATH
 OUTPUT_DIR = PROJECT_ROOT / "output" / "daily_signals"
@@ -375,7 +379,7 @@ def run():
             if cnt > 0:
                 print(f"  {lvl}级: {cnt}条")
 
-    print(f"\n按策略分布:")
+    print("\n按策略分布:")
     print(f"  Wyckoff: {len(wyc)}条")
     print(f"  MA5/20金叉: {len(ma)}条")
 

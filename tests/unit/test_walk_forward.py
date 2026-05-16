@@ -14,7 +14,7 @@ from src.verification.walk_forward import (
 class WalkForwardTests(unittest.TestCase):
     def test_evaluate_future_drawdown_detects_drop(self) -> None:
         prices = [100, 98, 92, 89, 95]
-        hit, drop = evaluate_future_drawdown(prices, idx=0, lookahead_days=4, drop_threshold=0.10)
+        hit, drop, tc_error = evaluate_future_drawdown(prices, idx=0, lookahead_days=4, drop_threshold=0.10)
         self.assertTrue(hit)
         self.assertAlmostEqual(drop, 0.11, places=2)
 

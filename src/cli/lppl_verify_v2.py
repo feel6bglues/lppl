@@ -20,21 +20,16 @@ Ensemble 模式参数 (对齐 target.md):
 """
 
 import argparse
+import logging
 import os
 import sys
 import warnings
 from datetime import datetime
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 
-warnings.filterwarnings("ignore")
-
-# 添加项目根路径（兼容直接运行 src/cli/*.py）
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+warnings.filterwarnings("once", category=RuntimeWarning, module="numba")
+logging.captureWarnings(True)
 
 # 导入引擎模块
 from src.config import load_optimal_config, resolve_symbol_params

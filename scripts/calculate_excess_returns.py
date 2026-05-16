@@ -11,8 +11,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -284,7 +284,7 @@ def write_excess_report(output_dir: Path, analysis: Dict) -> None:
     
     (output_dir / "excess_returns_report.md").write_text("\n".join(md_lines), encoding="utf-8")
     
-    print(f"输出文件:")
+    print("输出文件:")
     print(f"  - {output_dir / 'excess_returns_analysis.json'}")
     print(f"  - {output_dir / 'excess_returns_report.md'}")
 

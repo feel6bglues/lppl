@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
+
 """
 LPPL 底层数值核心
 
@@ -195,17 +196,18 @@ def fit_single_window_task(args: Tuple[int, pd.Series, np.ndarray]) -> Optional[
 
         from scipy.optimize import differential_evolution
 
-        result = differential_evolution(
-            cost_function,
-            bounds,
-            args=(t_data, log_price_data),
-            strategy="best1bin",
-            maxiter=100,
-            popsize=15,
-            tol=0.05,
-            seed=42,
-            workers=1,
-        )
+        best_result = None
+        best_fun = float("inf")
+        for seed in [0, 42, 123, 9999]:
+            result = differential_evolution(
+                cost_function, bounds, args=(t_data, log_price_data),
+                strategy="best1bin", maxiter=100, popsize=15,
+                tol=0.05, seed=seed, workers=1,
+            )
+            if result.success and result.fun < best_fun:
+                best_result = result
+                best_fun = result.fun
+        result = best_result
 
         if not result.success or not np.isfinite(result.fun):
             return None
